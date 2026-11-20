@@ -17,6 +17,8 @@ MODULES = [
     "mbench",
     "mbench.cli",
     "mbench.sut",
+    "mbench.hostsrc",
+    "mbench.validate",
     "mbench.matrix",
     "mbench.runner",
     "mbench.truth",

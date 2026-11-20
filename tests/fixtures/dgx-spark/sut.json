@@ -1,0 +1,2626 @@
+{
+  "schema_version": 1,
+  "scope": "host",
+  "collected_at": "2026-11-20T22:00:00Z",
+  "sut_hash": "sha256:6d2c04924bfe539d637cf774852428fb4127d69a9d60d962c75a70390e1d39bb",
+  "host": {
+    "hostname": "dgx-spark",
+    "hostname_anonymised": true,
+    "architecture": "aarch64",
+    "dmi": {
+      "sys_vendor": "NVIDIA",
+      "product_name": "NVIDIA_DGX_Spark",
+      "product_family": "DGX Spark",
+      "product_version": "A.7",
+      "product_sku": "0000",
+      "board_vendor": "NVIDIA",
+      "board_name": "P4242",
+      "board_version": "A04",
+      "bios_vendor": "American Megatrends International, LLC.",
+      "bios_version": "5.36_0ACUM018",
+      "bios_date": "08/06/2025",
+      "bios_release": "5.36",
+      "chassis_vendor": "NVIDIA",
+      "chassis_type": "17"
+    },
+    "cpu": {
+      "logical_cpus": 20,
+      "online": "0-19",
+      "sockets": 1,
+      "smt": {
+        "control": "notsupported",
+        "active": false
+      },
+      "boost": false,
+      "isolated": "",
+      "nohz_full": "",
+      "core_types": [
+        {
+          "model_name": "Cortex-A725",
+          "midr": "0x00000000410fd871",
+          "cpuinfo_max_mhz": 2808,
+          "cpuinfo_min_mhz": 338,
+          "scaling_max_mhz": 2808,
+          "scaling_min_mhz": 338,
+          "scaling_driver": "cppc_cpufreq",
+          "governor": "performance",
+          "caches": [
+            {
+              "level": 1,
+              "type": "Data",
+              "size_kib": 64,
+              "ways": 4,
+              "line_bytes": 64,
+              "shared_cpus": 1
+            },
+            {
+              "level": 1,
+              "type": "Instruction",
+              "size_kib": 64,
+              "ways": 4,
+              "line_bytes": 64,
+              "shared_cpus": 1
+            },
+            {
+              "level": 2,
+              "type": "Unified",
+              "size_kib": 512,
+              "ways": 8,
+              "line_bytes": 64,
+              "shared_cpus": 1
+            },
+            {
+              "level": 3,
+              "type": "Unified",
+              "size_kib": 8192,
+              "ways": 16,
+              "line_bytes": 64,
+              "shared_cpus": 10
+            }
+          ],
+          "count": 10,
+          "cpus": "0-4,10-14",
+          "nonuniform_fields": [
+            "caches"
+          ],
+          "variants": {
+            "caches": [
+              {
+                "cpus": "0-4",
+                "value": [
+                  {
+                    "level": 1,
+                    "line_bytes": 64,
+                    "shared_cpus": 1,
+                    "size_kib": 64,
+                    "type": "Data",
+                    "ways": 4
+                  },
+                  {
+                    "level": 1,
+                    "line_bytes": 64,
+                    "shared_cpus": 1,
+                    "size_kib": 64,
+                    "type": "Instruction",
+                    "ways": 4
+                  },
+                  {
+                    "level": 2,
+                    "line_bytes": 64,
+                    "shared_cpus": 1,
+                    "size_kib": 512,
+                    "type": "Unified",
+                    "ways": 8
+                  },
+                  {
+                    "level": 3,
+                    "line_bytes": 64,
+                    "shared_cpus": 10,
+                    "size_kib": 8192,
+                    "type": "Unified",
+                    "ways": 16
+                  }
+                ]
+              },
+              {
+                "cpus": "10-14",
+                "value": [
+                  {
+                    "level": 1,
+                    "line_bytes": 64,
+                    "shared_cpus": 1,
+                    "size_kib": 64,
+                    "type": "Data",
+                    "ways": 4
+                  },
+                  {
+                    "level": 1,
+                    "line_bytes": 64,
+                    "shared_cpus": 1,
+                    "size_kib": 64,
+                    "type": "Instruction",
+                    "ways": 4
+                  },
+                  {
+                    "level": 2,
+                    "line_bytes": 64,
+                    "shared_cpus": 1,
+                    "size_kib": 512,
+                    "type": "Unified",
+                    "ways": 8
+                  },
+                  {
+                    "level": 3,
+                    "line_bytes": 64,
+                    "shared_cpus": 10,
+                    "size_kib": 16384,
+                    "type": "Unified",
+                    "ways": 16
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "model_name": "Cortex-X925",
+          "midr": "0x00000000410fd851",
+          "cpuinfo_max_mhz": 3900,
+          "cpuinfo_min_mhz": 1378,
+          "scaling_max_mhz": 3900,
+          "scaling_min_mhz": 1378,
+          "scaling_driver": "cppc_cpufreq",
+          "governor": "performance",
+          "caches": [
+            {
+              "level": 1,
+              "type": "Data",
+              "size_kib": 64,
+              "ways": 4,
+              "line_bytes": 64,
+              "shared_cpus": 1
+            },
+            {
+              "level": 1,
+              "type": "Instruction",
+              "size_kib": 64,
+              "ways": 4,
+              "line_bytes": 64,
+              "shared_cpus": 1
+            },
+            {
+              "level": 2,
+              "type": "Unified",
+              "size_kib": 2048,
+              "ways": 8,
+              "line_bytes": 64,
+              "shared_cpus": 1
+            },
+            {
+              "level": 3,
+              "type": "Unified",
+              "size_kib": 8192,
+              "ways": 16,
+              "line_bytes": 64,
+              "shared_cpus": 10
+            }
+          ],
+          "count": 10,
+          "cpus": "5-9,15-19",
+          "nonuniform_fields": [
+            "caches"
+          ],
+          "variants": {
+            "caches": [
+              {
+                "cpus": "5-9",
+                "value": [
+                  {
+                    "level": 1,
+                    "line_bytes": 64,
+                    "shared_cpus": 1,
+                    "size_kib": 64,
+                    "type": "Data",
+                    "ways": 4
+                  },
+                  {
+                    "level": 1,
+                    "line_bytes": 64,
+                    "shared_cpus": 1,
+                    "size_kib": 64,
+                    "type": "Instruction",
+                    "ways": 4
+                  },
+                  {
+                    "level": 2,
+                    "line_bytes": 64,
+                    "shared_cpus": 1,
+                    "size_kib": 2048,
+                    "type": "Unified",
+                    "ways": 8
+                  },
+                  {
+                    "level": 3,
+                    "line_bytes": 64,
+                    "shared_cpus": 10,
+                    "size_kib": 8192,
+                    "type": "Unified",
+                    "ways": 16
+                  }
+                ]
+              },
+              {
+                "cpus": "15-19",
+                "value": [
+                  {
+                    "level": 1,
+                    "line_bytes": 64,
+                    "shared_cpus": 1,
+                    "size_kib": 64,
+                    "type": "Data",
+                    "ways": 4
+                  },
+                  {
+                    "level": 1,
+                    "line_bytes": 64,
+                    "shared_cpus": 1,
+                    "size_kib": 64,
+                    "type": "Instruction",
+                    "ways": 4
+                  },
+                  {
+                    "level": 2,
+                    "line_bytes": 64,
+                    "shared_cpus": 1,
+                    "size_kib": 2048,
+                    "type": "Unified",
+                    "ways": 8
+                  },
+                  {
+                    "level": 3,
+                    "line_bytes": 64,
+                    "shared_cpus": 10,
+                    "size_kib": 16384,
+                    "type": "Unified",
+                    "ways": 16
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "cache_totals": {
+        "L1d": {
+          "instances": 20,
+          "total_kib": 1280
+        },
+        "L1i": {
+          "instances": 20,
+          "total_kib": 1280
+        },
+        "L2": {
+          "instances": 20,
+          "total_kib": 25600
+        },
+        "L3": {
+          "instances": 2,
+          "total_kib": 24576
+        }
+      },
+      "lscpu_caches": [
+        {
+          "name": "L1d",
+          "one_size": "64K",
+          "all_size": "1.3M",
+          "ways": 4,
+          "level": 1,
+          "type": "Data"
+        },
+        {
+          "name": "L1i",
+          "one_size": "64K",
+          "all_size": "1.3M",
+          "ways": 4,
+          "level": 1,
+          "type": "Instruction"
+        },
+        {
+          "name": "L2",
+          "one_size": "512K",
+          "all_size": "25M",
+          "ways": 8,
+          "level": 2,
+          "type": "Unified"
+        },
+        {
+          "name": "L3",
+          "one_size": "8M",
+          "all_size": "24M",
+          "ways": 16,
+          "level": 3,
+          "type": "Unified"
+        }
+      ]
+    },
+    "numa": {
+      "nodes": [
+        {
+          "node": 0,
+          "cpus": "0-19",
+          "mem_total_kib": 125507832
+        }
+      ]
+    },
+    "memory": {
+      "total_kib": 125507832,
+      "speed": {
+        "unavailable": "needs_root",
+        "reason": "memory speed and type come from the SMBIOS table /sys/firmware/dmi/tables/DMI (dmidecode), readable by root only"
+      },
+      "type": {
+        "unavailable": "needs_root",
+        "reason": "memory speed and type come from the SMBIOS table /sys/firmware/dmi/tables/DMI (dmidecode), readable by root only"
+      },
+      "hugepages": {
+        "default_size_kib": 2048,
+        "pools": [
+          {
+            "size_kib": 64,
+            "total": 0
+          },
+          {
+            "size_kib": 2048,
+            "total": 0
+          },
+          {
+            "size_kib": 32768,
+            "total": 0
+          },
+          {
+            "size_kib": 1048576,
+            "total": 0
+          }
+        ]
+      },
+      "transparent_hugepage": {
+        "enabled": "madvise",
+        "defrag": "madvise"
+      },
+      "swap": {
+        "total_kib": 16777212,
+        "areas": [
+          {
+            "type": "file",
+            "size_kib": 16777212,
+            "priority": -2
+          }
+        ]
+      }
+    }
+  },
+  "os": {
+    "distro": {
+      "id": "ubuntu",
+      "version_id": "24.04",
+      "pretty_name": "Ubuntu 24.04.4 LTS"
+    },
+    "kernel": {
+      "release": "6.17.0-1032-nvidia",
+      "version": "#32-Ubuntu SMP PREEMPT_DYNAMIC Wed Aug 19 17:40:46 UTC 2026"
+    },
+    "cmdline": "BOOT_IMAGE=/boot/vmlinuz-6.17.0-1032-nvidia root=UUID=<uuid> ro console=tty0 plymouth.ignore-serial-consoles plymouth.use-simpledrm console=tty0 console=ttyS0,921600 crashkernel=1G-:0M quiet splash pci=pcie_bus_safe vt.handoff=7",
+    "mitigations": {
+      "gather_data_sampling": "Not affected",
+      "ghostwrite": "Not affected",
+      "indirect_target_selection": "Not affected",
+      "itlb_multihit": "Not affected",
+      "l1tf": "Not affected",
+      "mds": "Not affected",
+      "meltdown": "Not affected",
+      "mmio_stale_data": "Not affected",
+      "old_microcode": "Not affected",
+      "reg_file_data_sampling": "Not affected",
+      "retbleed": "Not affected",
+      "spec_rstack_overflow": "Not affected",
+      "spec_store_bypass": "Mitigation: Speculative Store Bypass disabled via prctl",
+      "spectre_v1": "Mitigation: __user pointer sanitization",
+      "spectre_v2": "Mitigation: CSV2, BHB",
+      "srbds": "Not affected",
+      "tsa": "Not affected",
+      "tsx_async_abort": "Not affected",
+      "vmscape": "Not affected"
+    },
+    "sysctl_net_core": {
+      "bpf_jit_enable": "1",
+      "bpf_jit_harden": {
+        "unavailable": "needs_root",
+        "reason": "/proc/sys/net/core/bpf_jit_harden is readable by root only"
+      },
+      "bpf_jit_kallsyms": {
+        "unavailable": "needs_root",
+        "reason": "/proc/sys/net/core/bpf_jit_kallsyms is readable by root only"
+      },
+      "bpf_jit_limit": {
+        "unavailable": "needs_root",
+        "reason": "/proc/sys/net/core/bpf_jit_limit is readable by root only"
+      },
+      "busy_poll": "0",
+      "busy_read": "0",
+      "default_qdisc": "fq_codel",
+      "dev_weight": "64",
+      "dev_weight_rx_bias": "1",
+      "dev_weight_tx_bias": "1",
+      "devconf_inherit_init_net": "0",
+      "fb_tunnels_only_for_init_net": "0",
+      "flow_limit_cpu_bitmap": "00000",
+      "flow_limit_table_len": "4096",
+      "gro_normal_batch": "8",
+      "high_order_alloc_disable": "0",
+      "max_skb_frags": "17",
+      "mem_pcpu_rsv": "256",
+      "message_burst": "10",
+      "message_cost": "5",
+      "netdev_budget": "300",
+      "netdev_budget_usecs": "2000",
+      "netdev_max_backlog": "1000",
+      "netdev_rss_key": {
+        "unavailable": "redacted",
+        "reason": "RSS hash key: a secret, not recorded"
+      },
+      "netdev_tstamp_prequeue": "1",
+      "netdev_unregister_timeout_secs": "10",
+      "optmem_max": "131072",
+      "rmem_default": "212992",
+      "rmem_max": "212992",
+      "rps_default_mask": "00000",
+      "rps_sock_flow_entries": "0",
+      "skb_defer_max": "64",
+      "somaxconn": "4096",
+      "tstamp_allow_data": "1",
+      "txrehash": "1",
+      "warnings": "0",
+      "wmem_default": "212992",
+      "wmem_max": "212992",
+      "xfrm_acq_expires": "30",
+      "xfrm_aevent_etime": "10",
+      "xfrm_aevent_rseqth": "2",
+      "xfrm_larval_drop": "1"
+    }
+  },
+  "nics": [
+    {
+      "name": "enP2p1s0f0np0",
+      "kind": "physical",
+      "under_test": false,
+      "pci": {
+        "address": "0002:01:00.0",
+        "vendor_id": "0x15b3",
+        "device_id": "0x1021",
+        "subsystem_vendor_id": "0x15b3",
+        "subsystem_device_id": "0x21ec",
+        "description": "Ethernet controller [0200]: Mellanox Technologies MT2910 Family [ConnectX-7] [15b3:1021]"
+      },
+      "driver": {
+        "name": "mlx5_core",
+        "version": "6.17.0-1032-nvidia",
+        "firmware": "28.45.4028 (NVD0000000087)"
+      },
+      "link": {
+        "operstate": "down",
+        "speed_mbps": {
+          "unavailable": "not_applicable",
+          "reason": "link is down: no negotiated speed"
+        },
+        "duplex": "unknown",
+        "mtu": 1500
+      },
+      "queues": {
+        "rx": 20,
+        "tx": 20,
+        "rps_cpus": [
+          "00000"
+        ]
+      },
+      "channels": {
+        "max": {
+          "rx": null,
+          "tx": null,
+          "other": null,
+          "combined": 20
+        },
+        "current": {
+          "rx": null,
+          "tx": null,
+          "other": null,
+          "combined": 20
+        }
+      },
+      "rings": {
+        "max": {
+          "rx": 8192,
+          "rx_mini": null,
+          "rx_jumbo": null,
+          "tx": 8192
+        },
+        "current": {
+          "rx": 1024,
+          "rx_mini": null,
+          "rx_jumbo": null,
+          "tx": 1024
+        }
+      },
+      "offloads": {
+        "gro": true,
+        "lro": false,
+        "tso": true,
+        "gso": true,
+        "rx_hashing": true,
+        "features": {
+          "rx-checksumming": "on",
+          "tx-checksumming": "on",
+          "tx-checksum-ipv4": "off [fixed]",
+          "tx-checksum-ip-generic": "on",
+          "tx-checksum-ipv6": "off [fixed]",
+          "tx-checksum-fcoe-crc": "off [fixed]",
+          "tx-checksum-sctp": "off [fixed]",
+          "scatter-gather": "on",
+          "tx-scatter-gather": "on",
+          "tx-scatter-gather-fraglist": "off [fixed]",
+          "tcp-segmentation-offload": "on",
+          "tx-tcp-segmentation": "on",
+          "tx-tcp-ecn-segmentation": "off [fixed]",
+          "tx-tcp-mangleid-segmentation": "off",
+          "tx-tcp6-segmentation": "on",
+          "tx-tcp-accecn-segmentation": "off [fixed]",
+          "generic-segmentation-offload": "on",
+          "generic-receive-offload": "on",
+          "large-receive-offload": "off",
+          "rx-vlan-offload": "on",
+          "tx-vlan-offload": "on",
+          "ntuple-filters": "off",
+          "receive-hashing": "on",
+          "highdma": "on [fixed]",
+          "rx-vlan-filter": "on",
+          "vlan-challenged": "off [fixed]",
+          "tx-gso-robust": "off [fixed]",
+          "tx-fcoe-segmentation": "off [fixed]",
+          "tx-gre-segmentation": "on",
+          "tx-gre-csum-segmentation": "on",
+          "tx-ipxip4-segmentation": "on",
+          "tx-ipxip6-segmentation": "on",
+          "tx-udp_tnl-segmentation": "on",
+          "tx-udp_tnl-csum-segmentation": "on",
+          "tx-gso-partial": "on",
+          "tx-tunnel-remcsum-segmentation": "off [fixed]",
+          "tx-sctp-segmentation": "off [fixed]",
+          "tx-esp-segmentation": "on",
+          "tx-udp-segmentation": "on",
+          "tx-gso-list": "off [fixed]",
+          "tx-nocache-copy": "off",
+          "loopback": "off [fixed]",
+          "rx-fcs": "off",
+          "rx-all": "on",
+          "tx-vlan-stag-hw-insert": "on",
+          "rx-vlan-stag-hw-parse": "off [fixed]",
+          "rx-vlan-stag-filter": "on [fixed]",
+          "l2-fwd-offload": "off [fixed]",
+          "hw-tc-offload": "on",
+          "esp-hw-offload": "on [fixed]",
+          "esp-tx-csum-hw-offload": "on [fixed]",
+          "rx-udp_tunnel-port-offload": "on",
+          "tls-hw-tx-offload": "on",
+          "tls-hw-rx-offload": "off",
+          "rx-gro-hw": "off",
+          "tls-hw-record": "off [fixed]",
+          "rx-gro-list": "off",
+          "macsec-hw-offload": "on",
+          "rx-udp-gro-forwarding": "off",
+          "hsr-tag-ins-offload": "off [fixed]",
+          "hsr-tag-rm-offload": "off [fixed]",
+          "hsr-fwd-offload": "off [fixed]",
+          "hsr-dup-offload": "off [fixed]"
+        }
+      },
+      "rss": {
+        "rx_rings": 20,
+        "indirection_table_size": 256,
+        "hash_functions": {
+          "toeplitz": "on",
+          "xor": "off",
+          "crc32": "off"
+        }
+      },
+      "irqs": [
+        {
+          "irq": 437,
+          "names": [
+            "mlx5_async0@pci:0002:01:00.0"
+          ],
+          "affinity": "0-19",
+          "effective_affinity": "7"
+        },
+        {
+          "irq": 438,
+          "names": [
+            "mlx5_comp0@pci:0002:01:00.0"
+          ],
+          "affinity": "0",
+          "effective_affinity": "0"
+        },
+        {
+          "irq": 439,
+          "names": [
+            "mlx5_comp1@pci:0002:01:00.0"
+          ],
+          "affinity": "1",
+          "effective_affinity": "1"
+        },
+        {
+          "irq": 440,
+          "names": [
+            "mlx5_comp2@pci:0002:01:00.0"
+          ],
+          "affinity": "2",
+          "effective_affinity": "2"
+        },
+        {
+          "irq": 441,
+          "names": [
+            "mlx5_comp3@pci:0002:01:00.0"
+          ],
+          "affinity": "3",
+          "effective_affinity": "3"
+        },
+        {
+          "irq": 442,
+          "names": [
+            "mlx5_comp4@pci:0002:01:00.0"
+          ],
+          "affinity": "4",
+          "effective_affinity": "4"
+        },
+        {
+          "irq": 443,
+          "names": [
+            "mlx5_comp5@pci:0002:01:00.0"
+          ],
+          "affinity": "5",
+          "effective_affinity": "5"
+        },
+        {
+          "irq": 444,
+          "names": [
+            "mlx5_comp6@pci:0002:01:00.0"
+          ],
+          "affinity": "6",
+          "effective_affinity": "6"
+        },
+        {
+          "irq": 445,
+          "names": [
+            "mlx5_comp7@pci:0002:01:00.0"
+          ],
+          "affinity": "7",
+          "effective_affinity": "7"
+        },
+        {
+          "irq": 446,
+          "names": [
+            "mlx5_comp8@pci:0002:01:00.0"
+          ],
+          "affinity": "8",
+          "effective_affinity": "8"
+        },
+        {
+          "irq": 447,
+          "names": [
+            "mlx5_comp9@pci:0002:01:00.0"
+          ],
+          "affinity": "9",
+          "effective_affinity": "9"
+        },
+        {
+          "irq": 448,
+          "names": [
+            "mlx5_comp10@pci:0002:01:00.0"
+          ],
+          "affinity": "10",
+          "effective_affinity": "10"
+        },
+        {
+          "irq": 449,
+          "names": [
+            "mlx5_comp11@pci:0002:01:00.0"
+          ],
+          "affinity": "11",
+          "effective_affinity": "11"
+        },
+        {
+          "irq": 450,
+          "names": [
+            "mlx5_comp12@pci:0002:01:00.0"
+          ],
+          "affinity": "12",
+          "effective_affinity": "12"
+        },
+        {
+          "irq": 451,
+          "names": [
+            "mlx5_comp13@pci:0002:01:00.0"
+          ],
+          "affinity": "13",
+          "effective_affinity": "13"
+        },
+        {
+          "irq": 452,
+          "names": [
+            "mlx5_comp14@pci:0002:01:00.0"
+          ],
+          "affinity": "14",
+          "effective_affinity": "14"
+        },
+        {
+          "irq": 453,
+          "names": [
+            "mlx5_comp15@pci:0002:01:00.0"
+          ],
+          "affinity": "15",
+          "effective_affinity": "15"
+        },
+        {
+          "irq": 454,
+          "names": [
+            "mlx5_comp16@pci:0002:01:00.0"
+          ],
+          "affinity": "16",
+          "effective_affinity": "16"
+        },
+        {
+          "irq": 455,
+          "names": [
+            "mlx5_comp17@pci:0002:01:00.0"
+          ],
+          "affinity": "17",
+          "effective_affinity": "17"
+        },
+        {
+          "irq": 456,
+          "names": [
+            "mlx5_comp18@pci:0002:01:00.0"
+          ],
+          "affinity": "18",
+          "effective_affinity": "18"
+        },
+        {
+          "irq": 457,
+          "names": [
+            "mlx5_comp19@pci:0002:01:00.0"
+          ],
+          "affinity": "19",
+          "effective_affinity": "19"
+        }
+      ]
+    },
+    {
+      "name": "enP2p1s0f1np1",
+      "kind": "physical",
+      "under_test": false,
+      "pci": {
+        "address": "0002:01:00.1",
+        "vendor_id": "0x15b3",
+        "device_id": "0x1021",
+        "subsystem_vendor_id": "0x15b3",
+        "subsystem_device_id": "0x21ec",
+        "description": "Ethernet controller [0200]: Mellanox Technologies MT2910 Family [ConnectX-7] [15b3:1021]"
+      },
+      "driver": {
+        "name": "mlx5_core",
+        "version": "6.17.0-1032-nvidia",
+        "firmware": "28.45.4028 (NVD0000000087)"
+      },
+      "link": {
+        "operstate": "down",
+        "speed_mbps": {
+          "unavailable": "not_applicable",
+          "reason": "link is down: no negotiated speed"
+        },
+        "duplex": "unknown",
+        "mtu": 1500
+      },
+      "queues": {
+        "rx": 20,
+        "tx": 20,
+        "rps_cpus": [
+          "00000"
+        ]
+      },
+      "channels": {
+        "max": {
+          "rx": null,
+          "tx": null,
+          "other": null,
+          "combined": 20
+        },
+        "current": {
+          "rx": null,
+          "tx": null,
+          "other": null,
+          "combined": 20
+        }
+      },
+      "rings": {
+        "max": {
+          "rx": 8192,
+          "rx_mini": null,
+          "rx_jumbo": null,
+          "tx": 8192
+        },
+        "current": {
+          "rx": 1024,
+          "rx_mini": null,
+          "rx_jumbo": null,
+          "tx": 1024
+        }
+      },
+      "offloads": {
+        "gro": true,
+        "lro": false,
+        "tso": true,
+        "gso": true,
+        "rx_hashing": true,
+        "features": {
+          "rx-checksumming": "on",
+          "tx-checksumming": "on",
+          "tx-checksum-ipv4": "off [fixed]",
+          "tx-checksum-ip-generic": "on",
+          "tx-checksum-ipv6": "off [fixed]",
+          "tx-checksum-fcoe-crc": "off [fixed]",
+          "tx-checksum-sctp": "off [fixed]",
+          "scatter-gather": "on",
+          "tx-scatter-gather": "on",
+          "tx-scatter-gather-fraglist": "off [fixed]",
+          "tcp-segmentation-offload": "on",
+          "tx-tcp-segmentation": "on",
+          "tx-tcp-ecn-segmentation": "off [fixed]",
+          "tx-tcp-mangleid-segmentation": "off",
+          "tx-tcp6-segmentation": "on",
+          "tx-tcp-accecn-segmentation": "off [fixed]",
+          "generic-segmentation-offload": "on",
+          "generic-receive-offload": "on",
+          "large-receive-offload": "off",
+          "rx-vlan-offload": "on",
+          "tx-vlan-offload": "on",
+          "ntuple-filters": "off",
+          "receive-hashing": "on",
+          "highdma": "on [fixed]",
+          "rx-vlan-filter": "on",
+          "vlan-challenged": "off [fixed]",
+          "tx-gso-robust": "off [fixed]",
+          "tx-fcoe-segmentation": "off [fixed]",
+          "tx-gre-segmentation": "on",
+          "tx-gre-csum-segmentation": "on",
+          "tx-ipxip4-segmentation": "on",
+          "tx-ipxip6-segmentation": "on",
+          "tx-udp_tnl-segmentation": "on",
+          "tx-udp_tnl-csum-segmentation": "on",
+          "tx-gso-partial": "on",
+          "tx-tunnel-remcsum-segmentation": "off [fixed]",
+          "tx-sctp-segmentation": "off [fixed]",
+          "tx-esp-segmentation": "on",
+          "tx-udp-segmentation": "on",
+          "tx-gso-list": "off [fixed]",
+          "tx-nocache-copy": "off",
+          "loopback": "off [fixed]",
+          "rx-fcs": "off",
+          "rx-all": "on",
+          "tx-vlan-stag-hw-insert": "on",
+          "rx-vlan-stag-hw-parse": "off [fixed]",
+          "rx-vlan-stag-filter": "on [fixed]",
+          "l2-fwd-offload": "off [fixed]",
+          "hw-tc-offload": "on",
+          "esp-hw-offload": "on [fixed]",
+          "esp-tx-csum-hw-offload": "on [fixed]",
+          "rx-udp_tunnel-port-offload": "on",
+          "tls-hw-tx-offload": "on",
+          "tls-hw-rx-offload": "off",
+          "rx-gro-hw": "off",
+          "tls-hw-record": "off [fixed]",
+          "rx-gro-list": "off",
+          "macsec-hw-offload": "on",
+          "rx-udp-gro-forwarding": "off",
+          "hsr-tag-ins-offload": "off [fixed]",
+          "hsr-tag-rm-offload": "off [fixed]",
+          "hsr-fwd-offload": "off [fixed]",
+          "hsr-dup-offload": "off [fixed]"
+        }
+      },
+      "rss": {
+        "rx_rings": 20,
+        "indirection_table_size": 256,
+        "hash_functions": {
+          "toeplitz": "on",
+          "xor": "off",
+          "crc32": "off"
+        }
+      },
+      "irqs": [
+        {
+          "irq": 459,
+          "names": [
+            "mlx5_async0@pci:0002:01:00.1"
+          ],
+          "affinity": "0-19",
+          "effective_affinity": "8"
+        },
+        {
+          "irq": 460,
+          "names": [
+            "mlx5_comp0@pci:0002:01:00.1"
+          ],
+          "affinity": "0",
+          "effective_affinity": "0"
+        },
+        {
+          "irq": 461,
+          "names": [
+            "mlx5_comp1@pci:0002:01:00.1"
+          ],
+          "affinity": "1",
+          "effective_affinity": "1"
+        },
+        {
+          "irq": 462,
+          "names": [
+            "mlx5_comp2@pci:0002:01:00.1"
+          ],
+          "affinity": "2",
+          "effective_affinity": "2"
+        },
+        {
+          "irq": 463,
+          "names": [
+            "mlx5_comp3@pci:0002:01:00.1"
+          ],
+          "affinity": "3",
+          "effective_affinity": "3"
+        },
+        {
+          "irq": 464,
+          "names": [
+            "mlx5_comp4@pci:0002:01:00.1"
+          ],
+          "affinity": "4",
+          "effective_affinity": "4"
+        },
+        {
+          "irq": 465,
+          "names": [
+            "mlx5_comp5@pci:0002:01:00.1"
+          ],
+          "affinity": "5",
+          "effective_affinity": "5"
+        },
+        {
+          "irq": 466,
+          "names": [
+            "mlx5_comp6@pci:0002:01:00.1"
+          ],
+          "affinity": "6",
+          "effective_affinity": "6"
+        },
+        {
+          "irq": 467,
+          "names": [
+            "mlx5_comp7@pci:0002:01:00.1"
+          ],
+          "affinity": "7",
+          "effective_affinity": "7"
+        },
+        {
+          "irq": 468,
+          "names": [
+            "mlx5_comp8@pci:0002:01:00.1"
+          ],
+          "affinity": "8",
+          "effective_affinity": "8"
+        },
+        {
+          "irq": 469,
+          "names": [
+            "mlx5_comp9@pci:0002:01:00.1"
+          ],
+          "affinity": "9",
+          "effective_affinity": "9"
+        },
+        {
+          "irq": 470,
+          "names": [
+            "mlx5_comp10@pci:0002:01:00.1"
+          ],
+          "affinity": "10",
+          "effective_affinity": "10"
+        },
+        {
+          "irq": 471,
+          "names": [
+            "mlx5_comp11@pci:0002:01:00.1"
+          ],
+          "affinity": "11",
+          "effective_affinity": "11"
+        },
+        {
+          "irq": 472,
+          "names": [
+            "mlx5_comp12@pci:0002:01:00.1"
+          ],
+          "affinity": "12",
+          "effective_affinity": "12"
+        },
+        {
+          "irq": 473,
+          "names": [
+            "mlx5_comp13@pci:0002:01:00.1"
+          ],
+          "affinity": "13",
+          "effective_affinity": "13"
+        },
+        {
+          "irq": 474,
+          "names": [
+            "mlx5_comp14@pci:0002:01:00.1"
+          ],
+          "affinity": "14",
+          "effective_affinity": "14"
+        },
+        {
+          "irq": 475,
+          "names": [
+            "mlx5_comp15@pci:0002:01:00.1"
+          ],
+          "affinity": "15",
+          "effective_affinity": "15"
+        },
+        {
+          "irq": 476,
+          "names": [
+            "mlx5_comp16@pci:0002:01:00.1"
+          ],
+          "affinity": "16",
+          "effective_affinity": "16"
+        },
+        {
+          "irq": 477,
+          "names": [
+            "mlx5_comp17@pci:0002:01:00.1"
+          ],
+          "affinity": "17",
+          "effective_affinity": "17"
+        },
+        {
+          "irq": 478,
+          "names": [
+            "mlx5_comp18@pci:0002:01:00.1"
+          ],
+          "affinity": "18",
+          "effective_affinity": "18"
+        },
+        {
+          "irq": 479,
+          "names": [
+            "mlx5_comp19@pci:0002:01:00.1"
+          ],
+          "affinity": "19",
+          "effective_affinity": "19"
+        }
+      ]
+    },
+    {
+      "name": "enP7s7",
+      "kind": "physical",
+      "under_test": false,
+      "pci": {
+        "address": "0007:01:00.0",
+        "vendor_id": "0x10ec",
+        "device_id": "0x8127",
+        "subsystem_vendor_id": "0x10ec",
+        "subsystem_device_id": "0x0123",
+        "description": "Ethernet controller [0200]: Realtek Semiconductor Co., Ltd. Device [10ec:8127] (rev 05)"
+      },
+      "driver": {
+        "name": "r8127",
+        "version": "11.014.00-NAPI",
+        "firmware": {
+          "unavailable": "not_supported",
+          "reason": "the driver reports no firmware version"
+        }
+      },
+      "link": {
+        "operstate": "up",
+        "speed_mbps": 1000,
+        "duplex": "full",
+        "mtu": 1500
+      },
+      "queues": {
+        "rx": 1,
+        "tx": 1,
+        "rps_cpus": [
+          "00000"
+        ]
+      },
+      "channels": {
+        "max": {
+          "rx": 4,
+          "tx": 2,
+          "other": null,
+          "combined": null
+        },
+        "current": {
+          "rx": 1,
+          "tx": 1,
+          "other": null,
+          "combined": null
+        }
+      },
+      "rings": {
+        "max": {
+          "rx": 1024,
+          "rx_mini": null,
+          "rx_jumbo": null,
+          "tx": 1024
+        },
+        "current": {
+          "rx": 1024,
+          "rx_mini": null,
+          "rx_jumbo": null,
+          "tx": 1024
+        }
+      },
+      "offloads": {
+        "gro": true,
+        "lro": false,
+        "tso": true,
+        "gso": true,
+        "rx_hashing": false,
+        "features": {
+          "rx-checksumming": "on",
+          "tx-checksumming": "on",
+          "tx-checksum-ipv4": "on",
+          "tx-checksum-ip-generic": "off [fixed]",
+          "tx-checksum-ipv6": "on",
+          "tx-checksum-fcoe-crc": "off [fixed]",
+          "tx-checksum-sctp": "off [fixed]",
+          "scatter-gather": "on",
+          "tx-scatter-gather": "on",
+          "tx-scatter-gather-fraglist": "off [fixed]",
+          "tcp-segmentation-offload": "on",
+          "tx-tcp-segmentation": "on",
+          "tx-tcp-ecn-segmentation": "off [fixed]",
+          "tx-tcp-mangleid-segmentation": "off",
+          "tx-tcp6-segmentation": "on",
+          "tx-tcp-accecn-segmentation": "off [fixed]",
+          "generic-segmentation-offload": "on",
+          "generic-receive-offload": "on",
+          "large-receive-offload": "off [fixed]",
+          "rx-vlan-offload": "on",
+          "tx-vlan-offload": "on",
+          "ntuple-filters": "off [fixed]",
+          "receive-hashing": "off [fixed]",
+          "highdma": "on [fixed]",
+          "rx-vlan-filter": "off [fixed]",
+          "vlan-challenged": "off [fixed]",
+          "tx-gso-robust": "off [fixed]",
+          "tx-fcoe-segmentation": "off [fixed]",
+          "tx-gre-segmentation": "off [fixed]",
+          "tx-gre-csum-segmentation": "off [fixed]",
+          "tx-ipxip4-segmentation": "off [fixed]",
+          "tx-ipxip6-segmentation": "off [fixed]",
+          "tx-udp_tnl-segmentation": "off [fixed]",
+          "tx-udp_tnl-csum-segmentation": "off [fixed]",
+          "tx-gso-partial": "off [fixed]",
+          "tx-tunnel-remcsum-segmentation": "off [fixed]",
+          "tx-sctp-segmentation": "off [fixed]",
+          "tx-esp-segmentation": "off [fixed]",
+          "tx-udp-segmentation": "off [fixed]",
+          "tx-gso-list": "off [fixed]",
+          "tx-nocache-copy": "off",
+          "loopback": "off [fixed]",
+          "rx-fcs": "off",
+          "rx-all": "off",
+          "tx-vlan-stag-hw-insert": "off [fixed]",
+          "rx-vlan-stag-hw-parse": "off [fixed]",
+          "rx-vlan-stag-filter": "off [fixed]",
+          "l2-fwd-offload": "off [fixed]",
+          "hw-tc-offload": "off [fixed]",
+          "esp-hw-offload": "off [fixed]",
+          "esp-tx-csum-hw-offload": "off [fixed]",
+          "rx-udp_tunnel-port-offload": "off [fixed]",
+          "tls-hw-tx-offload": "off [fixed]",
+          "tls-hw-rx-offload": "off [fixed]",
+          "rx-gro-hw": "off [fixed]",
+          "tls-hw-record": "off [fixed]",
+          "rx-gro-list": "off",
+          "macsec-hw-offload": "off [fixed]",
+          "rx-udp-gro-forwarding": "off",
+          "hsr-tag-ins-offload": "off [fixed]",
+          "hsr-tag-rm-offload": "off [fixed]",
+          "hsr-fwd-offload": "off [fixed]",
+          "hsr-dup-offload": "off [fixed]"
+        }
+      },
+      "rss": {
+        "unavailable": "not_supported",
+        "reason": "ethtool -x enP7s7: netlink error: Operation not supported"
+      },
+      "irqs": [
+        {
+          "irq": 346,
+          "names": [
+            "enP7s7-0"
+          ],
+          "affinity": "0-19",
+          "effective_affinity": "13"
+        },
+        {
+          "irq": 347,
+          "names": [
+            "enP7s7-1"
+          ],
+          "affinity": "0-19",
+          "effective_affinity": "14"
+        },
+        {
+          "irq": 348,
+          "names": [
+            "enP7s7-2"
+          ],
+          "affinity": "0-19",
+          "effective_affinity": "15"
+        },
+        {
+          "irq": 349,
+          "names": [
+            "enP7s7-3"
+          ],
+          "affinity": "0-19",
+          "effective_affinity": "16"
+        },
+        {
+          "irq": 350,
+          "names": [
+            "enP7s7-4"
+          ],
+          "affinity": "0-19",
+          "effective_affinity": "17"
+        },
+        {
+          "irq": 351,
+          "names": [
+            "enP7s7-5"
+          ],
+          "affinity": "0-19",
+          "effective_affinity": "18"
+        },
+        {
+          "irq": 352,
+          "names": [
+            "enP7s7-6"
+          ],
+          "affinity": "0-19",
+          "effective_affinity": "19"
+        },
+        {
+          "irq": 353,
+          "names": [
+            "enP7s7-7"
+          ],
+          "affinity": "0-19",
+          "effective_affinity": "10"
+        },
+        {
+          "irq": 354,
+          "names": [
+            "enP7s7-8"
+          ],
+          "affinity": "0-19",
+          "effective_affinity": "1"
+        },
+        {
+          "irq": 355,
+          "names": [
+            "enP7s7-9"
+          ],
+          "affinity": "0-19",
+          "effective_affinity": "2"
+        },
+        {
+          "irq": 356,
+          "names": [
+            "enP7s7-10"
+          ],
+          "affinity": "0-19",
+          "effective_affinity": "3"
+        },
+        {
+          "irq": 357,
+          "names": [
+            "enP7s7-11"
+          ],
+          "affinity": "0-19",
+          "effective_affinity": "4"
+        },
+        {
+          "irq": 358,
+          "names": [
+            "enP7s7-12"
+          ],
+          "affinity": "0-19",
+          "effective_affinity": "5"
+        },
+        {
+          "irq": 359,
+          "names": [
+            "enP7s7-13"
+          ],
+          "affinity": "0-19",
+          "effective_affinity": "6"
+        },
+        {
+          "irq": 360,
+          "names": [
+            "enP7s7-14"
+          ],
+          "affinity": "0-19",
+          "effective_affinity": "7"
+        },
+        {
+          "irq": 361,
+          "names": [
+            "enP7s7-15"
+          ],
+          "affinity": "0-19",
+          "effective_affinity": "8"
+        },
+        {
+          "irq": 362,
+          "names": [
+            "enP7s7-16"
+          ],
+          "affinity": "0-19",
+          "effective_affinity": "9"
+        },
+        {
+          "irq": 363,
+          "names": [
+            "enP7s7-17"
+          ],
+          "affinity": "0-19",
+          "effective_affinity": "10"
+        },
+        {
+          "irq": 364,
+          "names": [
+            "enP7s7-18"
+          ],
+          "affinity": "0-19",
+          "effective_affinity": "11"
+        },
+        {
+          "irq": 365,
+          "names": [
+            "enP7s7-19"
+          ],
+          "affinity": "0-19",
+          "effective_affinity": "12"
+        },
+        {
+          "irq": 366,
+          "names": [
+            "enP7s7-20"
+          ],
+          "affinity": "0-19",
+          "effective_affinity": "13"
+        },
+        {
+          "irq": 367,
+          "names": [
+            "enP7s7-21"
+          ],
+          "affinity": "0-19",
+          "effective_affinity": "14"
+        },
+        {
+          "irq": 368,
+          "names": [
+            "enP7s7-22"
+          ],
+          "affinity": "0-19",
+          "effective_affinity": "15"
+        },
+        {
+          "irq": 369,
+          "names": [
+            "enP7s7-23"
+          ],
+          "affinity": "0-19",
+          "effective_affinity": "16"
+        },
+        {
+          "irq": 370,
+          "names": [
+            "enP7s7-24"
+          ],
+          "affinity": "0-19",
+          "effective_affinity": "17"
+        },
+        {
+          "irq": 371,
+          "names": [
+            "enP7s7-25"
+          ],
+          "affinity": "0-19",
+          "effective_affinity": "18"
+        },
+        {
+          "irq": 372,
+          "names": [
+            "enP7s7-26"
+          ],
+          "affinity": "0-19",
+          "effective_affinity": "19"
+        },
+        {
+          "irq": 373,
+          "names": [
+            "enP7s7-27"
+          ],
+          "affinity": "0-19",
+          "effective_affinity": "0"
+        },
+        {
+          "irq": 374,
+          "names": [
+            "enP7s7-28"
+          ],
+          "affinity": "0-19",
+          "effective_affinity": "1"
+        },
+        {
+          "irq": 375,
+          "names": [
+            "enP7s7-29"
+          ],
+          "affinity": "0-19",
+          "effective_affinity": "2"
+        },
+        {
+          "irq": 376,
+          "names": [
+            "enP7s7-30"
+          ],
+          "affinity": "0-19",
+          "effective_affinity": "3"
+        },
+        {
+          "irq": 377,
+          "names": [
+            "enP7s7-31"
+          ],
+          "affinity": "0-19",
+          "effective_affinity": "4"
+        }
+      ]
+    },
+    {
+      "name": "enp1s0f0np0",
+      "kind": "physical",
+      "under_test": false,
+      "pci": {
+        "address": "0000:01:00.0",
+        "vendor_id": "0x15b3",
+        "device_id": "0x1021",
+        "subsystem_vendor_id": "0x15b3",
+        "subsystem_device_id": "0x21ec",
+        "description": "Ethernet controller [0200]: Mellanox Technologies MT2910 Family [ConnectX-7] [15b3:1021]"
+      },
+      "driver": {
+        "name": "mlx5_core",
+        "version": "6.17.0-1032-nvidia",
+        "firmware": "28.45.4028 (NVD0000000087)"
+      },
+      "link": {
+        "operstate": "down",
+        "speed_mbps": {
+          "unavailable": "not_applicable",
+          "reason": "link is down: no negotiated speed"
+        },
+        "duplex": "unknown",
+        "mtu": 1500
+      },
+      "queues": {
+        "rx": 20,
+        "tx": 20,
+        "rps_cpus": [
+          "00000"
+        ]
+      },
+      "channels": {
+        "max": {
+          "rx": null,
+          "tx": null,
+          "other": null,
+          "combined": 20
+        },
+        "current": {
+          "rx": null,
+          "tx": null,
+          "other": null,
+          "combined": 20
+        }
+      },
+      "rings": {
+        "max": {
+          "rx": 8192,
+          "rx_mini": null,
+          "rx_jumbo": null,
+          "tx": 8192
+        },
+        "current": {
+          "rx": 1024,
+          "rx_mini": null,
+          "rx_jumbo": null,
+          "tx": 1024
+        }
+      },
+      "offloads": {
+        "gro": true,
+        "lro": false,
+        "tso": true,
+        "gso": true,
+        "rx_hashing": true,
+        "features": {
+          "rx-checksumming": "on",
+          "tx-checksumming": "on",
+          "tx-checksum-ipv4": "off [fixed]",
+          "tx-checksum-ip-generic": "on",
+          "tx-checksum-ipv6": "off [fixed]",
+          "tx-checksum-fcoe-crc": "off [fixed]",
+          "tx-checksum-sctp": "off [fixed]",
+          "scatter-gather": "on",
+          "tx-scatter-gather": "on",
+          "tx-scatter-gather-fraglist": "off [fixed]",
+          "tcp-segmentation-offload": "on",
+          "tx-tcp-segmentation": "on",
+          "tx-tcp-ecn-segmentation": "off [fixed]",
+          "tx-tcp-mangleid-segmentation": "off",
+          "tx-tcp6-segmentation": "on",
+          "tx-tcp-accecn-segmentation": "off [fixed]",
+          "generic-segmentation-offload": "on",
+          "generic-receive-offload": "on",
+          "large-receive-offload": "off",
+          "rx-vlan-offload": "on",
+          "tx-vlan-offload": "on",
+          "ntuple-filters": "off",
+          "receive-hashing": "on",
+          "highdma": "on [fixed]",
+          "rx-vlan-filter": "on",
+          "vlan-challenged": "off [fixed]",
+          "tx-gso-robust": "off [fixed]",
+          "tx-fcoe-segmentation": "off [fixed]",
+          "tx-gre-segmentation": "on",
+          "tx-gre-csum-segmentation": "on",
+          "tx-ipxip4-segmentation": "on",
+          "tx-ipxip6-segmentation": "on",
+          "tx-udp_tnl-segmentation": "on",
+          "tx-udp_tnl-csum-segmentation": "on",
+          "tx-gso-partial": "on",
+          "tx-tunnel-remcsum-segmentation": "off [fixed]",
+          "tx-sctp-segmentation": "off [fixed]",
+          "tx-esp-segmentation": "on",
+          "tx-udp-segmentation": "on",
+          "tx-gso-list": "off [fixed]",
+          "tx-nocache-copy": "off",
+          "loopback": "off [fixed]",
+          "rx-fcs": "off",
+          "rx-all": "on",
+          "tx-vlan-stag-hw-insert": "on",
+          "rx-vlan-stag-hw-parse": "off [fixed]",
+          "rx-vlan-stag-filter": "on [fixed]",
+          "l2-fwd-offload": "off [fixed]",
+          "hw-tc-offload": "on",
+          "esp-hw-offload": "on [fixed]",
+          "esp-tx-csum-hw-offload": "on [fixed]",
+          "rx-udp_tunnel-port-offload": "on",
+          "tls-hw-tx-offload": "on",
+          "tls-hw-rx-offload": "off",
+          "rx-gro-hw": "off",
+          "tls-hw-record": "off [fixed]",
+          "rx-gro-list": "off",
+          "macsec-hw-offload": "on",
+          "rx-udp-gro-forwarding": "off",
+          "hsr-tag-ins-offload": "off [fixed]",
+          "hsr-tag-rm-offload": "off [fixed]",
+          "hsr-fwd-offload": "off [fixed]",
+          "hsr-dup-offload": "off [fixed]"
+        }
+      },
+      "rss": {
+        "rx_rings": 20,
+        "indirection_table_size": 256,
+        "hash_functions": {
+          "toeplitz": "on",
+          "xor": "off",
+          "crc32": "off"
+        }
+      },
+      "irqs": [
+        {
+          "irq": 394,
+          "names": [
+            "mlx5_async0@pci:0000:01:00.0"
+          ],
+          "affinity": "0-19",
+          "effective_affinity": "6"
+        },
+        {
+          "irq": 395,
+          "names": [
+            "mlx5_comp0@pci:0000:01:00.0"
+          ],
+          "affinity": "0",
+          "effective_affinity": "0"
+        },
+        {
+          "irq": 396,
+          "names": [
+            "mlx5_comp1@pci:0000:01:00.0"
+          ],
+          "affinity": "1",
+          "effective_affinity": "1"
+        },
+        {
+          "irq": 397,
+          "names": [
+            "mlx5_comp2@pci:0000:01:00.0"
+          ],
+          "affinity": "2",
+          "effective_affinity": "2"
+        },
+        {
+          "irq": 398,
+          "names": [
+            "mlx5_comp3@pci:0000:01:00.0"
+          ],
+          "affinity": "3",
+          "effective_affinity": "3"
+        },
+        {
+          "irq": 399,
+          "names": [
+            "mlx5_comp4@pci:0000:01:00.0"
+          ],
+          "affinity": "4",
+          "effective_affinity": "4"
+        },
+        {
+          "irq": 400,
+          "names": [
+            "mlx5_comp5@pci:0000:01:00.0"
+          ],
+          "affinity": "5",
+          "effective_affinity": "5"
+        },
+        {
+          "irq": 401,
+          "names": [
+            "mlx5_comp6@pci:0000:01:00.0"
+          ],
+          "affinity": "6",
+          "effective_affinity": "6"
+        },
+        {
+          "irq": 402,
+          "names": [
+            "mlx5_comp7@pci:0000:01:00.0"
+          ],
+          "affinity": "7",
+          "effective_affinity": "7"
+        },
+        {
+          "irq": 403,
+          "names": [
+            "mlx5_comp8@pci:0000:01:00.0"
+          ],
+          "affinity": "8",
+          "effective_affinity": "8"
+        },
+        {
+          "irq": 404,
+          "names": [
+            "mlx5_comp9@pci:0000:01:00.0"
+          ],
+          "affinity": "9",
+          "effective_affinity": "9"
+        },
+        {
+          "irq": 405,
+          "names": [
+            "mlx5_comp10@pci:0000:01:00.0"
+          ],
+          "affinity": "10",
+          "effective_affinity": "10"
+        },
+        {
+          "irq": 406,
+          "names": [
+            "mlx5_comp11@pci:0000:01:00.0"
+          ],
+          "affinity": "11",
+          "effective_affinity": "11"
+        },
+        {
+          "irq": 407,
+          "names": [
+            "mlx5_comp12@pci:0000:01:00.0"
+          ],
+          "affinity": "12",
+          "effective_affinity": "12"
+        },
+        {
+          "irq": 408,
+          "names": [
+            "mlx5_comp13@pci:0000:01:00.0"
+          ],
+          "affinity": "13",
+          "effective_affinity": "13"
+        },
+        {
+          "irq": 409,
+          "names": [
+            "mlx5_comp14@pci:0000:01:00.0"
+          ],
+          "affinity": "14",
+          "effective_affinity": "14"
+        },
+        {
+          "irq": 410,
+          "names": [
+            "mlx5_comp15@pci:0000:01:00.0"
+          ],
+          "affinity": "15",
+          "effective_affinity": "15"
+        },
+        {
+          "irq": 411,
+          "names": [
+            "mlx5_comp16@pci:0000:01:00.0"
+          ],
+          "affinity": "16",
+          "effective_affinity": "16"
+        },
+        {
+          "irq": 412,
+          "names": [
+            "mlx5_comp17@pci:0000:01:00.0"
+          ],
+          "affinity": "17",
+          "effective_affinity": "17"
+        },
+        {
+          "irq": 413,
+          "names": [
+            "mlx5_comp18@pci:0000:01:00.0"
+          ],
+          "affinity": "18",
+          "effective_affinity": "18"
+        },
+        {
+          "irq": 414,
+          "names": [
+            "mlx5_comp19@pci:0000:01:00.0"
+          ],
+          "affinity": "19",
+          "effective_affinity": "19"
+        }
+      ]
+    },
+    {
+      "name": "enp1s0f1np1",
+      "kind": "physical",
+      "under_test": false,
+      "pci": {
+        "address": "0000:01:00.1",
+        "vendor_id": "0x15b3",
+        "device_id": "0x1021",
+        "subsystem_vendor_id": "0x15b3",
+        "subsystem_device_id": "0x21ec",
+        "description": "Ethernet controller [0200]: Mellanox Technologies MT2910 Family [ConnectX-7] [15b3:1021]"
+      },
+      "driver": {
+        "name": "mlx5_core",
+        "version": "6.17.0-1032-nvidia",
+        "firmware": "28.45.4028 (NVD0000000087)"
+      },
+      "link": {
+        "operstate": "down",
+        "speed_mbps": {
+          "unavailable": "not_applicable",
+          "reason": "link is down: no negotiated speed"
+        },
+        "duplex": "unknown",
+        "mtu": 1500
+      },
+      "queues": {
+        "rx": 20,
+        "tx": 20,
+        "rps_cpus": [
+          "00000"
+        ]
+      },
+      "channels": {
+        "max": {
+          "rx": null,
+          "tx": null,
+          "other": null,
+          "combined": 20
+        },
+        "current": {
+          "rx": null,
+          "tx": null,
+          "other": null,
+          "combined": 20
+        }
+      },
+      "rings": {
+        "max": {
+          "rx": 8192,
+          "rx_mini": null,
+          "rx_jumbo": null,
+          "tx": 8192
+        },
+        "current": {
+          "rx": 1024,
+          "rx_mini": null,
+          "rx_jumbo": null,
+          "tx": 1024
+        }
+      },
+      "offloads": {
+        "gro": true,
+        "lro": false,
+        "tso": true,
+        "gso": true,
+        "rx_hashing": true,
+        "features": {
+          "rx-checksumming": "on",
+          "tx-checksumming": "on",
+          "tx-checksum-ipv4": "off [fixed]",
+          "tx-checksum-ip-generic": "on",
+          "tx-checksum-ipv6": "off [fixed]",
+          "tx-checksum-fcoe-crc": "off [fixed]",
+          "tx-checksum-sctp": "off [fixed]",
+          "scatter-gather": "on",
+          "tx-scatter-gather": "on",
+          "tx-scatter-gather-fraglist": "off [fixed]",
+          "tcp-segmentation-offload": "on",
+          "tx-tcp-segmentation": "on",
+          "tx-tcp-ecn-segmentation": "off [fixed]",
+          "tx-tcp-mangleid-segmentation": "off",
+          "tx-tcp6-segmentation": "on",
+          "tx-tcp-accecn-segmentation": "off [fixed]",
+          "generic-segmentation-offload": "on",
+          "generic-receive-offload": "on",
+          "large-receive-offload": "off",
+          "rx-vlan-offload": "on",
+          "tx-vlan-offload": "on",
+          "ntuple-filters": "off",
+          "receive-hashing": "on",
+          "highdma": "on [fixed]",
+          "rx-vlan-filter": "on",
+          "vlan-challenged": "off [fixed]",
+          "tx-gso-robust": "off [fixed]",
+          "tx-fcoe-segmentation": "off [fixed]",
+          "tx-gre-segmentation": "on",
+          "tx-gre-csum-segmentation": "on",
+          "tx-ipxip4-segmentation": "on",
+          "tx-ipxip6-segmentation": "on",
+          "tx-udp_tnl-segmentation": "on",
+          "tx-udp_tnl-csum-segmentation": "on",
+          "tx-gso-partial": "on",
+          "tx-tunnel-remcsum-segmentation": "off [fixed]",
+          "tx-sctp-segmentation": "off [fixed]",
+          "tx-esp-segmentation": "on",
+          "tx-udp-segmentation": "on",
+          "tx-gso-list": "off [fixed]",
+          "tx-nocache-copy": "off",
+          "loopback": "off [fixed]",
+          "rx-fcs": "off",
+          "rx-all": "on",
+          "tx-vlan-stag-hw-insert": "on",
+          "rx-vlan-stag-hw-parse": "off [fixed]",
+          "rx-vlan-stag-filter": "on [fixed]",
+          "l2-fwd-offload": "off [fixed]",
+          "hw-tc-offload": "on",
+          "esp-hw-offload": "on [fixed]",
+          "esp-tx-csum-hw-offload": "on [fixed]",
+          "rx-udp_tunnel-port-offload": "on",
+          "tls-hw-tx-offload": "on",
+          "tls-hw-rx-offload": "off",
+          "rx-gro-hw": "off",
+          "tls-hw-record": "off [fixed]",
+          "rx-gro-list": "off",
+          "macsec-hw-offload": "on",
+          "rx-udp-gro-forwarding": "off",
+          "hsr-tag-ins-offload": "off [fixed]",
+          "hsr-tag-rm-offload": "off [fixed]",
+          "hsr-fwd-offload": "off [fixed]",
+          "hsr-dup-offload": "off [fixed]"
+        }
+      },
+      "rss": {
+        "rx_rings": 20,
+        "indirection_table_size": 256,
+        "hash_functions": {
+          "toeplitz": "on",
+          "xor": "off",
+          "crc32": "off"
+        }
+      },
+      "irqs": [
+        {
+          "irq": 416,
+          "names": [
+            "mlx5_async0@pci:0000:01:00.1"
+          ],
+          "affinity": "0-19",
+          "effective_affinity": "7"
+        },
+        {
+          "irq": 417,
+          "names": [
+            "mlx5_comp0@pci:0000:01:00.1"
+          ],
+          "affinity": "0",
+          "effective_affinity": "0"
+        },
+        {
+          "irq": 418,
+          "names": [
+            "mlx5_comp1@pci:0000:01:00.1"
+          ],
+          "affinity": "1",
+          "effective_affinity": "1"
+        },
+        {
+          "irq": 419,
+          "names": [
+            "mlx5_comp2@pci:0000:01:00.1"
+          ],
+          "affinity": "2",
+          "effective_affinity": "2"
+        },
+        {
+          "irq": 420,
+          "names": [
+            "mlx5_comp3@pci:0000:01:00.1"
+          ],
+          "affinity": "3",
+          "effective_affinity": "3"
+        },
+        {
+          "irq": 421,
+          "names": [
+            "mlx5_comp4@pci:0000:01:00.1"
+          ],
+          "affinity": "4",
+          "effective_affinity": "4"
+        },
+        {
+          "irq": 422,
+          "names": [
+            "mlx5_comp5@pci:0000:01:00.1"
+          ],
+          "affinity": "5",
+          "effective_affinity": "5"
+        },
+        {
+          "irq": 423,
+          "names": [
+            "mlx5_comp6@pci:0000:01:00.1"
+          ],
+          "affinity": "6",
+          "effective_affinity": "6"
+        },
+        {
+          "irq": 424,
+          "names": [
+            "mlx5_comp7@pci:0000:01:00.1"
+          ],
+          "affinity": "7",
+          "effective_affinity": "7"
+        },
+        {
+          "irq": 425,
+          "names": [
+            "mlx5_comp8@pci:0000:01:00.1"
+          ],
+          "affinity": "8",
+          "effective_affinity": "8"
+        },
+        {
+          "irq": 426,
+          "names": [
+            "mlx5_comp9@pci:0000:01:00.1"
+          ],
+          "affinity": "9",
+          "effective_affinity": "9"
+        },
+        {
+          "irq": 427,
+          "names": [
+            "mlx5_comp10@pci:0000:01:00.1"
+          ],
+          "affinity": "10",
+          "effective_affinity": "10"
+        },
+        {
+          "irq": 428,
+          "names": [
+            "mlx5_comp11@pci:0000:01:00.1"
+          ],
+          "affinity": "11",
+          "effective_affinity": "11"
+        },
+        {
+          "irq": 429,
+          "names": [
+            "mlx5_comp12@pci:0000:01:00.1"
+          ],
+          "affinity": "12",
+          "effective_affinity": "12"
+        },
+        {
+          "irq": 430,
+          "names": [
+            "mlx5_comp13@pci:0000:01:00.1"
+          ],
+          "affinity": "13",
+          "effective_affinity": "13"
+        },
+        {
+          "irq": 431,
+          "names": [
+            "mlx5_comp14@pci:0000:01:00.1"
+          ],
+          "affinity": "14",
+          "effective_affinity": "14"
+        },
+        {
+          "irq": 432,
+          "names": [
+            "mlx5_comp15@pci:0000:01:00.1"
+          ],
+          "affinity": "15",
+          "effective_affinity": "15"
+        },
+        {
+          "irq": 433,
+          "names": [
+            "mlx5_comp16@pci:0000:01:00.1"
+          ],
+          "affinity": "16",
+          "effective_affinity": "16"
+        },
+        {
+          "irq": 434,
+          "names": [
+            "mlx5_comp17@pci:0000:01:00.1"
+          ],
+          "affinity": "17",
+          "effective_affinity": "17"
+        },
+        {
+          "irq": 435,
+          "names": [
+            "mlx5_comp18@pci:0000:01:00.1"
+          ],
+          "affinity": "18",
+          "effective_affinity": "18"
+        },
+        {
+          "irq": 436,
+          "names": [
+            "mlx5_comp19@pci:0000:01:00.1"
+          ],
+          "affinity": "19",
+          "effective_affinity": "19"
+        }
+      ]
+    },
+    {
+      "name": "wlP9s9",
+      "kind": "physical",
+      "under_test": false,
+      "pci": {
+        "address": "0009:01:00.0",
+        "vendor_id": "0x14c3",
+        "device_id": "0x7925",
+        "subsystem_vendor_id": "0x1a3b",
+        "subsystem_device_id": "0x6374",
+        "description": "Network controller [0280]: MEDIATEK Corp. Device [14c3:7925]"
+      },
+      "driver": {
+        "name": "mt7925e",
+        "version": "6.17.0-1032-nvidia",
+        "firmware": "____000000-20260605184805"
+      },
+      "link": {
+        "operstate": "down",
+        "speed_mbps": {
+          "unavailable": "not_applicable",
+          "reason": "link is down: no negotiated speed"
+        },
+        "duplex": {
+          "unavailable": "not_supported",
+          "reason": "/sys/class/net/wlP9s9/duplex: the driver does not report it (EINVAL)"
+        },
+        "mtu": 1500
+      },
+      "queues": {
+        "rx": 1,
+        "tx": 1,
+        "rps_cpus": [
+          "00000"
+        ]
+      },
+      "channels": {
+        "unavailable": "not_supported",
+        "reason": "ethtool -l wlP9s9: netlink error: Operation not supported"
+      },
+      "rings": {
+        "max": {
+          "rx": null,
+          "rx_mini": null,
+          "rx_jumbo": null,
+          "tx": null
+        },
+        "current": {
+          "rx": null,
+          "rx_mini": null,
+          "rx_jumbo": null,
+          "tx": null
+        }
+      },
+      "offloads": {
+        "gro": true,
+        "lro": false,
+        "tso": false,
+        "gso": false,
+        "rx_hashing": false,
+        "features": {
+          "rx-checksumming": "on [fixed]",
+          "tx-checksumming": "off",
+          "tx-checksum-ipv4": "off [fixed]",
+          "tx-checksum-ip-generic": "off [fixed]",
+          "tx-checksum-ipv6": "off [fixed]",
+          "tx-checksum-fcoe-crc": "off [fixed]",
+          "tx-checksum-sctp": "off [fixed]",
+          "scatter-gather": "off",
+          "tx-scatter-gather": "off [fixed]",
+          "tx-scatter-gather-fraglist": "off [fixed]",
+          "tcp-segmentation-offload": "off",
+          "tx-tcp-segmentation": "off [fixed]",
+          "tx-tcp-ecn-segmentation": "off [fixed]",
+          "tx-tcp-mangleid-segmentation": "off [fixed]",
+          "tx-tcp6-segmentation": "off [fixed]",
+          "tx-tcp-accecn-segmentation": "off [fixed]",
+          "generic-segmentation-offload": "off [requested on]",
+          "generic-receive-offload": "on",
+          "large-receive-offload": "off [fixed]",
+          "rx-vlan-offload": "off [fixed]",
+          "tx-vlan-offload": "off [fixed]",
+          "ntuple-filters": "off [fixed]",
+          "receive-hashing": "off [fixed]",
+          "highdma": "off [fixed]",
+          "rx-vlan-filter": "off [fixed]",
+          "vlan-challenged": "off [fixed]",
+          "tx-gso-robust": "off [fixed]",
+          "tx-fcoe-segmentation": "off [fixed]",
+          "tx-gre-segmentation": "off [fixed]",
+          "tx-gre-csum-segmentation": "off [fixed]",
+          "tx-ipxip4-segmentation": "off [fixed]",
+          "tx-ipxip6-segmentation": "off [fixed]",
+          "tx-udp_tnl-segmentation": "off [fixed]",
+          "tx-udp_tnl-csum-segmentation": "off [fixed]",
+          "tx-gso-partial": "off [fixed]",
+          "tx-tunnel-remcsum-segmentation": "off [fixed]",
+          "tx-sctp-segmentation": "off [fixed]",
+          "tx-esp-segmentation": "off [fixed]",
+          "tx-udp-segmentation": "off [fixed]",
+          "tx-gso-list": "off [fixed]",
+          "tx-nocache-copy": "off",
+          "loopback": "off [fixed]",
+          "rx-fcs": "off [fixed]",
+          "rx-all": "off [fixed]",
+          "tx-vlan-stag-hw-insert": "off [fixed]",
+          "rx-vlan-stag-hw-parse": "off [fixed]",
+          "rx-vlan-stag-filter": "off [fixed]",
+          "l2-fwd-offload": "off [fixed]",
+          "hw-tc-offload": "off [fixed]",
+          "esp-hw-offload": "off [fixed]",
+          "esp-tx-csum-hw-offload": "off [fixed]",
+          "rx-udp_tunnel-port-offload": "off [fixed]",
+          "tls-hw-tx-offload": "off [fixed]",
+          "tls-hw-rx-offload": "off [fixed]",
+          "rx-gro-hw": "off [fixed]",
+          "tls-hw-record": "off [fixed]",
+          "rx-gro-list": "off",
+          "macsec-hw-offload": "off [fixed]",
+          "rx-udp-gro-forwarding": "off",
+          "hsr-tag-ins-offload": "off [fixed]",
+          "hsr-tag-rm-offload": "off [fixed]",
+          "hsr-fwd-offload": "off [fixed]",
+          "hsr-dup-offload": "off [fixed]"
+        }
+      },
+      "rss": {
+        "unavailable": "not_supported",
+        "reason": "ethtool -x wlP9s9: netlink error: Operation not supported"
+      },
+      "irqs": [
+        {
+          "irq": 481,
+          "names": [
+            "mt7925e"
+          ],
+          "affinity": "0-19",
+          "effective_affinity": "9"
+        }
+      ]
+    }
+  ],
+  "container_runtime": {
+    "docker": {
+      "api_version": "1.53",
+      "cgroup_driver": "systemd",
+      "cgroup_version": "2",
+      "client_version": "29.2.1",
+      "containerd_version": "v2.2.1",
+      "default_runtime": "runc",
+      "limit_support": {
+        "cpuset": true,
+        "cpu_shares": true,
+        "cfs_quota": true,
+        "memory": true,
+        "swap": true
+      },
+      "mem_total_bytes": 128520019968,
+      "ncpu": 20,
+      "runc_version": "1.3.4",
+      "runtimes": [
+        "io.containerd.runc.v2",
+        "nvidia",
+        "runc"
+      ],
+      "server_version": "29.2.1",
+      "storage_driver": "overlay2"
+    },
+    "cgroup": {
+      "version": 2,
+      "controllers": [
+        "cpuset",
+        "cpu",
+        "io",
+        "memory",
+        "hugetlb",
+        "pids",
+        "rdma",
+        "misc",
+        "dmem"
+      ]
+    },
+    "limits": {
+      "harness": {
+        "cpu_max": "max 100000",
+        "memory_max": "max",
+        "cpuset_cpus": {
+          "unavailable": "not_supported",
+          "reason": "the cpuset controller is not enabled for the harness's cgroup"
+        }
+      },
+      "per_run": {
+        "unavailable": "not_applicable",
+        "reason": "host-scope record: the runner records each run's container limits (#8)"
+      }
+    }
+  },
+  "tools": {
+    "unavailable": "not_applicable",
+    "reason": "host-scope record: the adapter fills the tools under test at run time (#5)"
+  },
+  "noise": {
+    "load_average": {
+      "before": {
+        "load1": 4.82,
+        "load5": 4.81,
+        "load15": 4.9
+      },
+      "after": {
+        "load1": 5.23,
+        "load5": 4.9,
+        "load15": 4.93
+      }
+    },
+    "top_cpu": [
+      {
+        "pid": 2636744,
+        "comm": "mmt_sec_standal",
+        "cpu_percent": 102.0,
+        "rss_kib": 17424
+      },
+      {
+        "pid": 2636755,
+        "comm": "mmt_sec_standal",
+        "cpu_percent": 102.0,
+        "rss_kib": 17328
+      },
+      {
+        "pid": 2636760,
+        "comm": "mmt_sec_standal",
+        "cpu_percent": 102.0,
+        "rss_kib": 17328
+      },
+      {
+        "pid": 2636765,
+        "comm": "mmt_sec_standal",
+        "cpu_percent": 102.0,
+        "rss_kib": 17424
+      },
+      {
+        "pid": 2636771,
+        "comm": "mmt_sec_standal",
+        "cpu_percent": 102.0,
+        "rss_kib": 17424
+      },
+      {
+        "pid": 2636795,
+        "comm": "mmt_sec_standal",
+        "cpu_percent": 102.0,
+        "rss_kib": 17328
+      },
+      {
+        "pid": 2636776,
+        "comm": "mmt_sec_standal",
+        "cpu_percent": 101.0,
+        "rss_kib": 17388
+      },
+      {
+        "pid": 2636781,
+        "comm": "mmt_sec_standal",
+        "cpu_percent": 101.0,
+        "rss_kib": 17328
+      },
+      {
+        "pid": 2634540,
+        "comm": "claude",
+        "cpu_percent": 36.0,
+        "rss_kib": 410392
+      },
+      {
+        "pid": 2601814,
+        "comm": "claude",
+        "cpu_percent": 15.0,
+        "rss_kib": 433108
+      }
+    ],
+    "top_memory": [
+      {
+        "pid": 4011,
+        "comm": "gnome-shell",
+        "cpu_percent": 0.0,
+        "rss_kib": 1685440
+      },
+      {
+        "pid": 2259823,
+        "comm": "claude",
+        "cpu_percent": 1.0,
+        "rss_kib": 576328
+      },
+      {
+        "pid": 2423350,
+        "comm": "claude",
+        "cpu_percent": 1.0,
+        "rss_kib": 494160
+      },
+      {
+        "pid": 3358713,
+        "comm": "hermes",
+        "cpu_percent": 0.0,
+        "rss_kib": 493640
+      },
+      {
+        "pid": 2601814,
+        "comm": "claude",
+        "cpu_percent": 15.0,
+        "rss_kib": 433108
+      },
+      {
+        "pid": 2423342,
+        "comm": "claude",
+        "cpu_percent": 0.0,
+        "rss_kib": 424456
+      },
+      {
+        "pid": 2624190,
+        "comm": "claude",
+        "cpu_percent": 8.0,
+        "rss_kib": 420992
+      },
+      {
+        "pid": 2634540,
+        "comm": "claude",
+        "cpu_percent": 36.0,
+        "rss_kib": 410392
+      },
+      {
+        "pid": 2492602,
+        "comm": "claude",
+        "cpu_percent": 0.0,
+        "rss_kib": 351620
+      },
+      {
+        "pid": 7232,
+        "comm": "kube-apiserver",
+        "cpu_percent": 1.0,
+        "rss_kib": 330056
+      }
+    ],
+    "sample_seconds": 1.0,
+    "services": [
+      {
+        "unit": "vllm-qwen.service",
+        "scope": "user",
+        "load_state": "loaded",
+        "active_state": "active",
+        "sub_state": "running",
+        "unit_file_state": "enabled"
+      },
+      {
+        "unit": "vllm-health-watchdog.timer",
+        "scope": "user",
+        "load_state": "loaded",
+        "active_state": "active",
+        "sub_state": "waiting",
+        "unit_file_state": "enabled"
+      }
+    ],
+    "vllm_stopped": false,
+    "containers_running": 23,
+    "memory": {
+      "available_kib": 19820740,
+      "swap_used_kib": 12881256
+    },
+    "thermal": {
+      "zones": [
+        {
+          "zone": "thermal_zone0",
+          "type": "acpitz",
+          "temp_c": 85.9
+        },
+        {
+          "zone": "thermal_zone1",
+          "type": "acpitz",
+          "temp_c": 58.7
+        },
+        {
+          "zone": "thermal_zone2",
+          "type": "acpitz",
+          "temp_c": 65.6
+        },
+        {
+          "zone": "thermal_zone3",
+          "type": "acpitz",
+          "temp_c": 62.7
+        },
+        {
+          "zone": "thermal_zone4",
+          "type": "acpitz",
+          "temp_c": 85.9
+        },
+        {
+          "zone": "thermal_zone5",
+          "type": "acpitz",
+          "temp_c": 56.7
+        },
+        {
+          "zone": "thermal_zone6",
+          "type": "acpitz",
+          "temp_c": 65.7
+        }
+      ],
+      "cooling_devices": {
+        "Fan": {
+          "devices": 1,
+          "active": 0
+        },
+        "Processor": {
+          "devices": 20,
+          "active": 0
+        },
+        "PCIe_Port_Link_Speed_0000:00:00.0": {
+          "devices": 1,
+          "active": 0
+        },
+        "PCIe_Port_Link_Speed_0002:00:00.0": {
+          "devices": 1,
+          "active": 0
+        },
+        "PCIe_Port_Link_Speed_0004:00:00.0": {
+          "devices": 1,
+          "active": 0
+        },
+        "PCIe_Port_Link_Speed_0007:00:00.0": {
+          "devices": 1,
+          "active": 0
+        },
+        "PCIe_Port_Link_Speed_0009:00:00.0": {
+          "devices": 1,
+          "active": 1
+        },
+        "PCIe_Port_Link_Speed_000f:00:00.0": {
+          "devices": 1,
+          "active": 0
+        }
+      }
+    },
+    "cpu_frequency": [
+      {
+        "model_name": "Cortex-A725",
+        "cpus": "0-4,10-14",
+        "scaling_cur_mhz": {
+          "min": 2808,
+          "max": 2808,
+          "mean": 2808.0
+        },
+        "cpuinfo_cur_mhz": {
+          "unavailable": "needs_root",
+          "reason": "/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_cur_freq is readable by root only"
+        },
+        "perf_limited_cpus": ""
+      },
+      {
+        "model_name": "Cortex-X925",
+        "cpus": "5-9,15-19",
+        "scaling_cur_mhz": {
+          "min": 3900,
+          "max": 3900,
+          "mean": 3900.0
+        },
+        "cpuinfo_cur_mhz": {
+          "unavailable": "needs_root",
+          "reason": "/sys/devices/system/cpu/cpu5/cpufreq/cpuinfo_cur_freq is readable by root only"
+        },
+        "perf_limited_cpus": ""
+      }
+    ]
+  },
+  "harness": {
+    "mbench_version": "0.1.0",
+    "mbench_commit": "0000000000000000000000000000000000000000",
+    "mbench_dirty": false,
+    "python_version": "3.12.0",
+    "python_implementation": "CPython",
+    "collection": {
+      "start": "2026-11-20T22:00:00Z",
+      "end": "2026-11-20T22:00:00Z"
+    },
+    "run": {
+      "unavailable": "not_applicable",
+      "reason": "host-scope record: the runner records the run's times (#8)"
+    },
+    "pcaps": {
+      "unavailable": "not_applicable",
+      "reason": "host-scope record: the runner records the pcap sha256s (#8)"
+    }
+  }
+}
