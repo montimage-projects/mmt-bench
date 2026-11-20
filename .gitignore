@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+build/
+dist/
+*.egg-info/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Packet captures never go into git: the corpus manifest lists them by sha256.
+# Character classes make each extension case-insensitive (x.Pcap, x.PcapNG, x.CAP).
+*.[pP][cC][aA][pP]
+*.[pP][cC][aA][pP][nN][gG]
+*.[pP][cC][aA][pP].*
+*.[pP][cC][aA][pP][nN][gG].*
+*.[cC][aA][pP]
+*.[cC][aA][pP].*
+*.[eE][rR][fF]
+*.[eE][rR][fF].*
+# Local corpus data (downloaded, generated or private captures).
+corpus/data/
+
+# Editors and OS
+.idea/
+.vscode/
+.DS_Store
