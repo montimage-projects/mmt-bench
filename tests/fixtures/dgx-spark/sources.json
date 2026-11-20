@@ -1,0 +1,6421 @@
+{
+ "commands": {
+  "[\"docker\", \"info\", \"--format\", \"{{json .}}\"]": [
+   {
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "{\"CPUSet\": true, \"CPUShares\": true, \"CgroupDriver\": \"systemd\", \"CgroupVersion\": \"2\", \"ContainersRunning\": 23, \"CpuCfsPeriod\": true, \"CpuCfsQuota\": true, \"DefaultRuntime\": \"runc\", \"Driver\": \"overlay2\", \"Isolation\": \"\", \"MemTotal\": 128520019968, \"MemoryLimit\": true, \"NCPU\": 20, \"Runtimes\": {\"io.containerd.runc.v2\": {}, \"nvidia\": {}, \"runc\": {}}, \"SecurityOptions\": [\"name=apparmor\", \"name=seccomp,profile=builtin\", \"name=cgroupns\"], \"ServerVersion\": \"29.2.1\", \"SwapLimit\": true}"
+   }
+  ],
+  "[\"docker\", \"version\", \"--format\", \"{{json .}}\"]": [
+   {
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "{\"Client\":{\"Platform\":{\"Name\":\"Docker Engine - Community\"},\"Version\":\"29.2.1\",\"ApiVersion\":\"1.53\",\"DefaultAPIVersion\":\"1.53\",\"GitCommit\":\"a5c7197\",\"GoVersion\":\"go1.25.6\",\"Os\":\"linux\",\"Arch\":\"arm64\",\"BuildTime\":\"Mon Feb  2 17:16:40 2026\",\"Context\":\"default\"},\"Server\":{\"Platform\":{\"Name\":\"Docker Engine - Community\"},\"Version\":\"29.2.1\",\"ApiVersion\":\"1.53\",\"MinAPIVersion\":\"1.44\",\"Os\":\"linux\",\"Arch\":\"arm64\",\"Components\":[{\"Name\":\"Engine\",\"Version\":\"29.2.1\",\"Details\":{\"ApiVersion\":\"1.53\",\"Arch\":\"arm64\",\"BuildTime\":\"Mon Feb  2 17:16:40 2026\",\"Experimental\":\"false\",\"GitCommit\":\"6bc6209\",\"GoVersion\":\"go1.25.6\",\"KernelVersion\":\"6.17.0-1032-nvidia\",\"MinAPIVersion\":\"1.44\",\"Os\":\"linux\"}},{\"Name\":\"containerd\",\"Version\":\"v2.2.1\",\"Details\":{\"GitCommit\":\"dea7da592f5d1d2b7755e3a161be07f43fad8f75\"}},{\"Name\":\"runc\",\"Version\":\"1.3.4\",\"Details\":{\"GitCommit\":\"v1.3.4-0-gd6d73eb8\"}},{\"Name\":\"docker-init\",\"Version\":\"0.19.0\",\"Details\":{\"GitCommit\":\"de40ad0\"}}],\"GitCommit\":\"6bc6209\",\"GoVersion\":\"go1.25.6\",\"KernelVersion\":\"6.17.0-1032-nvidia\",\"BuildTime\":\"2026-02-02T17:16:40.000000000+00:00\"}}\n"
+   }
+  ],
+  "[\"ethtool\", \"-g\", \"enP2p1s0f0np0\"]": [
+   {
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "Ring parameters for enP2p1s0f0np0:\nPre-set maximums:\nRX:\t\t\t8192\nRX Mini:\t\tn/a\nRX Jumbo:\t\tn/a\nTX:\t\t\t8192\nTX push buff len:\tn/a\nCurrent hardware settings:\nRX:\t\t\t1024\nRX Mini:\t\tn/a\nRX Jumbo:\t\tn/a\nTX:\t\t\t1024\nRX Buf Len:\t\tn/a\nCQE Size:\t\tn/a\nTX Push:\t\toff\nRX Push:\t\toff\nTX push buff len:\tn/a\nTCP data split:\t\tn/a\n"
+   }
+  ],
+  "[\"ethtool\", \"-g\", \"enP2p1s0f1np1\"]": [
+   {
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "Ring parameters for enP2p1s0f1np1:\nPre-set maximums:\nRX:\t\t\t8192\nRX Mini:\t\tn/a\nRX Jumbo:\t\tn/a\nTX:\t\t\t8192\nTX push buff len:\tn/a\nCurrent hardware settings:\nRX:\t\t\t1024\nRX Mini:\t\tn/a\nRX Jumbo:\t\tn/a\nTX:\t\t\t1024\nRX Buf Len:\t\tn/a\nCQE Size:\t\tn/a\nTX Push:\t\toff\nRX Push:\t\toff\nTX push buff len:\tn/a\nTCP data split:\t\tn/a\n"
+   }
+  ],
+  "[\"ethtool\", \"-g\", \"enP7s7\"]": [
+   {
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "Ring parameters for enP7s7:\nPre-set maximums:\nRX:\t\t\t1024\nRX Mini:\t\tn/a\nRX Jumbo:\t\tn/a\nTX:\t\t\t1024\nTX push buff len:\tn/a\nCurrent hardware settings:\nRX:\t\t\t1024\nRX Mini:\t\tn/a\nRX Jumbo:\t\tn/a\nTX:\t\t\t1024\nRX Buf Len:\t\tn/a\nCQE Size:\t\tn/a\nTX Push:\t\toff\nRX Push:\t\toff\nTX push buff len:\tn/a\nTCP data split:\t\tn/a\n"
+   }
+  ],
+  "[\"ethtool\", \"-g\", \"enp1s0f0np0\"]": [
+   {
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "Ring parameters for enp1s0f0np0:\nPre-set maximums:\nRX:\t\t\t8192\nRX Mini:\t\tn/a\nRX Jumbo:\t\tn/a\nTX:\t\t\t8192\nTX push buff len:\tn/a\nCurrent hardware settings:\nRX:\t\t\t1024\nRX Mini:\t\tn/a\nRX Jumbo:\t\tn/a\nTX:\t\t\t1024\nRX Buf Len:\t\tn/a\nCQE Size:\t\tn/a\nTX Push:\t\toff\nRX Push:\t\toff\nTX push buff len:\tn/a\nTCP data split:\t\tn/a\n"
+   }
+  ],
+  "[\"ethtool\", \"-g\", \"enp1s0f1np1\"]": [
+   {
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "Ring parameters for enp1s0f1np1:\nPre-set maximums:\nRX:\t\t\t8192\nRX Mini:\t\tn/a\nRX Jumbo:\t\tn/a\nTX:\t\t\t8192\nTX push buff len:\tn/a\nCurrent hardware settings:\nRX:\t\t\t1024\nRX Mini:\t\tn/a\nRX Jumbo:\t\tn/a\nTX:\t\t\t1024\nRX Buf Len:\t\tn/a\nCQE Size:\t\tn/a\nTX Push:\t\toff\nRX Push:\t\toff\nTX push buff len:\tn/a\nTCP data split:\t\tn/a\n"
+   }
+  ],
+  "[\"ethtool\", \"-g\", \"wlP9s9\"]": [
+   {
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "Ring parameters for wlP9s9:\nPre-set maximums:\nRX:\t\t\tn/a\nRX Mini:\t\tn/a\nRX Jumbo:\t\tn/a\nTX:\t\t\tn/a\nTX push buff len:\tn/a\nCurrent hardware settings:\nRX:\t\t\tn/a\nRX Mini:\t\tn/a\nRX Jumbo:\t\tn/a\nTX:\t\t\tn/a\nRX Buf Len:\t\tn/a\nCQE Size:\t\tn/a\nTX Push:\t\toff\nRX Push:\t\toff\nTX push buff len:\tn/a\nTCP data split:\t\tn/a\n"
+   }
+  ],
+  "[\"ethtool\", \"-i\", \"enP2p1s0f0np0\"]": [
+   {
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "driver: mlx5_core\nversion: 6.17.0-1032-nvidia\nfirmware-version: 28.45.4028 (NVD0000000087)\nexpansion-rom-version: \nbus-info: 0002:01:00.0\nsupports-statistics: yes\nsupports-test: yes\nsupports-eeprom-access: no\nsupports-register-dump: no\nsupports-priv-flags: yes\n"
+   }
+  ],
+  "[\"ethtool\", \"-i\", \"enP2p1s0f1np1\"]": [
+   {
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "driver: mlx5_core\nversion: 6.17.0-1032-nvidia\nfirmware-version: 28.45.4028 (NVD0000000087)\nexpansion-rom-version: \nbus-info: 0002:01:00.1\nsupports-statistics: yes\nsupports-test: yes\nsupports-eeprom-access: no\nsupports-register-dump: no\nsupports-priv-flags: yes\n"
+   }
+  ],
+  "[\"ethtool\", \"-i\", \"enP7s7\"]": [
+   {
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "driver: r8127\nversion: 11.014.00-NAPI\nfirmware-version: \nexpansion-rom-version: \nbus-info: 0007:01:00.0\nsupports-statistics: yes\nsupports-test: no\nsupports-eeprom-access: no\nsupports-register-dump: yes\nsupports-priv-flags: no\n"
+   }
+  ],
+  "[\"ethtool\", \"-i\", \"enp1s0f0np0\"]": [
+   {
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "driver: mlx5_core\nversion: 6.17.0-1032-nvidia\nfirmware-version: 28.45.4028 (NVD0000000087)\nexpansion-rom-version: \nbus-info: 0000:01:00.0\nsupports-statistics: yes\nsupports-test: yes\nsupports-eeprom-access: no\nsupports-register-dump: no\nsupports-priv-flags: yes\n"
+   }
+  ],
+  "[\"ethtool\", \"-i\", \"enp1s0f1np1\"]": [
+   {
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "driver: mlx5_core\nversion: 6.17.0-1032-nvidia\nfirmware-version: 28.45.4028 (NVD0000000087)\nexpansion-rom-version: \nbus-info: 0000:01:00.1\nsupports-statistics: yes\nsupports-test: yes\nsupports-eeprom-access: no\nsupports-register-dump: no\nsupports-priv-flags: yes\n"
+   }
+  ],
+  "[\"ethtool\", \"-i\", \"wlP9s9\"]": [
+   {
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "driver: mt7925e\nversion: 6.17.0-1032-nvidia\nfirmware-version: ____000000-20260605184805\nexpansion-rom-version: \nbus-info: 0009:01:00.0\nsupports-statistics: yes\nsupports-test: no\nsupports-eeprom-access: no\nsupports-register-dump: no\nsupports-priv-flags: no\n"
+   }
+  ],
+  "[\"ethtool\", \"-k\", \"enP2p1s0f0np0\"]": [
+   {
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "Features for enP2p1s0f0np0:\nrx-checksumming: on\ntx-checksumming: on\n\ttx-checksum-ipv4: off [fixed]\n\ttx-checksum-ip-generic: on\n\ttx-checksum-ipv6: off [fixed]\n\ttx-checksum-fcoe-crc: off [fixed]\n\ttx-checksum-sctp: off [fixed]\nscatter-gather: on\n\ttx-scatter-gather: on\n\ttx-scatter-gather-fraglist: off [fixed]\ntcp-segmentation-offload: on\n\ttx-tcp-segmentation: on\n\ttx-tcp-ecn-segmentation: off [fixed]\n\ttx-tcp-mangleid-segmentation: off\n\ttx-tcp6-segmentation: on\n\ttx-tcp-accecn-segmentation: off [fixed]\ngeneric-segmentation-offload: on\ngeneric-receive-offload: on\nlarge-receive-offload: off\nrx-vlan-offload: on\ntx-vlan-offload: on\nntuple-filters: off\nreceive-hashing: on\nhighdma: on [fixed]\nrx-vlan-filter: on\nvlan-challenged: off [fixed]\ntx-gso-robust: off [fixed]\ntx-fcoe-segmentation: off [fixed]\ntx-gre-segmentation: on\ntx-gre-csum-segmentation: on\ntx-ipxip4-segmentation: on\ntx-ipxip6-segmentation: on\ntx-udp_tnl-segmentation: on\ntx-udp_tnl-csum-segmentation: on\ntx-gso-partial: on\ntx-tunnel-remcsum-segmentation: off [fixed]\ntx-sctp-segmentation: off [fixed]\ntx-esp-segmentation: on\ntx-udp-segmentation: on\ntx-gso-list: off [fixed]\ntx-nocache-copy: off\nloopback: off [fixed]\nrx-fcs: off\nrx-all: on\ntx-vlan-stag-hw-insert: on\nrx-vlan-stag-hw-parse: off [fixed]\nrx-vlan-stag-filter: on [fixed]\nl2-fwd-offload: off [fixed]\nhw-tc-offload: on\nesp-hw-offload: on [fixed]\nesp-tx-csum-hw-offload: on [fixed]\nrx-udp_tunnel-port-offload: on\ntls-hw-tx-offload: on\ntls-hw-rx-offload: off\nrx-gro-hw: off\ntls-hw-record: off [fixed]\nrx-gro-list: off\nmacsec-hw-offload: on\nrx-udp-gro-forwarding: off\nhsr-tag-ins-offload: off [fixed]\nhsr-tag-rm-offload: off [fixed]\nhsr-fwd-offload: off [fixed]\nhsr-dup-offload: off [fixed]\n"
+   }
+  ],
+  "[\"ethtool\", \"-k\", \"enP2p1s0f1np1\"]": [
+   {
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "Features for enP2p1s0f1np1:\nrx-checksumming: on\ntx-checksumming: on\n\ttx-checksum-ipv4: off [fixed]\n\ttx-checksum-ip-generic: on\n\ttx-checksum-ipv6: off [fixed]\n\ttx-checksum-fcoe-crc: off [fixed]\n\ttx-checksum-sctp: off [fixed]\nscatter-gather: on\n\ttx-scatter-gather: on\n\ttx-scatter-gather-fraglist: off [fixed]\ntcp-segmentation-offload: on\n\ttx-tcp-segmentation: on\n\ttx-tcp-ecn-segmentation: off [fixed]\n\ttx-tcp-mangleid-segmentation: off\n\ttx-tcp6-segmentation: on\n\ttx-tcp-accecn-segmentation: off [fixed]\ngeneric-segmentation-offload: on\ngeneric-receive-offload: on\nlarge-receive-offload: off\nrx-vlan-offload: on\ntx-vlan-offload: on\nntuple-filters: off\nreceive-hashing: on\nhighdma: on [fixed]\nrx-vlan-filter: on\nvlan-challenged: off [fixed]\ntx-gso-robust: off [fixed]\ntx-fcoe-segmentation: off [fixed]\ntx-gre-segmentation: on\ntx-gre-csum-segmentation: on\ntx-ipxip4-segmentation: on\ntx-ipxip6-segmentation: on\ntx-udp_tnl-segmentation: on\ntx-udp_tnl-csum-segmentation: on\ntx-gso-partial: on\ntx-tunnel-remcsum-segmentation: off [fixed]\ntx-sctp-segmentation: off [fixed]\ntx-esp-segmentation: on\ntx-udp-segmentation: on\ntx-gso-list: off [fixed]\ntx-nocache-copy: off\nloopback: off [fixed]\nrx-fcs: off\nrx-all: on\ntx-vlan-stag-hw-insert: on\nrx-vlan-stag-hw-parse: off [fixed]\nrx-vlan-stag-filter: on [fixed]\nl2-fwd-offload: off [fixed]\nhw-tc-offload: on\nesp-hw-offload: on [fixed]\nesp-tx-csum-hw-offload: on [fixed]\nrx-udp_tunnel-port-offload: on\ntls-hw-tx-offload: on\ntls-hw-rx-offload: off\nrx-gro-hw: off\ntls-hw-record: off [fixed]\nrx-gro-list: off\nmacsec-hw-offload: on\nrx-udp-gro-forwarding: off\nhsr-tag-ins-offload: off [fixed]\nhsr-tag-rm-offload: off [fixed]\nhsr-fwd-offload: off [fixed]\nhsr-dup-offload: off [fixed]\n"
+   }
+  ],
+  "[\"ethtool\", \"-k\", \"enP7s7\"]": [
+   {
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "Features for enP7s7:\nrx-checksumming: on\ntx-checksumming: on\n\ttx-checksum-ipv4: on\n\ttx-checksum-ip-generic: off [fixed]\n\ttx-checksum-ipv6: on\n\ttx-checksum-fcoe-crc: off [fixed]\n\ttx-checksum-sctp: off [fixed]\nscatter-gather: on\n\ttx-scatter-gather: on\n\ttx-scatter-gather-fraglist: off [fixed]\ntcp-segmentation-offload: on\n\ttx-tcp-segmentation: on\n\ttx-tcp-ecn-segmentation: off [fixed]\n\ttx-tcp-mangleid-segmentation: off\n\ttx-tcp6-segmentation: on\n\ttx-tcp-accecn-segmentation: off [fixed]\ngeneric-segmentation-offload: on\ngeneric-receive-offload: on\nlarge-receive-offload: off [fixed]\nrx-vlan-offload: on\ntx-vlan-offload: on\nntuple-filters: off [fixed]\nreceive-hashing: off [fixed]\nhighdma: on [fixed]\nrx-vlan-filter: off [fixed]\nvlan-challenged: off [fixed]\ntx-gso-robust: off [fixed]\ntx-fcoe-segmentation: off [fixed]\ntx-gre-segmentation: off [fixed]\ntx-gre-csum-segmentation: off [fixed]\ntx-ipxip4-segmentation: off [fixed]\ntx-ipxip6-segmentation: off [fixed]\ntx-udp_tnl-segmentation: off [fixed]\ntx-udp_tnl-csum-segmentation: off [fixed]\ntx-gso-partial: off [fixed]\ntx-tunnel-remcsum-segmentation: off [fixed]\ntx-sctp-segmentation: off [fixed]\ntx-esp-segmentation: off [fixed]\ntx-udp-segmentation: off [fixed]\ntx-gso-list: off [fixed]\ntx-nocache-copy: off\nloopback: off [fixed]\nrx-fcs: off\nrx-all: off\ntx-vlan-stag-hw-insert: off [fixed]\nrx-vlan-stag-hw-parse: off [fixed]\nrx-vlan-stag-filter: off [fixed]\nl2-fwd-offload: off [fixed]\nhw-tc-offload: off [fixed]\nesp-hw-offload: off [fixed]\nesp-tx-csum-hw-offload: off [fixed]\nrx-udp_tunnel-port-offload: off [fixed]\ntls-hw-tx-offload: off [fixed]\ntls-hw-rx-offload: off [fixed]\nrx-gro-hw: off [fixed]\ntls-hw-record: off [fixed]\nrx-gro-list: off\nmacsec-hw-offload: off [fixed]\nrx-udp-gro-forwarding: off\nhsr-tag-ins-offload: off [fixed]\nhsr-tag-rm-offload: off [fixed]\nhsr-fwd-offload: off [fixed]\nhsr-dup-offload: off [fixed]\n"
+   }
+  ],
+  "[\"ethtool\", \"-k\", \"enp1s0f0np0\"]": [
+   {
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "Features for enp1s0f0np0:\nrx-checksumming: on\ntx-checksumming: on\n\ttx-checksum-ipv4: off [fixed]\n\ttx-checksum-ip-generic: on\n\ttx-checksum-ipv6: off [fixed]\n\ttx-checksum-fcoe-crc: off [fixed]\n\ttx-checksum-sctp: off [fixed]\nscatter-gather: on\n\ttx-scatter-gather: on\n\ttx-scatter-gather-fraglist: off [fixed]\ntcp-segmentation-offload: on\n\ttx-tcp-segmentation: on\n\ttx-tcp-ecn-segmentation: off [fixed]\n\ttx-tcp-mangleid-segmentation: off\n\ttx-tcp6-segmentation: on\n\ttx-tcp-accecn-segmentation: off [fixed]\ngeneric-segmentation-offload: on\ngeneric-receive-offload: on\nlarge-receive-offload: off\nrx-vlan-offload: on\ntx-vlan-offload: on\nntuple-filters: off\nreceive-hashing: on\nhighdma: on [fixed]\nrx-vlan-filter: on\nvlan-challenged: off [fixed]\ntx-gso-robust: off [fixed]\ntx-fcoe-segmentation: off [fixed]\ntx-gre-segmentation: on\ntx-gre-csum-segmentation: on\ntx-ipxip4-segmentation: on\ntx-ipxip6-segmentation: on\ntx-udp_tnl-segmentation: on\ntx-udp_tnl-csum-segmentation: on\ntx-gso-partial: on\ntx-tunnel-remcsum-segmentation: off [fixed]\ntx-sctp-segmentation: off [fixed]\ntx-esp-segmentation: on\ntx-udp-segmentation: on\ntx-gso-list: off [fixed]\ntx-nocache-copy: off\nloopback: off [fixed]\nrx-fcs: off\nrx-all: on\ntx-vlan-stag-hw-insert: on\nrx-vlan-stag-hw-parse: off [fixed]\nrx-vlan-stag-filter: on [fixed]\nl2-fwd-offload: off [fixed]\nhw-tc-offload: on\nesp-hw-offload: on [fixed]\nesp-tx-csum-hw-offload: on [fixed]\nrx-udp_tunnel-port-offload: on\ntls-hw-tx-offload: on\ntls-hw-rx-offload: off\nrx-gro-hw: off\ntls-hw-record: off [fixed]\nrx-gro-list: off\nmacsec-hw-offload: on\nrx-udp-gro-forwarding: off\nhsr-tag-ins-offload: off [fixed]\nhsr-tag-rm-offload: off [fixed]\nhsr-fwd-offload: off [fixed]\nhsr-dup-offload: off [fixed]\n"
+   }
+  ],
+  "[\"ethtool\", \"-k\", \"enp1s0f1np1\"]": [
+   {
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "Features for enp1s0f1np1:\nrx-checksumming: on\ntx-checksumming: on\n\ttx-checksum-ipv4: off [fixed]\n\ttx-checksum-ip-generic: on\n\ttx-checksum-ipv6: off [fixed]\n\ttx-checksum-fcoe-crc: off [fixed]\n\ttx-checksum-sctp: off [fixed]\nscatter-gather: on\n\ttx-scatter-gather: on\n\ttx-scatter-gather-fraglist: off [fixed]\ntcp-segmentation-offload: on\n\ttx-tcp-segmentation: on\n\ttx-tcp-ecn-segmentation: off [fixed]\n\ttx-tcp-mangleid-segmentation: off\n\ttx-tcp6-segmentation: on\n\ttx-tcp-accecn-segmentation: off [fixed]\ngeneric-segmentation-offload: on\ngeneric-receive-offload: on\nlarge-receive-offload: off\nrx-vlan-offload: on\ntx-vlan-offload: on\nntuple-filters: off\nreceive-hashing: on\nhighdma: on [fixed]\nrx-vlan-filter: on\nvlan-challenged: off [fixed]\ntx-gso-robust: off [fixed]\ntx-fcoe-segmentation: off [fixed]\ntx-gre-segmentation: on\ntx-gre-csum-segmentation: on\ntx-ipxip4-segmentation: on\ntx-ipxip6-segmentation: on\ntx-udp_tnl-segmentation: on\ntx-udp_tnl-csum-segmentation: on\ntx-gso-partial: on\ntx-tunnel-remcsum-segmentation: off [fixed]\ntx-sctp-segmentation: off [fixed]\ntx-esp-segmentation: on\ntx-udp-segmentation: on\ntx-gso-list: off [fixed]\ntx-nocache-copy: off\nloopback: off [fixed]\nrx-fcs: off\nrx-all: on\ntx-vlan-stag-hw-insert: on\nrx-vlan-stag-hw-parse: off [fixed]\nrx-vlan-stag-filter: on [fixed]\nl2-fwd-offload: off [fixed]\nhw-tc-offload: on\nesp-hw-offload: on [fixed]\nesp-tx-csum-hw-offload: on [fixed]\nrx-udp_tunnel-port-offload: on\ntls-hw-tx-offload: on\ntls-hw-rx-offload: off\nrx-gro-hw: off\ntls-hw-record: off [fixed]\nrx-gro-list: off\nmacsec-hw-offload: on\nrx-udp-gro-forwarding: off\nhsr-tag-ins-offload: off [fixed]\nhsr-tag-rm-offload: off [fixed]\nhsr-fwd-offload: off [fixed]\nhsr-dup-offload: off [fixed]\n"
+   }
+  ],
+  "[\"ethtool\", \"-k\", \"wlP9s9\"]": [
+   {
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "Features for wlP9s9:\nrx-checksumming: on [fixed]\ntx-checksumming: off\n\ttx-checksum-ipv4: off [fixed]\n\ttx-checksum-ip-generic: off [fixed]\n\ttx-checksum-ipv6: off [fixed]\n\ttx-checksum-fcoe-crc: off [fixed]\n\ttx-checksum-sctp: off [fixed]\nscatter-gather: off\n\ttx-scatter-gather: off [fixed]\n\ttx-scatter-gather-fraglist: off [fixed]\ntcp-segmentation-offload: off\n\ttx-tcp-segmentation: off [fixed]\n\ttx-tcp-ecn-segmentation: off [fixed]\n\ttx-tcp-mangleid-segmentation: off [fixed]\n\ttx-tcp6-segmentation: off [fixed]\n\ttx-tcp-accecn-segmentation: off [fixed]\ngeneric-segmentation-offload: off [requested on]\ngeneric-receive-offload: on\nlarge-receive-offload: off [fixed]\nrx-vlan-offload: off [fixed]\ntx-vlan-offload: off [fixed]\nntuple-filters: off [fixed]\nreceive-hashing: off [fixed]\nhighdma: off [fixed]\nrx-vlan-filter: off [fixed]\nvlan-challenged: off [fixed]\ntx-gso-robust: off [fixed]\ntx-fcoe-segmentation: off [fixed]\ntx-gre-segmentation: off [fixed]\ntx-gre-csum-segmentation: off [fixed]\ntx-ipxip4-segmentation: off [fixed]\ntx-ipxip6-segmentation: off [fixed]\ntx-udp_tnl-segmentation: off [fixed]\ntx-udp_tnl-csum-segmentation: off [fixed]\ntx-gso-partial: off [fixed]\ntx-tunnel-remcsum-segmentation: off [fixed]\ntx-sctp-segmentation: off [fixed]\ntx-esp-segmentation: off [fixed]\ntx-udp-segmentation: off [fixed]\ntx-gso-list: off [fixed]\ntx-nocache-copy: off\nloopback: off [fixed]\nrx-fcs: off [fixed]\nrx-all: off [fixed]\ntx-vlan-stag-hw-insert: off [fixed]\nrx-vlan-stag-hw-parse: off [fixed]\nrx-vlan-stag-filter: off [fixed]\nl2-fwd-offload: off [fixed]\nhw-tc-offload: off [fixed]\nesp-hw-offload: off [fixed]\nesp-tx-csum-hw-offload: off [fixed]\nrx-udp_tunnel-port-offload: off [fixed]\ntls-hw-tx-offload: off [fixed]\ntls-hw-rx-offload: off [fixed]\nrx-gro-hw: off [fixed]\ntls-hw-record: off [fixed]\nrx-gro-list: off\nmacsec-hw-offload: off [fixed]\nrx-udp-gro-forwarding: off\nhsr-tag-ins-offload: off [fixed]\nhsr-tag-rm-offload: off [fixed]\nhsr-fwd-offload: off [fixed]\nhsr-dup-offload: off [fixed]\n"
+   }
+  ],
+  "[\"ethtool\", \"-l\", \"enP2p1s0f0np0\"]": [
+   {
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "Channel parameters for enP2p1s0f0np0:\nPre-set maximums:\nRX:\t\tn/a\nTX:\t\tn/a\nOther:\t\tn/a\nCombined:\t20\nCurrent hardware settings:\nRX:\t\tn/a\nTX:\t\tn/a\nOther:\t\tn/a\nCombined:\t20\n"
+   }
+  ],
+  "[\"ethtool\", \"-l\", \"enP2p1s0f1np1\"]": [
+   {
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "Channel parameters for enP2p1s0f1np1:\nPre-set maximums:\nRX:\t\tn/a\nTX:\t\tn/a\nOther:\t\tn/a\nCombined:\t20\nCurrent hardware settings:\nRX:\t\tn/a\nTX:\t\tn/a\nOther:\t\tn/a\nCombined:\t20\n"
+   }
+  ],
+  "[\"ethtool\", \"-l\", \"enP7s7\"]": [
+   {
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "Channel parameters for enP7s7:\nPre-set maximums:\nRX:\t\t4\nTX:\t\t2\nOther:\t\tn/a\nCombined:\tn/a\nCurrent hardware settings:\nRX:\t\t1\nTX:\t\t1\nOther:\t\tn/a\nCombined:\tn/a\n"
+   }
+  ],
+  "[\"ethtool\", \"-l\", \"enp1s0f0np0\"]": [
+   {
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "Channel parameters for enp1s0f0np0:\nPre-set maximums:\nRX:\t\tn/a\nTX:\t\tn/a\nOther:\t\tn/a\nCombined:\t20\nCurrent hardware settings:\nRX:\t\tn/a\nTX:\t\tn/a\nOther:\t\tn/a\nCombined:\t20\n"
+   }
+  ],
+  "[\"ethtool\", \"-l\", \"enp1s0f1np1\"]": [
+   {
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "Channel parameters for enp1s0f1np1:\nPre-set maximums:\nRX:\t\tn/a\nTX:\t\tn/a\nOther:\t\tn/a\nCombined:\t20\nCurrent hardware settings:\nRX:\t\tn/a\nTX:\t\tn/a\nOther:\t\tn/a\nCombined:\t20\n"
+   }
+  ],
+  "[\"ethtool\", \"-l\", \"wlP9s9\"]": [
+   {
+    "returncode": 1,
+    "stderr": "netlink error: Operation not supported\n",
+    "stdout": ""
+   }
+  ],
+  "[\"ethtool\", \"-x\", \"enP2p1s0f0np0\"]": [
+   {
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "\nRX flow hash indirection table for enP2p1s0f0np0 with 20 RX ring(s):\n    0:      0     1     2     3     4     5     6     7\n    8:      8     9    10    11    12    13    14    15\n   16:     16    17    18    19     0     1     2     3\n   24:      4     5     6     7     8     9    10    11\n   32:     12    13    14    15    16    17    18    19\n   40:      0     1     2     3     4     5     6     7\n   48:      8     9    10    11    12    13    14    15\n   56:     16    17    18    19     0     1     2     3\n   64:      4     5     6     7     8     9    10    11\n   72:     12    13    14    15    16    17    18    19\n   80:      0     1     2     3     4     5     6     7\n   88:      8     9    10    11    12    13    14    15\n   96:     16    17    18    19     0     1     2     3\n  104:      4     5     6     7     8     9    10    11\n  112:     12    13    14    15    16    17    18    19\n  120:      0     1     2     3     4     5     6     7\n  128:      8     9    10    11    12    13    14    15\n  136:     16    17    18    19     0     1     2     3\n  144:      4     5     6     7     8     9    10    11\n  152:     12    13    14    15    16    17    18    19\n  160:      0     1     2     3     4     5     6     7\n  168:      8     9    10    11    12    13    14    15\n  176:     16    17    18    19     0     1     2     3\n  184:      4     5     6     7     8     9    10    11\n  192:     12    13    14    15    16    17    18    19\n  200:      0     1     2     3     4     5     6     7\n  208:      8     9    10    11    12    13    14    15\n  216:     16    17    18    19     0     1     2     3\n  224:      4     5     6     7     8     9    10    11\n  232:     12    13    14    15    16    17    18    19\n  240:      0     1     2     3     4     5     6     7\n  248:      8     9    10    11    12    13    14    15\nRSS hash key:\n00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\nRSS hash function:\n    toeplitz: on\n    xor: off\n    crc32: off\n"
+   }
+  ],
+  "[\"ethtool\", \"-x\", \"enP2p1s0f1np1\"]": [
+   {
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "\nRX flow hash indirection table for enP2p1s0f1np1 with 20 RX ring(s):\n    0:      0     1     2     3     4     5     6     7\n    8:      8     9    10    11    12    13    14    15\n   16:     16    17    18    19     0     1     2     3\n   24:      4     5     6     7     8     9    10    11\n   32:     12    13    14    15    16    17    18    19\n   40:      0     1     2     3     4     5     6     7\n   48:      8     9    10    11    12    13    14    15\n   56:     16    17    18    19     0     1     2     3\n   64:      4     5     6     7     8     9    10    11\n   72:     12    13    14    15    16    17    18    19\n   80:      0     1     2     3     4     5     6     7\n   88:      8     9    10    11    12    13    14    15\n   96:     16    17    18    19     0     1     2     3\n  104:      4     5     6     7     8     9    10    11\n  112:     12    13    14    15    16    17    18    19\n  120:      0     1     2     3     4     5     6     7\n  128:      8     9    10    11    12    13    14    15\n  136:     16    17    18    19     0     1     2     3\n  144:      4     5     6     7     8     9    10    11\n  152:     12    13    14    15    16    17    18    19\n  160:      0     1     2     3     4     5     6     7\n  168:      8     9    10    11    12    13    14    15\n  176:     16    17    18    19     0     1     2     3\n  184:      4     5     6     7     8     9    10    11\n  192:     12    13    14    15    16    17    18    19\n  200:      0     1     2     3     4     5     6     7\n  208:      8     9    10    11    12    13    14    15\n  216:     16    17    18    19     0     1     2     3\n  224:      4     5     6     7     8     9    10    11\n  232:     12    13    14    15    16    17    18    19\n  240:      0     1     2     3     4     5     6     7\n  248:      8     9    10    11    12    13    14    15\nRSS hash key:\n00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\nRSS hash function:\n    toeplitz: on\n    xor: off\n    crc32: off\n"
+   }
+  ],
+  "[\"ethtool\", \"-x\", \"enP7s7\"]": [
+   {
+    "returncode": 1,
+    "stderr": "netlink error: Operation not supported\n",
+    "stdout": ""
+   }
+  ],
+  "[\"ethtool\", \"-x\", \"enp1s0f0np0\"]": [
+   {
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "\nRX flow hash indirection table for enp1s0f0np0 with 20 RX ring(s):\n    0:      0     1     2     3     4     5     6     7\n    8:      8     9    10    11    12    13    14    15\n   16:     16    17    18    19     0     1     2     3\n   24:      4     5     6     7     8     9    10    11\n   32:     12    13    14    15    16    17    18    19\n   40:      0     1     2     3     4     5     6     7\n   48:      8     9    10    11    12    13    14    15\n   56:     16    17    18    19     0     1     2     3\n   64:      4     5     6     7     8     9    10    11\n   72:     12    13    14    15    16    17    18    19\n   80:      0     1     2     3     4     5     6     7\n   88:      8     9    10    11    12    13    14    15\n   96:     16    17    18    19     0     1     2     3\n  104:      4     5     6     7     8     9    10    11\n  112:     12    13    14    15    16    17    18    19\n  120:      0     1     2     3     4     5     6     7\n  128:      8     9    10    11    12    13    14    15\n  136:     16    17    18    19     0     1     2     3\n  144:      4     5     6     7     8     9    10    11\n  152:     12    13    14    15    16    17    18    19\n  160:      0     1     2     3     4     5     6     7\n  168:      8     9    10    11    12    13    14    15\n  176:     16    17    18    19     0     1     2     3\n  184:      4     5     6     7     8     9    10    11\n  192:     12    13    14    15    16    17    18    19\n  200:      0     1     2     3     4     5     6     7\n  208:      8     9    10    11    12    13    14    15\n  216:     16    17    18    19     0     1     2     3\n  224:      4     5     6     7     8     9    10    11\n  232:     12    13    14    15    16    17    18    19\n  240:      0     1     2     3     4     5     6     7\n  248:      8     9    10    11    12    13    14    15\nRSS hash key:\n00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\nRSS hash function:\n    toeplitz: on\n    xor: off\n    crc32: off\n"
+   }
+  ],
+  "[\"ethtool\", \"-x\", \"enp1s0f1np1\"]": [
+   {
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "\nRX flow hash indirection table for enp1s0f1np1 with 20 RX ring(s):\n    0:      0     1     2     3     4     5     6     7\n    8:      8     9    10    11    12    13    14    15\n   16:     16    17    18    19     0     1     2     3\n   24:      4     5     6     7     8     9    10    11\n   32:     12    13    14    15    16    17    18    19\n   40:      0     1     2     3     4     5     6     7\n   48:      8     9    10    11    12    13    14    15\n   56:     16    17    18    19     0     1     2     3\n   64:      4     5     6     7     8     9    10    11\n   72:     12    13    14    15    16    17    18    19\n   80:      0     1     2     3     4     5     6     7\n   88:      8     9    10    11    12    13    14    15\n   96:     16    17    18    19     0     1     2     3\n  104:      4     5     6     7     8     9    10    11\n  112:     12    13    14    15    16    17    18    19\n  120:      0     1     2     3     4     5     6     7\n  128:      8     9    10    11    12    13    14    15\n  136:     16    17    18    19     0     1     2     3\n  144:      4     5     6     7     8     9    10    11\n  152:     12    13    14    15    16    17    18    19\n  160:      0     1     2     3     4     5     6     7\n  168:      8     9    10    11    12    13    14    15\n  176:     16    17    18    19     0     1     2     3\n  184:      4     5     6     7     8     9    10    11\n  192:     12    13    14    15    16    17    18    19\n  200:      0     1     2     3     4     5     6     7\n  208:      8     9    10    11    12    13    14    15\n  216:     16    17    18    19     0     1     2     3\n  224:      4     5     6     7     8     9    10    11\n  232:     12    13    14    15    16    17    18    19\n  240:      0     1     2     3     4     5     6     7\n  248:      8     9    10    11    12    13    14    15\nRSS hash key:\n00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\nRSS hash function:\n    toeplitz: on\n    xor: off\n    crc32: off\n"
+   }
+  ],
+  "[\"ethtool\", \"-x\", \"wlP9s9\"]": [
+   {
+    "returncode": 1,
+    "stderr": "netlink error: Operation not supported\n",
+    "stdout": ""
+   }
+  ],
+  "[\"lscpu\", \"-J\", \"-C\"]": [
+   {
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "{\n   \"caches\": [\n      {\n         \"name\": \"L1d\",\n         \"one-size\": \"64K\",\n         \"all-size\": \"1.3M\",\n         \"ways\": 4,\n         \"type\": \"Data\",\n         \"level\": 1,\n         \"sets\": 256,\n         \"phy-line\": null,\n         \"coherency-size\": 64\n      },{\n         \"name\": \"L1i\",\n         \"one-size\": \"64K\",\n         \"all-size\": \"1.3M\",\n         \"ways\": 4,\n         \"type\": \"Instruction\",\n         \"level\": 1,\n         \"sets\": 256,\n         \"phy-line\": null,\n         \"coherency-size\": 64\n      },{\n         \"name\": \"L2\",\n         \"one-size\": \"512K\",\n         \"all-size\": \"25M\",\n         \"ways\": 8,\n         \"type\": \"Unified\",\n         \"level\": 2,\n         \"sets\": 1024,\n         \"phy-line\": null,\n         \"coherency-size\": 64\n      },{\n         \"name\": \"L3\",\n         \"one-size\": \"8M\",\n         \"all-size\": \"24M\",\n         \"ways\": 16,\n         \"type\": \"Unified\",\n         \"level\": 3,\n         \"sets\": 8192,\n         \"phy-line\": null,\n         \"coherency-size\": 64\n      }\n   ]\n}\n"
+   }
+  ],
+  "[\"lscpu\", \"-p=CPU,MODELNAME\"]": [
+   {
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "# The following is the parsable format, which can be fed to other\n# programs. Each different item in every column has an unique ID\n# starting usually from zero.\n# CPU,Modelname\n0,Cortex-A725\n1,Cortex-A725\n2,Cortex-A725\n3,Cortex-A725\n4,Cortex-A725\n5,Cortex-X925\n6,Cortex-X925\n7,Cortex-X925\n8,Cortex-X925\n9,Cortex-X925\n10,Cortex-A725\n11,Cortex-A725\n12,Cortex-A725\n13,Cortex-A725\n14,Cortex-A725\n15,Cortex-X925\n16,Cortex-X925\n17,Cortex-X925\n18,Cortex-X925\n19,Cortex-X925\n"
+   }
+  ],
+  "[\"lspci\", \"-s\", \"0000:01:00.0\", \"-nn\"]": [
+   {
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "0000:01:00.0 Ethernet controller [0200]: Mellanox Technologies MT2910 Family [ConnectX-7] [15b3:1021]\n"
+   }
+  ],
+  "[\"lspci\", \"-s\", \"0000:01:00.1\", \"-nn\"]": [
+   {
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "0000:01:00.1 Ethernet controller [0200]: Mellanox Technologies MT2910 Family [ConnectX-7] [15b3:1021]\n"
+   }
+  ],
+  "[\"lspci\", \"-s\", \"0002:01:00.0\", \"-nn\"]": [
+   {
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "0002:01:00.0 Ethernet controller [0200]: Mellanox Technologies MT2910 Family [ConnectX-7] [15b3:1021]\n"
+   }
+  ],
+  "[\"lspci\", \"-s\", \"0002:01:00.1\", \"-nn\"]": [
+   {
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "0002:01:00.1 Ethernet controller [0200]: Mellanox Technologies MT2910 Family [ConnectX-7] [15b3:1021]\n"
+   }
+  ],
+  "[\"lspci\", \"-s\", \"0007:01:00.0\", \"-nn\"]": [
+   {
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "0007:01:00.0 Ethernet controller [0200]: Realtek Semiconductor Co., Ltd. Device [10ec:8127] (rev 05)\n"
+   }
+  ],
+  "[\"lspci\", \"-s\", \"0009:01:00.0\", \"-nn\"]": [
+   {
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "0009:01:00.0 Network controller [0280]: MEDIATEK Corp. Device [14c3:7925]\n"
+   }
+  ],
+  "[\"systemctl\", \"--user\", \"show\", \"vllm-health-watchdog.timer\", \"--property=Id,LoadState,ActiveState,SubState,UnitFileState\", \"--no-pager\"]": [
+   {
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "Id=vllm-health-watchdog.timer\nLoadState=loaded\nActiveState=active\nSubState=waiting\nUnitFileState=enabled\n"
+   }
+  ],
+  "[\"systemctl\", \"--user\", \"show\", \"vllm-qwen.service\", \"--property=Id,LoadState,ActiveState,SubState,UnitFileState\", \"--no-pager\"]": [
+   {
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "Id=vllm-qwen.service\nLoadState=loaded\nActiveState=active\nSubState=running\nUnitFileState=enabled\n"
+   }
+  ],
+  "[\"systemctl\", \"show\", \"vllm-health-watchdog.timer\", \"--property=Id,LoadState,ActiveState,SubState,UnitFileState\", \"--no-pager\"]": [
+   {
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "Id=vllm-health-watchdog.timer\nLoadState=not-found\nActiveState=inactive\nSubState=dead\nUnitFileState=\n"
+   }
+  ],
+  "[\"systemctl\", \"show\", \"vllm-qwen.service\", \"--property=Id,LoadState,ActiveState,SubState,UnitFileState\", \"--no-pager\"]": [
+   {
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "Id=vllm-qwen.service\nLoadState=not-found\nActiveState=inactive\nSubState=dead\nUnitFileState=\n"
+   }
+  ],
+  "[\"uname\", \"-m\"]": [
+   {
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "aarch64\n"
+   }
+  ]
+ },
+ "constants": {
+  "clock_ticks": 100,
+  "euid": 1000,
+  "page_size": 4096
+ },
+ "dirs": {
+  "/proc": [
+   [
+    "2259823",
+    "2423342",
+    "2423350",
+    "2492602",
+    "2601814",
+    "2624190",
+    "2634540",
+    "2636744",
+    "2636755",
+    "2636760",
+    "2636765",
+    "2636771",
+    "2636776",
+    "2636781",
+    "2636795",
+    "3358713",
+    "4011",
+    "7232",
+    "acpi",
+    "asound",
+    "bootconfig",
+    "buddyinfo",
+    "bus",
+    "cgroups",
+    "cmdline",
+    "consoles",
+    "cpuinfo",
+    "crypto",
+    "devices",
+    "diskstats",
+    "driver",
+    "dynamic_debug",
+    "execdomains",
+    "fb",
+    "filesystems",
+    "fs",
+    "interrupts",
+    "iomem",
+    "ioports",
+    "irq",
+    "kallsyms",
+    "kcore",
+    "key-users",
+    "keys",
+    "kmsg",
+    "kpagecgroup",
+    "kpagecount",
+    "kpageflags",
+    "latency_stats",
+    "loadavg",
+    "locks",
+    "mdstat",
+    "meminfo",
+    "misc",
+    "modules",
+    "mounts",
+    "mtd",
+    "net",
+    "pagetypeinfo",
+    "partitions",
+    "pressure",
+    "schedstat",
+    "scsi",
+    "self",
+    "slabinfo",
+    "softirqs",
+    "stat",
+    "swaps",
+    "sys",
+    "sysrq-trigger",
+    "sysvipc",
+    "thread-self",
+    "timer_list",
+    "tty",
+    "uptime",
+    "version",
+    "version_signature",
+    "vmallocinfo",
+    "vmstat",
+    "zoneinfo"
+   ],
+   [
+    "2259823",
+    "2423342",
+    "2423350",
+    "2492602",
+    "2601814",
+    "2624190",
+    "2634540",
+    "2636744",
+    "2636755",
+    "2636760",
+    "2636765",
+    "2636771",
+    "2636776",
+    "2636781",
+    "2636795",
+    "3358713",
+    "4011",
+    "7232",
+    "acpi",
+    "asound",
+    "bootconfig",
+    "buddyinfo",
+    "bus",
+    "cgroups",
+    "cmdline",
+    "consoles",
+    "cpuinfo",
+    "crypto",
+    "devices",
+    "diskstats",
+    "driver",
+    "dynamic_debug",
+    "execdomains",
+    "fb",
+    "filesystems",
+    "fs",
+    "interrupts",
+    "iomem",
+    "ioports",
+    "irq",
+    "kallsyms",
+    "kcore",
+    "key-users",
+    "keys",
+    "kmsg",
+    "kpagecgroup",
+    "kpagecount",
+    "kpageflags",
+    "latency_stats",
+    "loadavg",
+    "locks",
+    "mdstat",
+    "meminfo",
+    "misc",
+    "modules",
+    "mounts",
+    "mtd",
+    "net",
+    "pagetypeinfo",
+    "partitions",
+    "pressure",
+    "schedstat",
+    "scsi",
+    "self",
+    "slabinfo",
+    "softirqs",
+    "stat",
+    "swaps",
+    "sys",
+    "sysrq-trigger",
+    "sysvipc",
+    "thread-self",
+    "timer_list",
+    "tty",
+    "uptime",
+    "version",
+    "version_signature",
+    "vmallocinfo",
+    "vmstat",
+    "zoneinfo"
+   ]
+  ],
+  "/proc/irq/346": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "enP7s7-0",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/347": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "enP7s7-1",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/348": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "enP7s7-2",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/349": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "enP7s7-3",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/350": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "enP7s7-4",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/351": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "enP7s7-5",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/352": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "enP7s7-6",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/353": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "enP7s7-7",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/354": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "enP7s7-8",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/355": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "enP7s7-9",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/356": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "enP7s7-10",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/357": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "enP7s7-11",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/358": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "enP7s7-12",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/359": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "enP7s7-13",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/360": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "enP7s7-14",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/361": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "enP7s7-15",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/362": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "enP7s7-16",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/363": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "enP7s7-17",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/364": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "enP7s7-18",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/365": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "enP7s7-19",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/366": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "enP7s7-20",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/367": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "enP7s7-21",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/368": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "enP7s7-22",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/369": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "enP7s7-23",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/370": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "enP7s7-24",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/371": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "enP7s7-25",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/372": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "enP7s7-26",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/373": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "enP7s7-27",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/374": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "enP7s7-28",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/375": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "enP7s7-29",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/376": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "enP7s7-30",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/377": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "enP7s7-31",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/394": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_async0@pci:0000:01:00.0",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/395": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp0@pci:0000:01:00.0",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/396": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp1@pci:0000:01:00.0",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/397": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp2@pci:0000:01:00.0",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/398": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp3@pci:0000:01:00.0",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/399": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp4@pci:0000:01:00.0",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/400": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp5@pci:0000:01:00.0",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/401": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp6@pci:0000:01:00.0",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/402": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp7@pci:0000:01:00.0",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/403": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp8@pci:0000:01:00.0",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/404": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp9@pci:0000:01:00.0",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/405": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp10@pci:0000:01:00.0",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/406": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp11@pci:0000:01:00.0",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/407": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp12@pci:0000:01:00.0",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/408": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp13@pci:0000:01:00.0",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/409": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp14@pci:0000:01:00.0",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/410": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp15@pci:0000:01:00.0",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/411": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp16@pci:0000:01:00.0",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/412": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp17@pci:0000:01:00.0",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/413": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp18@pci:0000:01:00.0",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/414": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp19@pci:0000:01:00.0",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/416": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_async0@pci:0000:01:00.1",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/417": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp0@pci:0000:01:00.1",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/418": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp1@pci:0000:01:00.1",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/419": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp2@pci:0000:01:00.1",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/420": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp3@pci:0000:01:00.1",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/421": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp4@pci:0000:01:00.1",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/422": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp5@pci:0000:01:00.1",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/423": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp6@pci:0000:01:00.1",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/424": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp7@pci:0000:01:00.1",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/425": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp8@pci:0000:01:00.1",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/426": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp9@pci:0000:01:00.1",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/427": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp10@pci:0000:01:00.1",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/428": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp11@pci:0000:01:00.1",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/429": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp12@pci:0000:01:00.1",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/430": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp13@pci:0000:01:00.1",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/431": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp14@pci:0000:01:00.1",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/432": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp15@pci:0000:01:00.1",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/433": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp16@pci:0000:01:00.1",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/434": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp17@pci:0000:01:00.1",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/435": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp18@pci:0000:01:00.1",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/436": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp19@pci:0000:01:00.1",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/437": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_async0@pci:0002:01:00.0",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/438": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp0@pci:0002:01:00.0",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/439": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp1@pci:0002:01:00.0",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/440": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp2@pci:0002:01:00.0",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/441": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp3@pci:0002:01:00.0",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/442": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp4@pci:0002:01:00.0",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/443": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp5@pci:0002:01:00.0",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/444": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp6@pci:0002:01:00.0",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/445": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp7@pci:0002:01:00.0",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/446": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp8@pci:0002:01:00.0",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/447": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp9@pci:0002:01:00.0",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/448": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp10@pci:0002:01:00.0",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/449": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp11@pci:0002:01:00.0",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/450": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp12@pci:0002:01:00.0",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/451": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp13@pci:0002:01:00.0",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/452": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp14@pci:0002:01:00.0",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/453": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp15@pci:0002:01:00.0",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/454": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp16@pci:0002:01:00.0",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/455": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp17@pci:0002:01:00.0",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/456": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp18@pci:0002:01:00.0",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/457": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp19@pci:0002:01:00.0",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/459": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_async0@pci:0002:01:00.1",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/460": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp0@pci:0002:01:00.1",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/461": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp1@pci:0002:01:00.1",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/462": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp2@pci:0002:01:00.1",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/463": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp3@pci:0002:01:00.1",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/464": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp4@pci:0002:01:00.1",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/465": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp5@pci:0002:01:00.1",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/466": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp6@pci:0002:01:00.1",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/467": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp7@pci:0002:01:00.1",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/468": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp8@pci:0002:01:00.1",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/469": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp9@pci:0002:01:00.1",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/470": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp10@pci:0002:01:00.1",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/471": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp11@pci:0002:01:00.1",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/472": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp12@pci:0002:01:00.1",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/473": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp13@pci:0002:01:00.1",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/474": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp14@pci:0002:01:00.1",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/475": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp15@pci:0002:01:00.1",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/476": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp16@pci:0002:01:00.1",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/477": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp17@pci:0002:01:00.1",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/478": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp18@pci:0002:01:00.1",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/479": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mlx5_comp19@pci:0002:01:00.1",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/irq/481": [
+   [
+    "affinity_hint",
+    "effective_affinity",
+    "effective_affinity_list",
+    "mt7925e",
+    "node",
+    "smp_affinity",
+    "smp_affinity_list",
+    "spurious"
+   ]
+  ],
+  "/proc/sys/net/core": [
+   [
+    "bpf_jit_enable",
+    "bpf_jit_harden",
+    "bpf_jit_kallsyms",
+    "bpf_jit_limit",
+    "busy_poll",
+    "busy_read",
+    "default_qdisc",
+    "dev_weight",
+    "dev_weight_rx_bias",
+    "dev_weight_tx_bias",
+    "devconf_inherit_init_net",
+    "fb_tunnels_only_for_init_net",
+    "flow_limit_cpu_bitmap",
+    "flow_limit_table_len",
+    "gro_normal_batch",
+    "high_order_alloc_disable",
+    "max_skb_frags",
+    "mem_pcpu_rsv",
+    "message_burst",
+    "message_cost",
+    "netdev_budget",
+    "netdev_budget_usecs",
+    "netdev_max_backlog",
+    "netdev_rss_key",
+    "netdev_tstamp_prequeue",
+    "netdev_unregister_timeout_secs",
+    "optmem_max",
+    "rmem_default",
+    "rmem_max",
+    "rps_default_mask",
+    "rps_sock_flow_entries",
+    "skb_defer_max",
+    "somaxconn",
+    "tstamp_allow_data",
+    "txrehash",
+    "warnings",
+    "wmem_default",
+    "wmem_max",
+    "xfrm_acq_expires",
+    "xfrm_aevent_etime",
+    "xfrm_aevent_rseqth",
+    "xfrm_larval_drop"
+   ]
+  ],
+  "/sys/class/net": [
+   [
+    "enP2p1s0f0np0",
+    "enP2p1s0f1np1",
+    "enP7s7",
+    "enp1s0f0np0",
+    "enp1s0f1np1",
+    "wlP9s9"
+   ]
+  ],
+  "/sys/class/net/enP2p1s0f0np0/device/msi_irqs": [
+   [
+    "437",
+    "438",
+    "439",
+    "440",
+    "441",
+    "442",
+    "443",
+    "444",
+    "445",
+    "446",
+    "447",
+    "448",
+    "449",
+    "450",
+    "451",
+    "452",
+    "453",
+    "454",
+    "455",
+    "456",
+    "457"
+   ]
+  ],
+  "/sys/class/net/enP2p1s0f0np0/queues": [
+   [
+    "rx-0",
+    "rx-1",
+    "rx-10",
+    "rx-11",
+    "rx-12",
+    "rx-13",
+    "rx-14",
+    "rx-15",
+    "rx-16",
+    "rx-17",
+    "rx-18",
+    "rx-19",
+    "rx-2",
+    "rx-3",
+    "rx-4",
+    "rx-5",
+    "rx-6",
+    "rx-7",
+    "rx-8",
+    "rx-9",
+    "tx-0",
+    "tx-1",
+    "tx-10",
+    "tx-11",
+    "tx-12",
+    "tx-13",
+    "tx-14",
+    "tx-15",
+    "tx-16",
+    "tx-17",
+    "tx-18",
+    "tx-19",
+    "tx-2",
+    "tx-3",
+    "tx-4",
+    "tx-5",
+    "tx-6",
+    "tx-7",
+    "tx-8",
+    "tx-9"
+   ]
+  ],
+  "/sys/class/net/enP2p1s0f1np1/device/msi_irqs": [
+   [
+    "459",
+    "460",
+    "461",
+    "462",
+    "463",
+    "464",
+    "465",
+    "466",
+    "467",
+    "468",
+    "469",
+    "470",
+    "471",
+    "472",
+    "473",
+    "474",
+    "475",
+    "476",
+    "477",
+    "478",
+    "479"
+   ]
+  ],
+  "/sys/class/net/enP2p1s0f1np1/queues": [
+   [
+    "rx-0",
+    "rx-1",
+    "rx-10",
+    "rx-11",
+    "rx-12",
+    "rx-13",
+    "rx-14",
+    "rx-15",
+    "rx-16",
+    "rx-17",
+    "rx-18",
+    "rx-19",
+    "rx-2",
+    "rx-3",
+    "rx-4",
+    "rx-5",
+    "rx-6",
+    "rx-7",
+    "rx-8",
+    "rx-9",
+    "tx-0",
+    "tx-1",
+    "tx-10",
+    "tx-11",
+    "tx-12",
+    "tx-13",
+    "tx-14",
+    "tx-15",
+    "tx-16",
+    "tx-17",
+    "tx-18",
+    "tx-19",
+    "tx-2",
+    "tx-3",
+    "tx-4",
+    "tx-5",
+    "tx-6",
+    "tx-7",
+    "tx-8",
+    "tx-9"
+   ]
+  ],
+  "/sys/class/net/enP7s7/device/msi_irqs": [
+   [
+    "346",
+    "347",
+    "348",
+    "349",
+    "350",
+    "351",
+    "352",
+    "353",
+    "354",
+    "355",
+    "356",
+    "357",
+    "358",
+    "359",
+    "360",
+    "361",
+    "362",
+    "363",
+    "364",
+    "365",
+    "366",
+    "367",
+    "368",
+    "369",
+    "370",
+    "371",
+    "372",
+    "373",
+    "374",
+    "375",
+    "376",
+    "377"
+   ]
+  ],
+  "/sys/class/net/enP7s7/queues": [
+   [
+    "rx-0",
+    "tx-0"
+   ]
+  ],
+  "/sys/class/net/enp1s0f0np0/device/msi_irqs": [
+   [
+    "394",
+    "395",
+    "396",
+    "397",
+    "398",
+    "399",
+    "400",
+    "401",
+    "402",
+    "403",
+    "404",
+    "405",
+    "406",
+    "407",
+    "408",
+    "409",
+    "410",
+    "411",
+    "412",
+    "413",
+    "414"
+   ]
+  ],
+  "/sys/class/net/enp1s0f0np0/queues": [
+   [
+    "rx-0",
+    "rx-1",
+    "rx-10",
+    "rx-11",
+    "rx-12",
+    "rx-13",
+    "rx-14",
+    "rx-15",
+    "rx-16",
+    "rx-17",
+    "rx-18",
+    "rx-19",
+    "rx-2",
+    "rx-3",
+    "rx-4",
+    "rx-5",
+    "rx-6",
+    "rx-7",
+    "rx-8",
+    "rx-9",
+    "tx-0",
+    "tx-1",
+    "tx-10",
+    "tx-11",
+    "tx-12",
+    "tx-13",
+    "tx-14",
+    "tx-15",
+    "tx-16",
+    "tx-17",
+    "tx-18",
+    "tx-19",
+    "tx-2",
+    "tx-3",
+    "tx-4",
+    "tx-5",
+    "tx-6",
+    "tx-7",
+    "tx-8",
+    "tx-9"
+   ]
+  ],
+  "/sys/class/net/enp1s0f1np1/device/msi_irqs": [
+   [
+    "416",
+    "417",
+    "418",
+    "419",
+    "420",
+    "421",
+    "422",
+    "423",
+    "424",
+    "425",
+    "426",
+    "427",
+    "428",
+    "429",
+    "430",
+    "431",
+    "432",
+    "433",
+    "434",
+    "435",
+    "436"
+   ]
+  ],
+  "/sys/class/net/enp1s0f1np1/queues": [
+   [
+    "rx-0",
+    "rx-1",
+    "rx-10",
+    "rx-11",
+    "rx-12",
+    "rx-13",
+    "rx-14",
+    "rx-15",
+    "rx-16",
+    "rx-17",
+    "rx-18",
+    "rx-19",
+    "rx-2",
+    "rx-3",
+    "rx-4",
+    "rx-5",
+    "rx-6",
+    "rx-7",
+    "rx-8",
+    "rx-9",
+    "tx-0",
+    "tx-1",
+    "tx-10",
+    "tx-11",
+    "tx-12",
+    "tx-13",
+    "tx-14",
+    "tx-15",
+    "tx-16",
+    "tx-17",
+    "tx-18",
+    "tx-19",
+    "tx-2",
+    "tx-3",
+    "tx-4",
+    "tx-5",
+    "tx-6",
+    "tx-7",
+    "tx-8",
+    "tx-9"
+   ]
+  ],
+  "/sys/class/net/wlP9s9/device/msi_irqs": [
+   [
+    "481"
+   ]
+  ],
+  "/sys/class/net/wlP9s9/queues": [
+   [
+    "rx-0",
+    "tx-0"
+   ]
+  ],
+  "/sys/class/thermal": [
+   [
+    "cooling_device0",
+    "cooling_device1",
+    "cooling_device10",
+    "cooling_device11",
+    "cooling_device12",
+    "cooling_device13",
+    "cooling_device14",
+    "cooling_device15",
+    "cooling_device16",
+    "cooling_device17",
+    "cooling_device18",
+    "cooling_device19",
+    "cooling_device2",
+    "cooling_device20",
+    "cooling_device21",
+    "cooling_device22",
+    "cooling_device23",
+    "cooling_device24",
+    "cooling_device25",
+    "cooling_device26",
+    "cooling_device3",
+    "cooling_device4",
+    "cooling_device5",
+    "cooling_device6",
+    "cooling_device7",
+    "cooling_device8",
+    "cooling_device9",
+    "thermal_zone0",
+    "thermal_zone1",
+    "thermal_zone2",
+    "thermal_zone3",
+    "thermal_zone4",
+    "thermal_zone5",
+    "thermal_zone6"
+   ]
+  ],
+  "/sys/devices/system/cpu/cpu0/cache": [
+   [
+    "index0",
+    "index1",
+    "index2",
+    "index3",
+    "uevent"
+   ]
+  ],
+  "/sys/devices/system/cpu/cpu1/cache": [
+   [
+    "index0",
+    "index1",
+    "index2",
+    "index3",
+    "uevent"
+   ]
+  ],
+  "/sys/devices/system/cpu/cpu10/cache": [
+   [
+    "index0",
+    "index1",
+    "index2",
+    "index3",
+    "uevent"
+   ]
+  ],
+  "/sys/devices/system/cpu/cpu11/cache": [
+   [
+    "index0",
+    "index1",
+    "index2",
+    "index3",
+    "uevent"
+   ]
+  ],
+  "/sys/devices/system/cpu/cpu12/cache": [
+   [
+    "index0",
+    "index1",
+    "index2",
+    "index3",
+    "uevent"
+   ]
+  ],
+  "/sys/devices/system/cpu/cpu13/cache": [
+   [
+    "index0",
+    "index1",
+    "index2",
+    "index3",
+    "uevent"
+   ]
+  ],
+  "/sys/devices/system/cpu/cpu14/cache": [
+   [
+    "index0",
+    "index1",
+    "index2",
+    "index3",
+    "uevent"
+   ]
+  ],
+  "/sys/devices/system/cpu/cpu15/cache": [
+   [
+    "index0",
+    "index1",
+    "index2",
+    "index3",
+    "uevent"
+   ]
+  ],
+  "/sys/devices/system/cpu/cpu16/cache": [
+   [
+    "index0",
+    "index1",
+    "index2",
+    "index3",
+    "uevent"
+   ]
+  ],
+  "/sys/devices/system/cpu/cpu17/cache": [
+   [
+    "index0",
+    "index1",
+    "index2",
+    "index3",
+    "uevent"
+   ]
+  ],
+  "/sys/devices/system/cpu/cpu18/cache": [
+   [
+    "index0",
+    "index1",
+    "index2",
+    "index3",
+    "uevent"
+   ]
+  ],
+  "/sys/devices/system/cpu/cpu19/cache": [
+   [
+    "index0",
+    "index1",
+    "index2",
+    "index3",
+    "uevent"
+   ]
+  ],
+  "/sys/devices/system/cpu/cpu2/cache": [
+   [
+    "index0",
+    "index1",
+    "index2",
+    "index3",
+    "uevent"
+   ]
+  ],
+  "/sys/devices/system/cpu/cpu3/cache": [
+   [
+    "index0",
+    "index1",
+    "index2",
+    "index3",
+    "uevent"
+   ]
+  ],
+  "/sys/devices/system/cpu/cpu4/cache": [
+   [
+    "index0",
+    "index1",
+    "index2",
+    "index3",
+    "uevent"
+   ]
+  ],
+  "/sys/devices/system/cpu/cpu5/cache": [
+   [
+    "index0",
+    "index1",
+    "index2",
+    "index3",
+    "uevent"
+   ]
+  ],
+  "/sys/devices/system/cpu/cpu6/cache": [
+   [
+    "index0",
+    "index1",
+    "index2",
+    "index3",
+    "uevent"
+   ]
+  ],
+  "/sys/devices/system/cpu/cpu7/cache": [
+   [
+    "index0",
+    "index1",
+    "index2",
+    "index3",
+    "uevent"
+   ]
+  ],
+  "/sys/devices/system/cpu/cpu8/cache": [
+   [
+    "index0",
+    "index1",
+    "index2",
+    "index3",
+    "uevent"
+   ]
+  ],
+  "/sys/devices/system/cpu/cpu9/cache": [
+   [
+    "index0",
+    "index1",
+    "index2",
+    "index3",
+    "uevent"
+   ]
+  ],
+  "/sys/devices/system/cpu/vulnerabilities": [
+   [
+    "gather_data_sampling",
+    "ghostwrite",
+    "indirect_target_selection",
+    "itlb_multihit",
+    "l1tf",
+    "mds",
+    "meltdown",
+    "mmio_stale_data",
+    "old_microcode",
+    "reg_file_data_sampling",
+    "retbleed",
+    "spec_rstack_overflow",
+    "spec_store_bypass",
+    "spectre_v1",
+    "spectre_v2",
+    "srbds",
+    "tsa",
+    "tsx_async_abort",
+    "vmscape"
+   ]
+  ],
+  "/sys/devices/system/node": [
+   [
+    "has_cpu",
+    "has_generic_initiator",
+    "has_memory",
+    "has_normal_memory",
+    "node0",
+    "online",
+    "possible",
+    "power",
+    "uevent"
+   ]
+  ],
+  "/sys/kernel/mm/hugepages": [
+   [
+    "hugepages-1048576kB",
+    "hugepages-2048kB",
+    "hugepages-32768kB",
+    "hugepages-64kB"
+   ]
+  ]
+ },
+ "files": {
+  "/etc/os-release": [
+   "PRETTY_NAME=\"Ubuntu 24.04.4 LTS\"\nNAME=\"Ubuntu\"\nVERSION_ID=\"24.04\"\nVERSION=\"24.04.4 LTS (Noble Numbat)\"\nVERSION_CODENAME=noble\nID=ubuntu\nID_LIKE=debian\nHOME_URL=\"https://www.ubuntu.com/\"\nSUPPORT_URL=\"https://help.ubuntu.com/\"\nBUG_REPORT_URL=\"https://bugs.launchpad.net/ubuntu/\"\nPRIVACY_POLICY_URL=\"https://www.ubuntu.com/legal/terms-and-policies/privacy-policy\"\nUBUNTU_CODENAME=noble\nLOGO=ubuntu-logo\n"
+  ],
+  "/proc/2259823/stat": [
+   "2259823 (claude) S 2959705 2259823 2259823 34819 2259823 4194304 1117575 1785321 60 244 10009 1111 1916 2587 20 0 33 0 80030956 6402830336 144082 18446744073709551615 31773952 151670496 281474546488816 0 0 0 0 4096 2072145151 0 0 0 17 2 0 0 0 0 0 151858944 378601472 676524032 281474546492838 281474546496192 281474546496192 281474546499542 0\n",
+   "2259823 (claude) S 2959705 2259823 2259823 34819 2259823 4194304 1117575 1785321 60 244 10010 1111 1916 2587 20 0 33 0 80030956 6402830336 144082 18446744073709551615 31773952 151670496 281474546488816 0 0 0 0 4096 2072145151 0 0 0 17 0 0 0 0 0 0 151858944 378601472 676524032 281474546492838 281474546496192 281474546496192 281474546499542 0\n"
+  ],
+  "/proc/2423342/stat": [
+   "2423342 (claude) S 2959705 2423342 2423342 34821 2423342 4194304 592521 1127753 34 693 2834 383 1227 609 20 0 23 0 80215558 6394310656 106114 18446744073709551615 31773952 151670496 281474243773376 0 0 0 0 4096 2072145151 0 0 0 17 0 0 0 0 0 0 151858944 378601472 1154740224 281474243775627 281474243777233 281474243777233 281474243780566 0\n",
+   "2423342 (claude) S 2959705 2423342 2423342 34821 2423342 4194304 592521 1127753 34 693 2834 383 1227 609 20 0 23 0 80215558 6394310656 106114 18446744073709551615 31773952 151670496 281474243773376 0 0 0 0 4096 2072145151 0 0 0 17 1 0 0 0 0 0 151858944 378601472 1154740224 281474243775627 281474243777233 281474243777233 281474243780566 0\n"
+  ],
+  "/proc/2423350/stat": [
+   "2423350 (claude) S 2959705 2423350 2423350 34825 2423350 4194304 590653 978285 4 284 3436 426 837 484 20 0 28 0 80215559 6381465600 123805 18446744073709551615 31773952 151670496 281474733047216 0 0 0 0 4096 2072145151 0 0 0 17 10 0 0 0 0 0 151858944 378601472 420524032 281474733050421 281474733052625 281474733052625 281474733055958 0\n",
+   "2423350 (claude) S 2959705 2423350 2423350 34825 2423350 4194304 590660 980954 4 284 3437 426 841 484 20 0 28 0 80215559 6381465600 123540 18446744073709551615 31773952 151670496 281474733047216 0 0 0 0 4096 2072145151 0 0 0 17 13 0 0 0 0 0 151858944 378601472 420524032 281474733050421 281474733052625 281474733052625 281474733055958 0\n"
+  ],
+  "/proc/2492602/stat": [
+   "2492602 (claude) S 2959705 2492602 2492602 34820 2492602 4194304 6299944 17860043 70831 14474 61215 7522 17681 9326 20 0 25 0 74700232 6402826240 87905 18446744073709551615 31773952 151670496 281474870489392 0 0 0 0 4096 2072145151 0 0 0 17 10 0 0 0 0 0 151858944 378601472 1403478016 281474870493854 281474870493861 281474870493861 281474870497238 0\n",
+   "2492602 (claude) S 2959705 2492602 2492602 34820 2492602 4194304 6299944 17860043 70831 14474 61215 7522 17681 9326 20 0 25 0 74700232 6402826240 87905 18446744073709551615 31773952 151670496 281474870489392 0 0 0 0 4096 2072145151 0 0 0 17 10 0 0 0 0 0 151858944 378601472 1403478016 281474870493854 281474870493861 281474870493861 281474870497238 0\n"
+  ],
+  "/proc/2601814/stat": [
+   "2601814 (claude) S 2959705 2601814 2601814 34824 2601814 4194304 300825 280672 2 10 1144 162 262 152 20 0 30 0 80287861 6389985280 106827 18446744073709551615 31773952 151670496 281473997895296 0 0 0 0 4096 2072145151 0 0 0 17 14 0 0 0 0 0 151858944 378601472 763768832 281473997898516 281473997902528 281473997902528 281473997905878 0\n",
+   "2601814 (claude) S 2959705 2601814 2601814 34824 2601814 4194304 302931 290255 2 10 1157 164 269 156 20 0 30 0 80287861 6389985280 108277 18446744073709551615 31773952 151670496 281473997895296 0 0 0 0 4096 2072145151 0 0 0 17 1 0 0 0 0 0 151858944 378601472 763768832 281473997898516 281473997902528 281473997902528 281473997905878 0\n"
+  ],
+  "/proc/2624190/stat": [
+   "2624190 (claude) S 2959705 2624190 2624190 34827 2624190 4194304 242637 433563 1 103 762 115 836 769 20 0 27 0 80295258 6377271296 105760 18446744073709551615 31773952 151670496 281473966946112 0 0 0 0 4096 2072145151 0 0 0 17 0 0 0 0 0 0 151858944 378601472 981131264 281473966950093 281473966953140 281473966953140 281473966956502 0\n",
+   "2624190 (claude) S 2959705 2624190 2624190 34827 2624190 4194304 243060 437852 1 103 769 116 855 771 20 0 27 0 80295258 6377271296 105248 18446744073709551615 31773952 151670496 281473966946112 0 0 0 0 4096 2072145151 0 0 0 17 9 0 0 0 0 0 151858944 378601472 981131264 281473966950093 281473966953140 281473966953140 281473966956502 0\n"
+  ],
+  "/proc/2634540/stat": [
+   "2634540 (claude) S 2959705 2634540 2634540 34826 2634540 4194304 134596 153546 0 2 303 57 303 95 20 0 33 0 80305731 6402174976 96700 18446744073709551615 31773952 151670496 281474449543392 0 0 0 0 4096 2072145151 0 0 0 17 0 0 0 0 0 0 151858944 378601472 999256064 281474449545007 281474449547956 281474449547956 281474449551318 0\n",
+   "2634540 (claude) S 2959705 2634540 2634540 34826 2634540 4194304 154364 158744 0 2 333 63 304 99 20 0 33 0 80305731 6402174976 102598 18446744073709551615 31773952 151670496 281474449543392 0 0 0 0 4096 2072145151 0 0 0 17 3 0 0 0 0 0 151858944 378601472 999256064 281474449545007 281474449547956 281474449547956 281474449551318 0\n"
+  ],
+  "/proc/2636744/stat": [
+   "2636744 (mmt_sec_standal) R 2634902 2634818 2634818 0 -1 4194560 2423 0 0 0 79 0 0 0 20 0 1 0 80307858 39582536429568 4356 18446744073709551615 205828148625408 205828152055352 281474414854464 0 0 0 0 0 17634 0 0 0 17 15 0 0 0 0 0 205828152161600 205828154467632 205828617367552 281474414856842 281474414857117 281474414857117 281474414858211 0\n",
+   "2636744 (mmt_sec_standal) R 2634902 2634818 2634818 0 -1 4194560 2423 0 0 0 181 0 0 0 20 0 1 0 80307858 39582536429568 4356 18446744073709551615 205828148625408 205828152055352 281474414854464 0 0 0 0 0 17634 0 0 0 17 15 0 0 0 0 0 205828152161600 205828154467632 205828617367552 281474414856842 281474414857117 281474414857117 281474414858211 0\n"
+  ],
+  "/proc/2636755/stat": [
+   "2636755 (mmt_sec_standal) R 2634882 2634818 2634818 0 -1 4194560 2420 0 0 0 73 0 0 0 20 0 1 0 80307864 39582536429568 4332 18446744073709551615 201819994062848 201819997492792 281473915060048 0 0 0 0 0 17634 0 0 0 17 19 0 0 0 0 0 201819997599040 201819999905072 201820946157568 281473915062915 281473915063197 281473915063197 281473915064291 0\n",
+   "2636755 (mmt_sec_standal) R 2634882 2634818 2634818 0 -1 4194560 2420 0 0 0 175 0 0 0 20 0 1 0 80307864 39582536429568 4332 18446744073709551615 201819994062848 201819997492792 281473915060048 0 0 0 0 0 17634 0 0 0 17 19 0 0 0 0 0 201819997599040 201819999905072 201820946157568 281473915062915 281473915063197 281473915063197 281473915064291 0\n"
+  ],
+  "/proc/2636760/stat": [
+   "2636760 (mmt_sec_standal) R 2634880 2634818 2634818 0 -1 4194560 2419 0 0 0 72 0 0 0 20 0 1 0 80307865 39582536429568 4332 18446744073709551615 207842354266112 207842357696056 281473955900416 0 0 0 0 0 17634 0 0 0 17 16 0 0 0 0 0 207842357802304 207842360108336 207843281113088 281473955904135 281473955904413 281473955904413 281473955905507 0\n",
+   "2636760 (mmt_sec_standal) R 2634880 2634818 2634818 0 -1 4194560 2419 0 0 0 174 0 0 0 20 0 1 0 80307865 39582536429568 4332 18446744073709551615 207842354266112 207842357696056 281473955900416 0 0 0 0 0 17634 0 0 0 17 16 0 0 0 0 0 207842357802304 207842360108336 207843281113088 281473955904135 281473955904413 281473955904413 281473955905507 0\n"
+  ],
+  "/proc/2636765/stat": [
+   "2636765 (mmt_sec_standal) R 2634899 2634818 2634818 0 -1 4194560 2419 0 0 0 71 0 0 0 20 0 1 0 80307866 39582536425472 4356 18446744073709551615 218310675005440 218310678435384 281474459014544 0 0 0 0 0 17634 0 0 0 17 18 0 0 0 0 0 218310678541632 218310680847664 218310798700544 281474459015804 281474459016093 281474459016093 281474459017187 0\n",
+   "2636765 (mmt_sec_standal) R 2634899 2634818 2634818 0 -1 4194560 2419 0 0 0 173 0 0 0 20 0 1 0 80307866 39582536425472 4356 18446744073709551615 218310675005440 218310678435384 281474459014544 0 0 0 0 0 17634 0 0 0 17 18 0 0 0 0 0 218310678541632 218310680847664 218310798700544 281474459015804 281474459016093 281474459016093 281474459017187 0\n"
+  ],
+  "/proc/2636771/stat": [
+   "2636771 (mmt_sec_standal) R 2634885 2634818 2634818 0 -1 4194560 2421 0 0 0 70 0 0 0 20 0 1 0 80307867 39582536429568 4356 18446744073709551615 208862783078400 208862786508344 281474434723088 0 0 0 0 0 17634 0 0 0 17 17 0 0 0 0 0 208862786614592 208862788920624 208863244042240 281474434726530 281474434726813 281474434726813 281474434727907 0\n",
+   "2636771 (mmt_sec_standal) R 2634885 2634818 2634818 0 -1 4194560 2421 0 0 0 172 0 0 0 20 0 1 0 80307867 39582536429568 4356 18446744073709551615 208862783078400 208862786508344 281474434723088 0 0 0 0 0 17634 0 0 0 17 17 0 0 0 0 0 208862786614592 208862788920624 208863244042240 281474434726530 281474434726813 281474434726813 281474434727907 0\n"
+  ],
+  "/proc/2636776/stat": [
+   "2636776 (mmt_sec_standal) R 2634881 2634818 2634818 0 -1 4194560 2424 0 0 0 70 0 0 0 20 0 1 0 80307868 39582536425472 4347 18446744073709551615 199092517404672 199092520834616 281474809631776 0 0 0 0 0 17634 0 0 0 17 12 0 0 0 0 0 199092520940864 199092523246896 199093385179136 281474809633411 281474809633693 281474809633693 281474809634787 0\n",
+   "2636776 (mmt_sec_standal) R 2634881 2634818 2634818 0 -1 4194560 2424 0 0 0 171 0 0 0 20 0 1 0 80307868 39582536425472 4347 18446744073709551615 199092517404672 199092520834616 281474809631776 0 0 0 0 0 17634 0 0 0 17 12 0 0 0 0 0 199092520940864 199092523246896 199093385179136 281474809633411 281474809633693 281474809633693 281474809634787 0\n"
+  ],
+  "/proc/2636781/stat": [
+   "2636781 (mmt_sec_standal) R 2634879 2634818 2634818 0 -1 4194560 2417 0 0 0 68 0 0 0 20 0 1 0 80307870 39582536429568 4332 18446744073709551615 220137248587776 220137252017720 281474577035072 0 0 0 0 0 17634 0 0 0 17 11 0 0 0 0 0 220137252123968 220137254430000 220137496584192 281474577037957 281474577038237 281474577038237 281474577039331 0\n",
+   "2636781 (mmt_sec_standal) R 2634879 2634818 2634818 0 -1 4194560 2417 0 0 0 169 0 0 0 20 0 1 0 80307870 39582536429568 4332 18446744073709551615 220137248587776 220137252017720 281474577035072 0 0 0 0 0 17634 0 0 0 17 11 0 0 0 0 0 220137252123968 220137254430000 220137496584192 281474577037957 281474577038237 281474577038237 281474577039331 0\n"
+  ],
+  "/proc/2636795/stat": [
+   "2636795 (mmt_sec_standal) R 2634892 2634818 2634818 0 -1 4194560 2423 0 0 0 53 0 0 0 20 0 1 0 80307885 39582536429568 4332 18446744073709551615 192858622918656 192858626348600 281474650467360 0 0 0 0 0 17634 0 0 0 17 6 0 0 0 0 0 192858626454848 192858628760880 192859582935040 281474650471049 281474650471325 281474650471325 281474650472419 0\n",
+   "2636795 (mmt_sec_standal) R 2634892 2634818 2634818 0 -1 4194560 2423 0 0 0 155 0 0 0 20 0 1 0 80307885 39582536429568 4332 18446744073709551615 192858622918656 192858626348600 281474650467360 0 0 0 0 0 17634 0 0 0 17 6 0 0 0 0 0 192858626454848 192858628760880 192859582935040 281474650471049 281474650471325 281474650471325 281474650472419 0\n"
+  ],
+  "/proc/3358713/stat": [
+   "3358713 (hermes) S 1 3358711 3358711 0 -1 4194304 365980 13786572 96336 3978 47815 17736 9260 7949 20 0 70 0 76376483 1236180992 123410 18446744073709551615 221285110169600 221285121221008 281474135802768 0 0 0 0 16781316 16386 0 0 0 17 7 0 0 0 0 0 221285172838400 221285172945808 221286040473600 281474135806457 281474135813546 281474135813546 281474135814059 0\n",
+   "3358713 (hermes) S 1 3358711 3358711 0 -1 4194304 365980 13786572 96336 3978 47815 17736 9260 7949 20 0 70 0 76376483 1236180992 123410 18446744073709551615 221285110169600 221285121221008 281474135802768 0 0 0 0 16781316 16386 0 0 0 17 7 0 0 0 0 0 221285172838400 221285172945808 221286040473600 281474135806457 281474135813546 281474135813546 281474135814059 0\n"
+  ],
+  "/proc/4011/stat": [
+   "4011 (gnome-shell) S 1806 4011 4011 0 -1 4194304 1026615 387 88986 6 421273 4080 0 5 20 0 14 0 1520 5959565312 421360 18446744073709551615 188385328168960 188385328187452 281474426207344 0 0 0 0 16781312 17656 0 0 0 17 15 0 0 0 0 0 188385328298432 188385328300384 188385904193536 281474426210697 281474426210718 281474426210718 281474426212323 0\n",
+   "4011 (gnome-shell) S 1806 4011 4011 0 -1 4194304 1026615 387 88986 6 421273 4080 0 5 20 0 14 0 1520 5959565312 421360 18446744073709551615 188385328168960 188385328187452 281474426207344 0 0 0 0 16781312 17656 0 0 0 17 15 0 0 0 0 0 188385328298432 188385328300384 188385904193536 281474426210697 281474426210718 281474426210718 281474426212323 0\n"
+  ],
+  "/proc/7232/stat": [
+   "7232 (kube-apiserver) S 6853 7232 7232 0 -1 4194560 383284 995 1696 0 1360901 812073 1 0 20 0 28 0 1797 1625092096 82514 18446744073709551615 1 1 0 0 0 0 1002060288 0 2143420159 0 0 0 17 14 0 0 0 0 0 0 0 0 0 0 0 0 0\n",
+   "7232 (kube-apiserver) S 6853 7232 7232 0 -1 4194560 383284 995 1696 0 1360902 812073 1 0 20 0 28 0 1797 1625092096 82514 18446744073709551615 1 1 0 0 0 0 1002060288 0 2143420159 0 0 0 17 14 0 0 0 0 0 0 0 0 0 0 0 0 0\n"
+  ],
+  "/proc/cmdline": [
+   "BOOT_IMAGE=/boot/vmlinuz-6.17.0-1032-nvidia root=UUID=00000000-0000-0000-0000-000000000000 ro console=tty0 plymouth.ignore-serial-consoles plymouth.use-simpledrm console=tty0 console=ttyS0,921600 crashkernel=1G-:0M quiet splash pci=pcie_bus_safe vt.handoff=7\n"
+  ],
+  "/proc/cpuinfo": [
+   "processor\t: 0\nBogoMIPS\t: 2000.00\nFeatures\t: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm jscvt fcma lrcpc dcpop sha3 sm3 sm4 asimddp sha512 sve asimdfhm dit uscat ilrcpc flagm sb paca pacg dcpodp sve2 sveaes svepmull svebitperm svesha3 svesm4 flagm2 frint svei8mm svebf16 i8mm bf16 dgh bti ecv afp wfxt\nCPU implementer\t: 0x41\nCPU architecture: 8\nCPU variant\t: 0x0\nCPU part\t: 0xd87\nCPU revision\t: 1\n\nprocessor\t: 1\nBogoMIPS\t: 2000.00\nFeatures\t: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm jscvt fcma lrcpc dcpop sha3 sm3 sm4 asimddp sha512 sve asimdfhm dit uscat ilrcpc flagm sb paca pacg dcpodp sve2 sveaes svepmull svebitperm svesha3 svesm4 flagm2 frint svei8mm svebf16 i8mm bf16 dgh bti ecv afp wfxt\nCPU implementer\t: 0x41\nCPU architecture: 8\nCPU variant\t: 0x0\nCPU part\t: 0xd87\nCPU revision\t: 1\n\nprocessor\t: 2\nBogoMIPS\t: 2000.00\nFeatures\t: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm jscvt fcma lrcpc dcpop sha3 sm3 sm4 asimddp sha512 sve asimdfhm dit uscat ilrcpc flagm sb paca pacg dcpodp sve2 sveaes svepmull svebitperm svesha3 svesm4 flagm2 frint svei8mm svebf16 i8mm bf16 dgh bti ecv afp wfxt\nCPU implementer\t: 0x41\nCPU architecture: 8\nCPU variant\t: 0x0\nCPU part\t: 0xd87\nCPU revision\t: 1\n\nprocessor\t: 3\nBogoMIPS\t: 2000.00\nFeatures\t: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm jscvt fcma lrcpc dcpop sha3 sm3 sm4 asimddp sha512 sve asimdfhm dit uscat ilrcpc flagm sb paca pacg dcpodp sve2 sveaes svepmull svebitperm svesha3 svesm4 flagm2 frint svei8mm svebf16 i8mm bf16 dgh bti ecv afp wfxt\nCPU implementer\t: 0x41\nCPU architecture: 8\nCPU variant\t: 0x0\nCPU part\t: 0xd87\nCPU revision\t: 1\n\nprocessor\t: 4\nBogoMIPS\t: 2000.00\nFeatures\t: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm jscvt fcma lrcpc dcpop sha3 sm3 sm4 asimddp sha512 sve asimdfhm dit uscat ilrcpc flagm sb paca pacg dcpodp sve2 sveaes svepmull svebitperm svesha3 svesm4 flagm2 frint svei8mm svebf16 i8mm bf16 dgh bti ecv afp wfxt\nCPU implementer\t: 0x41\nCPU architecture: 8\nCPU variant\t: 0x0\nCPU part\t: 0xd87\nCPU revision\t: 1\n\nprocessor\t: 5\nBogoMIPS\t: 2000.00\nFeatures\t: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm jscvt fcma lrcpc dcpop sha3 sm3 sm4 asimddp sha512 sve asimdfhm dit uscat ilrcpc flagm sb paca pacg dcpodp sve2 sveaes svepmull svebitperm svesha3 svesm4 flagm2 frint svei8mm svebf16 i8mm bf16 dgh bti ecv afp wfxt\nCPU implementer\t: 0x41\nCPU architecture: 8\nCPU variant\t: 0x0\nCPU part\t: 0xd85\nCPU revision\t: 1\n\nprocessor\t: 6\nBogoMIPS\t: 2000.00\nFeatures\t: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm jscvt fcma lrcpc dcpop sha3 sm3 sm4 asimddp sha512 sve asimdfhm dit uscat ilrcpc flagm sb paca pacg dcpodp sve2 sveaes svepmull svebitperm svesha3 svesm4 flagm2 frint svei8mm svebf16 i8mm bf16 dgh bti ecv afp wfxt\nCPU implementer\t: 0x41\nCPU architecture: 8\nCPU variant\t: 0x0\nCPU part\t: 0xd85\nCPU revision\t: 1\n\nprocessor\t: 7\nBogoMIPS\t: 2000.00\nFeatures\t: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm jscvt fcma lrcpc dcpop sha3 sm3 sm4 asimddp sha512 sve asimdfhm dit uscat ilrcpc flagm sb paca pacg dcpodp sve2 sveaes svepmull svebitperm svesha3 svesm4 flagm2 frint svei8mm svebf16 i8mm bf16 dgh bti ecv afp wfxt\nCPU implementer\t: 0x41\nCPU architecture: 8\nCPU variant\t: 0x0\nCPU part\t: 0xd85\nCPU revision\t: 1\n\nprocessor\t: 8\nBogoMIPS\t: 2000.00\nFeatures\t: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm jscvt fcma lrcpc dcpop sha3 sm3 sm4 asimddp sha512 sve asimdfhm dit uscat ilrcpc flagm sb paca pacg dcpodp sve2 sveaes svepmull svebitperm svesha3 svesm4 flagm2 frint svei8mm svebf16 i8mm bf16 dgh bti ecv afp wfxt\nCPU implementer\t: 0x41\nCPU architecture: 8\nCPU variant\t: 0x0\nCPU part\t: 0xd85\nCPU revision\t: 1\n\nprocessor\t: 9\nBogoMIPS\t: 2000.00\nFeatures\t: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm jscvt fcma lrcpc dcpop sha3 sm3 sm4 asimddp sha512 sve asimdfhm dit uscat ilrcpc flagm sb paca pacg dcpodp sve2 sveaes svepmull svebitperm svesha3 svesm4 flagm2 frint svei8mm svebf16 i8mm bf16 dgh bti ecv afp wfxt\nCPU implementer\t: 0x41\nCPU architecture: 8\nCPU variant\t: 0x0\nCPU part\t: 0xd85\nCPU revision\t: 1\n\nprocessor\t: 10\nBogoMIPS\t: 2000.00\nFeatures\t: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm jscvt fcma lrcpc dcpop sha3 sm3 sm4 asimddp sha512 sve asimdfhm dit uscat ilrcpc flagm sb paca pacg dcpodp sve2 sveaes svepmull svebitperm svesha3 svesm4 flagm2 frint svei8mm svebf16 i8mm bf16 dgh bti ecv afp wfxt\nCPU implementer\t: 0x41\nCPU architecture: 8\nCPU variant\t: 0x0\nCPU part\t: 0xd87\nCPU revision\t: 1\n\nprocessor\t: 11\nBogoMIPS\t: 2000.00\nFeatures\t: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm jscvt fcma lrcpc dcpop sha3 sm3 sm4 asimddp sha512 sve asimdfhm dit uscat ilrcpc flagm sb paca pacg dcpodp sve2 sveaes svepmull svebitperm svesha3 svesm4 flagm2 frint svei8mm svebf16 i8mm bf16 dgh bti ecv afp wfxt\nCPU implementer\t: 0x41\nCPU architecture: 8\nCPU variant\t: 0x0\nCPU part\t: 0xd87\nCPU revision\t: 1\n\nprocessor\t: 12\nBogoMIPS\t: 2000.00\nFeatures\t: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm jscvt fcma lrcpc dcpop sha3 sm3 sm4 asimddp sha512 sve asimdfhm dit uscat ilrcpc flagm sb paca pacg dcpodp sve2 sveaes svepmull svebitperm svesha3 svesm4 flagm2 frint svei8mm svebf16 i8mm bf16 dgh bti ecv afp wfxt\nCPU implementer\t: 0x41\nCPU architecture: 8\nCPU variant\t: 0x0\nCPU part\t: 0xd87\nCPU revision\t: 1\n\nprocessor\t: 13\nBogoMIPS\t: 2000.00\nFeatures\t: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm jscvt fcma lrcpc dcpop sha3 sm3 sm4 asimddp sha512 sve asimdfhm dit uscat ilrcpc flagm sb paca pacg dcpodp sve2 sveaes svepmull svebitperm svesha3 svesm4 flagm2 frint svei8mm svebf16 i8mm bf16 dgh bti ecv afp wfxt\nCPU implementer\t: 0x41\nCPU architecture: 8\nCPU variant\t: 0x0\nCPU part\t: 0xd87\nCPU revision\t: 1\n\nprocessor\t: 14\nBogoMIPS\t: 2000.00\nFeatures\t: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm jscvt fcma lrcpc dcpop sha3 sm3 sm4 asimddp sha512 sve asimdfhm dit uscat ilrcpc flagm sb paca pacg dcpodp sve2 sveaes svepmull svebitperm svesha3 svesm4 flagm2 frint svei8mm svebf16 i8mm bf16 dgh bti ecv afp wfxt\nCPU implementer\t: 0x41\nCPU architecture: 8\nCPU variant\t: 0x0\nCPU part\t: 0xd87\nCPU revision\t: 1\n\nprocessor\t: 15\nBogoMIPS\t: 2000.00\nFeatures\t: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm jscvt fcma lrcpc dcpop sha3 sm3 sm4 asimddp sha512 sve asimdfhm dit uscat ilrcpc flagm sb paca pacg dcpodp sve2 sveaes svepmull svebitperm svesha3 svesm4 flagm2 frint svei8mm svebf16 i8mm bf16 dgh bti ecv afp wfxt\nCPU implementer\t: 0x41\nCPU architecture: 8\nCPU variant\t: 0x0\nCPU part\t: 0xd85\nCPU revision\t: 1\n\nprocessor\t: 16\nBogoMIPS\t: 2000.00\nFeatures\t: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm jscvt fcma lrcpc dcpop sha3 sm3 sm4 asimddp sha512 sve asimdfhm dit uscat ilrcpc flagm sb paca pacg dcpodp sve2 sveaes svepmull svebitperm svesha3 svesm4 flagm2 frint svei8mm svebf16 i8mm bf16 dgh bti ecv afp wfxt\nCPU implementer\t: 0x41\nCPU architecture: 8\nCPU variant\t: 0x0\nCPU part\t: 0xd85\nCPU revision\t: 1\n\nprocessor\t: 17\nBogoMIPS\t: 2000.00\nFeatures\t: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm jscvt fcma lrcpc dcpop sha3 sm3 sm4 asimddp sha512 sve asimdfhm dit uscat ilrcpc flagm sb paca pacg dcpodp sve2 sveaes svepmull svebitperm svesha3 svesm4 flagm2 frint svei8mm svebf16 i8mm bf16 dgh bti ecv afp wfxt\nCPU implementer\t: 0x41\nCPU architecture: 8\nCPU variant\t: 0x0\nCPU part\t: 0xd85\nCPU revision\t: 1\n\nprocessor\t: 18\nBogoMIPS\t: 2000.00\nFeatures\t: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm jscvt fcma lrcpc dcpop sha3 sm3 sm4 asimddp sha512 sve asimdfhm dit uscat ilrcpc flagm sb paca pacg dcpodp sve2 sveaes svepmull svebitperm svesha3 svesm4 flagm2 frint svei8mm svebf16 i8mm bf16 dgh bti ecv afp wfxt\nCPU implementer\t: 0x41\nCPU architecture: 8\nCPU variant\t: 0x0\nCPU part\t: 0xd85\nCPU revision\t: 1\n\nprocessor\t: 19\nBogoMIPS\t: 2000.00\nFeatures\t: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm jscvt fcma lrcpc dcpop sha3 sm3 sm4 asimddp sha512 sve asimdfhm dit uscat ilrcpc flagm sb paca pacg dcpodp sve2 sveaes svepmull svebitperm svesha3 svesm4 flagm2 frint svei8mm svebf16 i8mm bf16 dgh bti ecv afp wfxt\nCPU implementer\t: 0x41\nCPU architecture: 8\nCPU variant\t: 0x0\nCPU part\t: 0xd85\nCPU revision\t: 1\n\n"
+  ],
+  "/proc/irq/346/effective_affinity_list": [
+   "13\n"
+  ],
+  "/proc/irq/346/smp_affinity_list": [
+   "0-19\n"
+  ],
+  "/proc/irq/347/effective_affinity_list": [
+   "14\n"
+  ],
+  "/proc/irq/347/smp_affinity_list": [
+   "0-19\n"
+  ],
+  "/proc/irq/348/effective_affinity_list": [
+   "15\n"
+  ],
+  "/proc/irq/348/smp_affinity_list": [
+   "0-19\n"
+  ],
+  "/proc/irq/349/effective_affinity_list": [
+   "16\n"
+  ],
+  "/proc/irq/349/smp_affinity_list": [
+   "0-19\n"
+  ],
+  "/proc/irq/350/effective_affinity_list": [
+   "17\n"
+  ],
+  "/proc/irq/350/smp_affinity_list": [
+   "0-19\n"
+  ],
+  "/proc/irq/351/effective_affinity_list": [
+   "18\n"
+  ],
+  "/proc/irq/351/smp_affinity_list": [
+   "0-19\n"
+  ],
+  "/proc/irq/352/effective_affinity_list": [
+   "19\n"
+  ],
+  "/proc/irq/352/smp_affinity_list": [
+   "0-19\n"
+  ],
+  "/proc/irq/353/effective_affinity_list": [
+   "10\n"
+  ],
+  "/proc/irq/353/smp_affinity_list": [
+   "0-19\n"
+  ],
+  "/proc/irq/354/effective_affinity_list": [
+   "1\n"
+  ],
+  "/proc/irq/354/smp_affinity_list": [
+   "0-19\n"
+  ],
+  "/proc/irq/355/effective_affinity_list": [
+   "2\n"
+  ],
+  "/proc/irq/355/smp_affinity_list": [
+   "0-19\n"
+  ],
+  "/proc/irq/356/effective_affinity_list": [
+   "3\n"
+  ],
+  "/proc/irq/356/smp_affinity_list": [
+   "0-19\n"
+  ],
+  "/proc/irq/357/effective_affinity_list": [
+   "4\n"
+  ],
+  "/proc/irq/357/smp_affinity_list": [
+   "0-19\n"
+  ],
+  "/proc/irq/358/effective_affinity_list": [
+   "5\n"
+  ],
+  "/proc/irq/358/smp_affinity_list": [
+   "0-19\n"
+  ],
+  "/proc/irq/359/effective_affinity_list": [
+   "6\n"
+  ],
+  "/proc/irq/359/smp_affinity_list": [
+   "0-19\n"
+  ],
+  "/proc/irq/360/effective_affinity_list": [
+   "7\n"
+  ],
+  "/proc/irq/360/smp_affinity_list": [
+   "0-19\n"
+  ],
+  "/proc/irq/361/effective_affinity_list": [
+   "8\n"
+  ],
+  "/proc/irq/361/smp_affinity_list": [
+   "0-19\n"
+  ],
+  "/proc/irq/362/effective_affinity_list": [
+   "9\n"
+  ],
+  "/proc/irq/362/smp_affinity_list": [
+   "0-19\n"
+  ],
+  "/proc/irq/363/effective_affinity_list": [
+   "10\n"
+  ],
+  "/proc/irq/363/smp_affinity_list": [
+   "0-19\n"
+  ],
+  "/proc/irq/364/effective_affinity_list": [
+   "11\n"
+  ],
+  "/proc/irq/364/smp_affinity_list": [
+   "0-19\n"
+  ],
+  "/proc/irq/365/effective_affinity_list": [
+   "12\n"
+  ],
+  "/proc/irq/365/smp_affinity_list": [
+   "0-19\n"
+  ],
+  "/proc/irq/366/effective_affinity_list": [
+   "13\n"
+  ],
+  "/proc/irq/366/smp_affinity_list": [
+   "0-19\n"
+  ],
+  "/proc/irq/367/effective_affinity_list": [
+   "14\n"
+  ],
+  "/proc/irq/367/smp_affinity_list": [
+   "0-19\n"
+  ],
+  "/proc/irq/368/effective_affinity_list": [
+   "15\n"
+  ],
+  "/proc/irq/368/smp_affinity_list": [
+   "0-19\n"
+  ],
+  "/proc/irq/369/effective_affinity_list": [
+   "16\n"
+  ],
+  "/proc/irq/369/smp_affinity_list": [
+   "0-19\n"
+  ],
+  "/proc/irq/370/effective_affinity_list": [
+   "17\n"
+  ],
+  "/proc/irq/370/smp_affinity_list": [
+   "0-19\n"
+  ],
+  "/proc/irq/371/effective_affinity_list": [
+   "18\n"
+  ],
+  "/proc/irq/371/smp_affinity_list": [
+   "0-19\n"
+  ],
+  "/proc/irq/372/effective_affinity_list": [
+   "19\n"
+  ],
+  "/proc/irq/372/smp_affinity_list": [
+   "0-19\n"
+  ],
+  "/proc/irq/373/effective_affinity_list": [
+   "0\n"
+  ],
+  "/proc/irq/373/smp_affinity_list": [
+   "0-19\n"
+  ],
+  "/proc/irq/374/effective_affinity_list": [
+   "1\n"
+  ],
+  "/proc/irq/374/smp_affinity_list": [
+   "0-19\n"
+  ],
+  "/proc/irq/375/effective_affinity_list": [
+   "2\n"
+  ],
+  "/proc/irq/375/smp_affinity_list": [
+   "0-19\n"
+  ],
+  "/proc/irq/376/effective_affinity_list": [
+   "3\n"
+  ],
+  "/proc/irq/376/smp_affinity_list": [
+   "0-19\n"
+  ],
+  "/proc/irq/377/effective_affinity_list": [
+   "4\n"
+  ],
+  "/proc/irq/377/smp_affinity_list": [
+   "0-19\n"
+  ],
+  "/proc/irq/394/effective_affinity_list": [
+   "6\n"
+  ],
+  "/proc/irq/394/smp_affinity_list": [
+   "0-19\n"
+  ],
+  "/proc/irq/395/effective_affinity_list": [
+   "0\n"
+  ],
+  "/proc/irq/395/smp_affinity_list": [
+   "0\n"
+  ],
+  "/proc/irq/396/effective_affinity_list": [
+   "1\n"
+  ],
+  "/proc/irq/396/smp_affinity_list": [
+   "1\n"
+  ],
+  "/proc/irq/397/effective_affinity_list": [
+   "2\n"
+  ],
+  "/proc/irq/397/smp_affinity_list": [
+   "2\n"
+  ],
+  "/proc/irq/398/effective_affinity_list": [
+   "3\n"
+  ],
+  "/proc/irq/398/smp_affinity_list": [
+   "3\n"
+  ],
+  "/proc/irq/399/effective_affinity_list": [
+   "4\n"
+  ],
+  "/proc/irq/399/smp_affinity_list": [
+   "4\n"
+  ],
+  "/proc/irq/400/effective_affinity_list": [
+   "5\n"
+  ],
+  "/proc/irq/400/smp_affinity_list": [
+   "5\n"
+  ],
+  "/proc/irq/401/effective_affinity_list": [
+   "6\n"
+  ],
+  "/proc/irq/401/smp_affinity_list": [
+   "6\n"
+  ],
+  "/proc/irq/402/effective_affinity_list": [
+   "7\n"
+  ],
+  "/proc/irq/402/smp_affinity_list": [
+   "7\n"
+  ],
+  "/proc/irq/403/effective_affinity_list": [
+   "8\n"
+  ],
+  "/proc/irq/403/smp_affinity_list": [
+   "8\n"
+  ],
+  "/proc/irq/404/effective_affinity_list": [
+   "9\n"
+  ],
+  "/proc/irq/404/smp_affinity_list": [
+   "9\n"
+  ],
+  "/proc/irq/405/effective_affinity_list": [
+   "10\n"
+  ],
+  "/proc/irq/405/smp_affinity_list": [
+   "10\n"
+  ],
+  "/proc/irq/406/effective_affinity_list": [
+   "11\n"
+  ],
+  "/proc/irq/406/smp_affinity_list": [
+   "11\n"
+  ],
+  "/proc/irq/407/effective_affinity_list": [
+   "12\n"
+  ],
+  "/proc/irq/407/smp_affinity_list": [
+   "12\n"
+  ],
+  "/proc/irq/408/effective_affinity_list": [
+   "13\n"
+  ],
+  "/proc/irq/408/smp_affinity_list": [
+   "13\n"
+  ],
+  "/proc/irq/409/effective_affinity_list": [
+   "14\n"
+  ],
+  "/proc/irq/409/smp_affinity_list": [
+   "14\n"
+  ],
+  "/proc/irq/410/effective_affinity_list": [
+   "15\n"
+  ],
+  "/proc/irq/410/smp_affinity_list": [
+   "15\n"
+  ],
+  "/proc/irq/411/effective_affinity_list": [
+   "16\n"
+  ],
+  "/proc/irq/411/smp_affinity_list": [
+   "16\n"
+  ],
+  "/proc/irq/412/effective_affinity_list": [
+   "17\n"
+  ],
+  "/proc/irq/412/smp_affinity_list": [
+   "17\n"
+  ],
+  "/proc/irq/413/effective_affinity_list": [
+   "18\n"
+  ],
+  "/proc/irq/413/smp_affinity_list": [
+   "18\n"
+  ],
+  "/proc/irq/414/effective_affinity_list": [
+   "19\n"
+  ],
+  "/proc/irq/414/smp_affinity_list": [
+   "19\n"
+  ],
+  "/proc/irq/416/effective_affinity_list": [
+   "7\n"
+  ],
+  "/proc/irq/416/smp_affinity_list": [
+   "0-19\n"
+  ],
+  "/proc/irq/417/effective_affinity_list": [
+   "0\n"
+  ],
+  "/proc/irq/417/smp_affinity_list": [
+   "0\n"
+  ],
+  "/proc/irq/418/effective_affinity_list": [
+   "1\n"
+  ],
+  "/proc/irq/418/smp_affinity_list": [
+   "1\n"
+  ],
+  "/proc/irq/419/effective_affinity_list": [
+   "2\n"
+  ],
+  "/proc/irq/419/smp_affinity_list": [
+   "2\n"
+  ],
+  "/proc/irq/420/effective_affinity_list": [
+   "3\n"
+  ],
+  "/proc/irq/420/smp_affinity_list": [
+   "3\n"
+  ],
+  "/proc/irq/421/effective_affinity_list": [
+   "4\n"
+  ],
+  "/proc/irq/421/smp_affinity_list": [
+   "4\n"
+  ],
+  "/proc/irq/422/effective_affinity_list": [
+   "5\n"
+  ],
+  "/proc/irq/422/smp_affinity_list": [
+   "5\n"
+  ],
+  "/proc/irq/423/effective_affinity_list": [
+   "6\n"
+  ],
+  "/proc/irq/423/smp_affinity_list": [
+   "6\n"
+  ],
+  "/proc/irq/424/effective_affinity_list": [
+   "7\n"
+  ],
+  "/proc/irq/424/smp_affinity_list": [
+   "7\n"
+  ],
+  "/proc/irq/425/effective_affinity_list": [
+   "8\n"
+  ],
+  "/proc/irq/425/smp_affinity_list": [
+   "8\n"
+  ],
+  "/proc/irq/426/effective_affinity_list": [
+   "9\n"
+  ],
+  "/proc/irq/426/smp_affinity_list": [
+   "9\n"
+  ],
+  "/proc/irq/427/effective_affinity_list": [
+   "10\n"
+  ],
+  "/proc/irq/427/smp_affinity_list": [
+   "10\n"
+  ],
+  "/proc/irq/428/effective_affinity_list": [
+   "11\n"
+  ],
+  "/proc/irq/428/smp_affinity_list": [
+   "11\n"
+  ],
+  "/proc/irq/429/effective_affinity_list": [
+   "12\n"
+  ],
+  "/proc/irq/429/smp_affinity_list": [
+   "12\n"
+  ],
+  "/proc/irq/430/effective_affinity_list": [
+   "13\n"
+  ],
+  "/proc/irq/430/smp_affinity_list": [
+   "13\n"
+  ],
+  "/proc/irq/431/effective_affinity_list": [
+   "14\n"
+  ],
+  "/proc/irq/431/smp_affinity_list": [
+   "14\n"
+  ],
+  "/proc/irq/432/effective_affinity_list": [
+   "15\n"
+  ],
+  "/proc/irq/432/smp_affinity_list": [
+   "15\n"
+  ],
+  "/proc/irq/433/effective_affinity_list": [
+   "16\n"
+  ],
+  "/proc/irq/433/smp_affinity_list": [
+   "16\n"
+  ],
+  "/proc/irq/434/effective_affinity_list": [
+   "17\n"
+  ],
+  "/proc/irq/434/smp_affinity_list": [
+   "17\n"
+  ],
+  "/proc/irq/435/effective_affinity_list": [
+   "18\n"
+  ],
+  "/proc/irq/435/smp_affinity_list": [
+   "18\n"
+  ],
+  "/proc/irq/436/effective_affinity_list": [
+   "19\n"
+  ],
+  "/proc/irq/436/smp_affinity_list": [
+   "19\n"
+  ],
+  "/proc/irq/437/effective_affinity_list": [
+   "7\n"
+  ],
+  "/proc/irq/437/smp_affinity_list": [
+   "0-19\n"
+  ],
+  "/proc/irq/438/effective_affinity_list": [
+   "0\n"
+  ],
+  "/proc/irq/438/smp_affinity_list": [
+   "0\n"
+  ],
+  "/proc/irq/439/effective_affinity_list": [
+   "1\n"
+  ],
+  "/proc/irq/439/smp_affinity_list": [
+   "1\n"
+  ],
+  "/proc/irq/440/effective_affinity_list": [
+   "2\n"
+  ],
+  "/proc/irq/440/smp_affinity_list": [
+   "2\n"
+  ],
+  "/proc/irq/441/effective_affinity_list": [
+   "3\n"
+  ],
+  "/proc/irq/441/smp_affinity_list": [
+   "3\n"
+  ],
+  "/proc/irq/442/effective_affinity_list": [
+   "4\n"
+  ],
+  "/proc/irq/442/smp_affinity_list": [
+   "4\n"
+  ],
+  "/proc/irq/443/effective_affinity_list": [
+   "5\n"
+  ],
+  "/proc/irq/443/smp_affinity_list": [
+   "5\n"
+  ],
+  "/proc/irq/444/effective_affinity_list": [
+   "6\n"
+  ],
+  "/proc/irq/444/smp_affinity_list": [
+   "6\n"
+  ],
+  "/proc/irq/445/effective_affinity_list": [
+   "7\n"
+  ],
+  "/proc/irq/445/smp_affinity_list": [
+   "7\n"
+  ],
+  "/proc/irq/446/effective_affinity_list": [
+   "8\n"
+  ],
+  "/proc/irq/446/smp_affinity_list": [
+   "8\n"
+  ],
+  "/proc/irq/447/effective_affinity_list": [
+   "9\n"
+  ],
+  "/proc/irq/447/smp_affinity_list": [
+   "9\n"
+  ],
+  "/proc/irq/448/effective_affinity_list": [
+   "10\n"
+  ],
+  "/proc/irq/448/smp_affinity_list": [
+   "10\n"
+  ],
+  "/proc/irq/449/effective_affinity_list": [
+   "11\n"
+  ],
+  "/proc/irq/449/smp_affinity_list": [
+   "11\n"
+  ],
+  "/proc/irq/450/effective_affinity_list": [
+   "12\n"
+  ],
+  "/proc/irq/450/smp_affinity_list": [
+   "12\n"
+  ],
+  "/proc/irq/451/effective_affinity_list": [
+   "13\n"
+  ],
+  "/proc/irq/451/smp_affinity_list": [
+   "13\n"
+  ],
+  "/proc/irq/452/effective_affinity_list": [
+   "14\n"
+  ],
+  "/proc/irq/452/smp_affinity_list": [
+   "14\n"
+  ],
+  "/proc/irq/453/effective_affinity_list": [
+   "15\n"
+  ],
+  "/proc/irq/453/smp_affinity_list": [
+   "15\n"
+  ],
+  "/proc/irq/454/effective_affinity_list": [
+   "16\n"
+  ],
+  "/proc/irq/454/smp_affinity_list": [
+   "16\n"
+  ],
+  "/proc/irq/455/effective_affinity_list": [
+   "17\n"
+  ],
+  "/proc/irq/455/smp_affinity_list": [
+   "17\n"
+  ],
+  "/proc/irq/456/effective_affinity_list": [
+   "18\n"
+  ],
+  "/proc/irq/456/smp_affinity_list": [
+   "18\n"
+  ],
+  "/proc/irq/457/effective_affinity_list": [
+   "19\n"
+  ],
+  "/proc/irq/457/smp_affinity_list": [
+   "19\n"
+  ],
+  "/proc/irq/459/effective_affinity_list": [
+   "8\n"
+  ],
+  "/proc/irq/459/smp_affinity_list": [
+   "0-19\n"
+  ],
+  "/proc/irq/460/effective_affinity_list": [
+   "0\n"
+  ],
+  "/proc/irq/460/smp_affinity_list": [
+   "0\n"
+  ],
+  "/proc/irq/461/effective_affinity_list": [
+   "1\n"
+  ],
+  "/proc/irq/461/smp_affinity_list": [
+   "1\n"
+  ],
+  "/proc/irq/462/effective_affinity_list": [
+   "2\n"
+  ],
+  "/proc/irq/462/smp_affinity_list": [
+   "2\n"
+  ],
+  "/proc/irq/463/effective_affinity_list": [
+   "3\n"
+  ],
+  "/proc/irq/463/smp_affinity_list": [
+   "3\n"
+  ],
+  "/proc/irq/464/effective_affinity_list": [
+   "4\n"
+  ],
+  "/proc/irq/464/smp_affinity_list": [
+   "4\n"
+  ],
+  "/proc/irq/465/effective_affinity_list": [
+   "5\n"
+  ],
+  "/proc/irq/465/smp_affinity_list": [
+   "5\n"
+  ],
+  "/proc/irq/466/effective_affinity_list": [
+   "6\n"
+  ],
+  "/proc/irq/466/smp_affinity_list": [
+   "6\n"
+  ],
+  "/proc/irq/467/effective_affinity_list": [
+   "7\n"
+  ],
+  "/proc/irq/467/smp_affinity_list": [
+   "7\n"
+  ],
+  "/proc/irq/468/effective_affinity_list": [
+   "8\n"
+  ],
+  "/proc/irq/468/smp_affinity_list": [
+   "8\n"
+  ],
+  "/proc/irq/469/effective_affinity_list": [
+   "9\n"
+  ],
+  "/proc/irq/469/smp_affinity_list": [
+   "9\n"
+  ],
+  "/proc/irq/470/effective_affinity_list": [
+   "10\n"
+  ],
+  "/proc/irq/470/smp_affinity_list": [
+   "10\n"
+  ],
+  "/proc/irq/471/effective_affinity_list": [
+   "11\n"
+  ],
+  "/proc/irq/471/smp_affinity_list": [
+   "11\n"
+  ],
+  "/proc/irq/472/effective_affinity_list": [
+   "12\n"
+  ],
+  "/proc/irq/472/smp_affinity_list": [
+   "12\n"
+  ],
+  "/proc/irq/473/effective_affinity_list": [
+   "13\n"
+  ],
+  "/proc/irq/473/smp_affinity_list": [
+   "13\n"
+  ],
+  "/proc/irq/474/effective_affinity_list": [
+   "14\n"
+  ],
+  "/proc/irq/474/smp_affinity_list": [
+   "14\n"
+  ],
+  "/proc/irq/475/effective_affinity_list": [
+   "15\n"
+  ],
+  "/proc/irq/475/smp_affinity_list": [
+   "15\n"
+  ],
+  "/proc/irq/476/effective_affinity_list": [
+   "16\n"
+  ],
+  "/proc/irq/476/smp_affinity_list": [
+   "16\n"
+  ],
+  "/proc/irq/477/effective_affinity_list": [
+   "17\n"
+  ],
+  "/proc/irq/477/smp_affinity_list": [
+   "17\n"
+  ],
+  "/proc/irq/478/effective_affinity_list": [
+   "18\n"
+  ],
+  "/proc/irq/478/smp_affinity_list": [
+   "18\n"
+  ],
+  "/proc/irq/479/effective_affinity_list": [
+   "19\n"
+  ],
+  "/proc/irq/479/smp_affinity_list": [
+   "19\n"
+  ],
+  "/proc/irq/481/effective_affinity_list": [
+   "9\n"
+  ],
+  "/proc/irq/481/smp_affinity_list": [
+   "0-19\n"
+  ],
+  "/proc/loadavg": [
+   "4.82 4.81 4.90 12/5048 2636943\n",
+   "5.23 4.90 4.93 10/5028 2637147\n"
+  ],
+  "/proc/meminfo": [
+   "MemTotal:       125507832 kB\nMemFree:         6210704 kB\nMemAvailable:   19843608 kB\nBuffers:         2671220 kB\nCached:          6748736 kB\nSwapCached:        21252 kB\nActive:         14080080 kB\nInactive:        5023944 kB\nActive(anon):    8671512 kB\nInactive(anon):  1293044 kB\nActive(file):    5408568 kB\nInactive(file):  3730900 kB\nUnevictable:       24692 kB\nMlocked:           24416 kB\nSwapTotal:      16777212 kB\nSwapFree:        3895956 kB\nZswap:                 0 kB\nZswapped:              0 kB\nDirty:              4940 kB\nWriteback:             4 kB\nAnonPages:       9694640 kB\nMapped:          1626956 kB\nShmem:            275240 kB\nKReclaimable:    6500652 kB\nSlab:            8136896 kB\nSReclaimable:    6500652 kB\nSUnreclaim:      1636244 kB\nKernelStack:       77536 kB\nShadowCallStack:   20224 kB\nPageTables:       166300 kB\nSecPageTables:    176912 kB\nNFS_Unstable:          0 kB\nBounce:                0 kB\nWritebackTmp:          0 kB\nCommitLimit:    79531128 kB\nCommitted_AS:   54899896 kB\nVmallocTotal:   135288315904 kB\nVmallocUsed:      802684 kB\nVmallocChunk:          0 kB\nPercpu:            60560 kB\nHardwareCorrupted:     0 kB\nAnonHugePages:         0 kB\nShmemHugePages:        0 kB\nShmemPmdMapped:        0 kB\nFileHugePages:     10240 kB\nFilePmdMapped:         0 kB\nCmaTotal:         131072 kB\nCmaFree:           67744 kB\nBalloon:               0 kB\nHugePages_Total:       0\nHugePages_Free:        0\nHugePages_Rsvd:        0\nHugePages_Surp:        0\nHugepagesize:       2048 kB\nHugetlb:               0 kB\n",
+   "MemTotal:       125507832 kB\nMemFree:         6210704 kB\nMemAvailable:   19843608 kB\nBuffers:         2671220 kB\nCached:          6748736 kB\nSwapCached:        21252 kB\nActive:         14080080 kB\nInactive:        5023944 kB\nActive(anon):    8671512 kB\nInactive(anon):  1293044 kB\nActive(file):    5408568 kB\nInactive(file):  3730900 kB\nUnevictable:       24692 kB\nMlocked:           24416 kB\nSwapTotal:      16777212 kB\nSwapFree:        3895956 kB\nZswap:                 0 kB\nZswapped:              0 kB\nDirty:              4940 kB\nWriteback:             4 kB\nAnonPages:       9694640 kB\nMapped:          1626956 kB\nShmem:            275240 kB\nKReclaimable:    6500652 kB\nSlab:            8136896 kB\nSReclaimable:    6500652 kB\nSUnreclaim:      1636244 kB\nKernelStack:       77536 kB\nShadowCallStack:   20224 kB\nPageTables:       166300 kB\nSecPageTables:    176912 kB\nNFS_Unstable:          0 kB\nBounce:                0 kB\nWritebackTmp:          0 kB\nCommitLimit:    79531128 kB\nCommitted_AS:   54899896 kB\nVmallocTotal:   135288315904 kB\nVmallocUsed:      802684 kB\nVmallocChunk:          0 kB\nPercpu:            60560 kB\nHardwareCorrupted:     0 kB\nAnonHugePages:         0 kB\nShmemHugePages:        0 kB\nShmemPmdMapped:        0 kB\nFileHugePages:     10240 kB\nFilePmdMapped:         0 kB\nCmaTotal:         131072 kB\nCmaFree:           67744 kB\nBalloon:               0 kB\nHugePages_Total:       0\nHugePages_Free:        0\nHugePages_Rsvd:        0\nHugePages_Surp:        0\nHugepagesize:       2048 kB\nHugetlb:               0 kB\n",
+   "MemTotal:       125507832 kB\nMemFree:         6187824 kB\nMemAvailable:   19820740 kB\nBuffers:         2671228 kB\nCached:          6748744 kB\nSwapCached:        21252 kB\nActive:         14087744 kB\nInactive:        5023956 kB\nActive(anon):    8679176 kB\nInactive(anon):  1293044 kB\nActive(file):    5408568 kB\nInactive(file):  3730912 kB\nUnevictable:       24692 kB\nMlocked:           24416 kB\nSwapTotal:      16777212 kB\nSwapFree:        3895956 kB\nZswap:                 0 kB\nZswapped:              0 kB\nDirty:              5076 kB\nWriteback:             4 kB\nAnonPages:       9702272 kB\nMapped:          1630604 kB\nShmem:            275240 kB\nKReclaimable:    6500652 kB\nSlab:            8136920 kB\nSReclaimable:    6500652 kB\nSUnreclaim:      1636268 kB\nKernelStack:       78000 kB\nShadowCallStack:   20260 kB\nPageTables:       166548 kB\nSecPageTables:    176912 kB\nNFS_Unstable:          0 kB\nBounce:                0 kB\nWritebackTmp:          0 kB\nCommitLimit:    79531128 kB\nCommitted_AS:   54920496 kB\nVmallocTotal:   135288315904 kB\nVmallocUsed:      802984 kB\nVmallocChunk:          0 kB\nPercpu:            60560 kB\nHardwareCorrupted:     0 kB\nAnonHugePages:         0 kB\nShmemHugePages:        0 kB\nShmemPmdMapped:        0 kB\nFileHugePages:     10240 kB\nFilePmdMapped:         0 kB\nCmaTotal:         131072 kB\nCmaFree:           67744 kB\nBalloon:               0 kB\nHugePages_Total:       0\nHugePages_Free:        0\nHugePages_Rsvd:        0\nHugePages_Surp:        0\nHugepagesize:       2048 kB\nHugetlb:               0 kB\n"
+  ],
+  "/proc/self/cgroup": [
+   "0::/user.slice/user-1000.slice/user@1000.service/tmux-spawn-00000000-0000-0000-0000-000000000000.scope\n"
+  ],
+  "/proc/swaps": [
+   "Filename\t\t\t\tType\t\tSize\t\tUsed\t\tPriority\n/swap.img                               file\t\t16777212\t12881256\t-2\n"
+  ],
+  "/proc/sys/kernel/hostname": [
+   "dgx-spark\n"
+  ],
+  "/proc/sys/kernel/osrelease": [
+   "6.17.0-1032-nvidia\n"
+  ],
+  "/proc/sys/kernel/version": [
+   "#32-Ubuntu SMP PREEMPT_DYNAMIC Wed Aug 19 17:40:46 UTC 2026\n"
+  ],
+  "/proc/sys/net/core/bpf_jit_enable": [
+   "1\n"
+  ],
+  "/proc/sys/net/core/bpf_jit_harden": [
+   {
+    "errno": 13,
+    "error": "Permission denied"
+   }
+  ],
+  "/proc/sys/net/core/bpf_jit_kallsyms": [
+   {
+    "errno": 13,
+    "error": "Permission denied"
+   }
+  ],
+  "/proc/sys/net/core/bpf_jit_limit": [
+   {
+    "errno": 13,
+    "error": "Permission denied"
+   }
+  ],
+  "/proc/sys/net/core/busy_poll": [
+   "0\n"
+  ],
+  "/proc/sys/net/core/busy_read": [
+   "0\n"
+  ],
+  "/proc/sys/net/core/default_qdisc": [
+   "fq_codel\n"
+  ],
+  "/proc/sys/net/core/dev_weight": [
+   "64\n"
+  ],
+  "/proc/sys/net/core/dev_weight_rx_bias": [
+   "1\n"
+  ],
+  "/proc/sys/net/core/dev_weight_tx_bias": [
+   "1\n"
+  ],
+  "/proc/sys/net/core/devconf_inherit_init_net": [
+   "0\n"
+  ],
+  "/proc/sys/net/core/fb_tunnels_only_for_init_net": [
+   "0\n"
+  ],
+  "/proc/sys/net/core/flow_limit_cpu_bitmap": [
+   "00000\n"
+  ],
+  "/proc/sys/net/core/flow_limit_table_len": [
+   "4096\n"
+  ],
+  "/proc/sys/net/core/gro_normal_batch": [
+   "8\n"
+  ],
+  "/proc/sys/net/core/high_order_alloc_disable": [
+   "0\n"
+  ],
+  "/proc/sys/net/core/max_skb_frags": [
+   "17\n"
+  ],
+  "/proc/sys/net/core/mem_pcpu_rsv": [
+   "256\n"
+  ],
+  "/proc/sys/net/core/message_burst": [
+   "10\n"
+  ],
+  "/proc/sys/net/core/message_cost": [
+   "5\n"
+  ],
+  "/proc/sys/net/core/netdev_budget": [
+   "300\n"
+  ],
+  "/proc/sys/net/core/netdev_budget_usecs": [
+   "2000\n"
+  ],
+  "/proc/sys/net/core/netdev_max_backlog": [
+   "1000\n"
+  ],
+  "/proc/sys/net/core/netdev_tstamp_prequeue": [
+   "1\n"
+  ],
+  "/proc/sys/net/core/netdev_unregister_timeout_secs": [
+   "10\n"
+  ],
+  "/proc/sys/net/core/optmem_max": [
+   "131072\n"
+  ],
+  "/proc/sys/net/core/rmem_default": [
+   "212992\n"
+  ],
+  "/proc/sys/net/core/rmem_max": [
+   "212992\n"
+  ],
+  "/proc/sys/net/core/rps_default_mask": [
+   "00000\n"
+  ],
+  "/proc/sys/net/core/rps_sock_flow_entries": [
+   "0\n"
+  ],
+  "/proc/sys/net/core/skb_defer_max": [
+   "64\n"
+  ],
+  "/proc/sys/net/core/somaxconn": [
+   "4096\n"
+  ],
+  "/proc/sys/net/core/tstamp_allow_data": [
+   "1\n"
+  ],
+  "/proc/sys/net/core/txrehash": [
+   "1\n"
+  ],
+  "/proc/sys/net/core/warnings": [
+   "0\n"
+  ],
+  "/proc/sys/net/core/wmem_default": [
+   "212992\n"
+  ],
+  "/proc/sys/net/core/wmem_max": [
+   "212992\n"
+  ],
+  "/proc/sys/net/core/xfrm_acq_expires": [
+   "30\n"
+  ],
+  "/proc/sys/net/core/xfrm_aevent_etime": [
+   "10\n"
+  ],
+  "/proc/sys/net/core/xfrm_aevent_rseqth": [
+   "2\n"
+  ],
+  "/proc/sys/net/core/xfrm_larval_drop": [
+   "1\n"
+  ],
+  "/sys/bus/pci/devices/0000:01:00.0/device": [
+   "0x1021\n"
+  ],
+  "/sys/bus/pci/devices/0000:01:00.0/subsystem_device": [
+   "0x21ec\n"
+  ],
+  "/sys/bus/pci/devices/0000:01:00.0/subsystem_vendor": [
+   "0x15b3\n"
+  ],
+  "/sys/bus/pci/devices/0000:01:00.0/vendor": [
+   "0x15b3\n"
+  ],
+  "/sys/bus/pci/devices/0000:01:00.1/device": [
+   "0x1021\n"
+  ],
+  "/sys/bus/pci/devices/0000:01:00.1/subsystem_device": [
+   "0x21ec\n"
+  ],
+  "/sys/bus/pci/devices/0000:01:00.1/subsystem_vendor": [
+   "0x15b3\n"
+  ],
+  "/sys/bus/pci/devices/0000:01:00.1/vendor": [
+   "0x15b3\n"
+  ],
+  "/sys/bus/pci/devices/0002:01:00.0/device": [
+   "0x1021\n"
+  ],
+  "/sys/bus/pci/devices/0002:01:00.0/subsystem_device": [
+   "0x21ec\n"
+  ],
+  "/sys/bus/pci/devices/0002:01:00.0/subsystem_vendor": [
+   "0x15b3\n"
+  ],
+  "/sys/bus/pci/devices/0002:01:00.0/vendor": [
+   "0x15b3\n"
+  ],
+  "/sys/bus/pci/devices/0002:01:00.1/device": [
+   "0x1021\n"
+  ],
+  "/sys/bus/pci/devices/0002:01:00.1/subsystem_device": [
+   "0x21ec\n"
+  ],
+  "/sys/bus/pci/devices/0002:01:00.1/subsystem_vendor": [
+   "0x15b3\n"
+  ],
+  "/sys/bus/pci/devices/0002:01:00.1/vendor": [
+   "0x15b3\n"
+  ],
+  "/sys/bus/pci/devices/0007:01:00.0/device": [
+   "0x8127\n"
+  ],
+  "/sys/bus/pci/devices/0007:01:00.0/subsystem_device": [
+   "0x0123\n"
+  ],
+  "/sys/bus/pci/devices/0007:01:00.0/subsystem_vendor": [
+   "0x10ec\n"
+  ],
+  "/sys/bus/pci/devices/0007:01:00.0/vendor": [
+   "0x10ec\n"
+  ],
+  "/sys/bus/pci/devices/0009:01:00.0/device": [
+   "0x7925\n"
+  ],
+  "/sys/bus/pci/devices/0009:01:00.0/subsystem_device": [
+   "0x6374\n"
+  ],
+  "/sys/bus/pci/devices/0009:01:00.0/subsystem_vendor": [
+   "0x1a3b\n"
+  ],
+  "/sys/bus/pci/devices/0009:01:00.0/vendor": [
+   "0x14c3\n"
+  ],
+  "/sys/class/dmi/id/bios_date": [
+   "08/06/2025\n"
+  ],
+  "/sys/class/dmi/id/bios_release": [
+   "5.36\n"
+  ],
+  "/sys/class/dmi/id/bios_vendor": [
+   "American Megatrends International, LLC.\n"
+  ],
+  "/sys/class/dmi/id/bios_version": [
+   "5.36_0ACUM018\n"
+  ],
+  "/sys/class/dmi/id/board_name": [
+   "P4242\n"
+  ],
+  "/sys/class/dmi/id/board_vendor": [
+   "NVIDIA\n"
+  ],
+  "/sys/class/dmi/id/board_version": [
+   "A04\n"
+  ],
+  "/sys/class/dmi/id/chassis_type": [
+   "17\n"
+  ],
+  "/sys/class/dmi/id/chassis_vendor": [
+   "NVIDIA\n"
+  ],
+  "/sys/class/dmi/id/product_family": [
+   "DGX Spark\n"
+  ],
+  "/sys/class/dmi/id/product_name": [
+   "NVIDIA_DGX_Spark\n"
+  ],
+  "/sys/class/dmi/id/product_sku": [
+   "0000\n"
+  ],
+  "/sys/class/dmi/id/product_version": [
+   "A.7\n"
+  ],
+  "/sys/class/dmi/id/sys_vendor": [
+   "NVIDIA\n"
+  ],
+  "/sys/class/net/enP2p1s0f0np0/duplex": [
+   "unknown\n"
+  ],
+  "/sys/class/net/enP2p1s0f0np0/mtu": [
+   "1500\n"
+  ],
+  "/sys/class/net/enP2p1s0f0np0/operstate": [
+   "down\n"
+  ],
+  "/sys/class/net/enP2p1s0f0np0/queues/rx-0/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enP2p1s0f0np0/queues/rx-1/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enP2p1s0f0np0/queues/rx-10/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enP2p1s0f0np0/queues/rx-11/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enP2p1s0f0np0/queues/rx-12/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enP2p1s0f0np0/queues/rx-13/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enP2p1s0f0np0/queues/rx-14/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enP2p1s0f0np0/queues/rx-15/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enP2p1s0f0np0/queues/rx-16/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enP2p1s0f0np0/queues/rx-17/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enP2p1s0f0np0/queues/rx-18/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enP2p1s0f0np0/queues/rx-19/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enP2p1s0f0np0/queues/rx-2/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enP2p1s0f0np0/queues/rx-3/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enP2p1s0f0np0/queues/rx-4/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enP2p1s0f0np0/queues/rx-5/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enP2p1s0f0np0/queues/rx-6/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enP2p1s0f0np0/queues/rx-7/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enP2p1s0f0np0/queues/rx-8/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enP2p1s0f0np0/queues/rx-9/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enP2p1s0f0np0/speed": [
+   "-1\n"
+  ],
+  "/sys/class/net/enP2p1s0f1np1/duplex": [
+   "unknown\n"
+  ],
+  "/sys/class/net/enP2p1s0f1np1/mtu": [
+   "1500\n"
+  ],
+  "/sys/class/net/enP2p1s0f1np1/operstate": [
+   "down\n"
+  ],
+  "/sys/class/net/enP2p1s0f1np1/queues/rx-0/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enP2p1s0f1np1/queues/rx-1/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enP2p1s0f1np1/queues/rx-10/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enP2p1s0f1np1/queues/rx-11/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enP2p1s0f1np1/queues/rx-12/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enP2p1s0f1np1/queues/rx-13/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enP2p1s0f1np1/queues/rx-14/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enP2p1s0f1np1/queues/rx-15/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enP2p1s0f1np1/queues/rx-16/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enP2p1s0f1np1/queues/rx-17/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enP2p1s0f1np1/queues/rx-18/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enP2p1s0f1np1/queues/rx-19/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enP2p1s0f1np1/queues/rx-2/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enP2p1s0f1np1/queues/rx-3/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enP2p1s0f1np1/queues/rx-4/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enP2p1s0f1np1/queues/rx-5/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enP2p1s0f1np1/queues/rx-6/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enP2p1s0f1np1/queues/rx-7/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enP2p1s0f1np1/queues/rx-8/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enP2p1s0f1np1/queues/rx-9/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enP2p1s0f1np1/speed": [
+   "-1\n"
+  ],
+  "/sys/class/net/enP7s7/duplex": [
+   "full\n"
+  ],
+  "/sys/class/net/enP7s7/mtu": [
+   "1500\n"
+  ],
+  "/sys/class/net/enP7s7/operstate": [
+   "up\n"
+  ],
+  "/sys/class/net/enP7s7/queues/rx-0/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enP7s7/speed": [
+   "1000\n"
+  ],
+  "/sys/class/net/enp1s0f0np0/duplex": [
+   "unknown\n"
+  ],
+  "/sys/class/net/enp1s0f0np0/mtu": [
+   "1500\n"
+  ],
+  "/sys/class/net/enp1s0f0np0/operstate": [
+   "down\n"
+  ],
+  "/sys/class/net/enp1s0f0np0/queues/rx-0/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enp1s0f0np0/queues/rx-1/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enp1s0f0np0/queues/rx-10/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enp1s0f0np0/queues/rx-11/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enp1s0f0np0/queues/rx-12/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enp1s0f0np0/queues/rx-13/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enp1s0f0np0/queues/rx-14/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enp1s0f0np0/queues/rx-15/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enp1s0f0np0/queues/rx-16/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enp1s0f0np0/queues/rx-17/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enp1s0f0np0/queues/rx-18/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enp1s0f0np0/queues/rx-19/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enp1s0f0np0/queues/rx-2/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enp1s0f0np0/queues/rx-3/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enp1s0f0np0/queues/rx-4/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enp1s0f0np0/queues/rx-5/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enp1s0f0np0/queues/rx-6/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enp1s0f0np0/queues/rx-7/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enp1s0f0np0/queues/rx-8/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enp1s0f0np0/queues/rx-9/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enp1s0f0np0/speed": [
+   "-1\n"
+  ],
+  "/sys/class/net/enp1s0f1np1/duplex": [
+   "unknown\n"
+  ],
+  "/sys/class/net/enp1s0f1np1/mtu": [
+   "1500\n"
+  ],
+  "/sys/class/net/enp1s0f1np1/operstate": [
+   "down\n"
+  ],
+  "/sys/class/net/enp1s0f1np1/queues/rx-0/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enp1s0f1np1/queues/rx-1/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enp1s0f1np1/queues/rx-10/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enp1s0f1np1/queues/rx-11/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enp1s0f1np1/queues/rx-12/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enp1s0f1np1/queues/rx-13/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enp1s0f1np1/queues/rx-14/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enp1s0f1np1/queues/rx-15/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enp1s0f1np1/queues/rx-16/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enp1s0f1np1/queues/rx-17/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enp1s0f1np1/queues/rx-18/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enp1s0f1np1/queues/rx-19/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enp1s0f1np1/queues/rx-2/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enp1s0f1np1/queues/rx-3/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enp1s0f1np1/queues/rx-4/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enp1s0f1np1/queues/rx-5/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enp1s0f1np1/queues/rx-6/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enp1s0f1np1/queues/rx-7/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enp1s0f1np1/queues/rx-8/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enp1s0f1np1/queues/rx-9/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/enp1s0f1np1/speed": [
+   "-1\n"
+  ],
+  "/sys/class/net/wlP9s9/duplex": [
+   {
+    "errno": 22,
+    "error": "Invalid argument"
+   }
+  ],
+  "/sys/class/net/wlP9s9/mtu": [
+   "1500\n"
+  ],
+  "/sys/class/net/wlP9s9/operstate": [
+   "down\n"
+  ],
+  "/sys/class/net/wlP9s9/queues/rx-0/rps_cpus": [
+   "00000\n"
+  ],
+  "/sys/class/net/wlP9s9/speed": [
+   {
+    "errno": 22,
+    "error": "Invalid argument"
+   }
+  ],
+  "/sys/class/thermal/cooling_device0/cur_state": [
+   "0\n"
+  ],
+  "/sys/class/thermal/cooling_device0/type": [
+   "Fan\n"
+  ],
+  "/sys/class/thermal/cooling_device1/cur_state": [
+   "0\n"
+  ],
+  "/sys/class/thermal/cooling_device1/type": [
+   "Processor\n"
+  ],
+  "/sys/class/thermal/cooling_device10/cur_state": [
+   "0\n"
+  ],
+  "/sys/class/thermal/cooling_device10/type": [
+   "Processor\n"
+  ],
+  "/sys/class/thermal/cooling_device11/cur_state": [
+   "0\n"
+  ],
+  "/sys/class/thermal/cooling_device11/type": [
+   "Processor\n"
+  ],
+  "/sys/class/thermal/cooling_device12/cur_state": [
+   "0\n"
+  ],
+  "/sys/class/thermal/cooling_device12/type": [
+   "Processor\n"
+  ],
+  "/sys/class/thermal/cooling_device13/cur_state": [
+   "0\n"
+  ],
+  "/sys/class/thermal/cooling_device13/type": [
+   "Processor\n"
+  ],
+  "/sys/class/thermal/cooling_device14/cur_state": [
+   "0\n"
+  ],
+  "/sys/class/thermal/cooling_device14/type": [
+   "Processor\n"
+  ],
+  "/sys/class/thermal/cooling_device15/cur_state": [
+   "0\n"
+  ],
+  "/sys/class/thermal/cooling_device15/type": [
+   "Processor\n"
+  ],
+  "/sys/class/thermal/cooling_device16/cur_state": [
+   "0\n"
+  ],
+  "/sys/class/thermal/cooling_device16/type": [
+   "Processor\n"
+  ],
+  "/sys/class/thermal/cooling_device17/cur_state": [
+   "0\n"
+  ],
+  "/sys/class/thermal/cooling_device17/type": [
+   "Processor\n"
+  ],
+  "/sys/class/thermal/cooling_device18/cur_state": [
+   "0\n"
+  ],
+  "/sys/class/thermal/cooling_device18/type": [
+   "Processor\n"
+  ],
+  "/sys/class/thermal/cooling_device19/cur_state": [
+   "0\n"
+  ],
+  "/sys/class/thermal/cooling_device19/type": [
+   "Processor\n"
+  ],
+  "/sys/class/thermal/cooling_device2/cur_state": [
+   "0\n"
+  ],
+  "/sys/class/thermal/cooling_device2/type": [
+   "Processor\n"
+  ],
+  "/sys/class/thermal/cooling_device20/cur_state": [
+   "0\n"
+  ],
+  "/sys/class/thermal/cooling_device20/type": [
+   "Processor\n"
+  ],
+  "/sys/class/thermal/cooling_device21/cur_state": [
+   "0\n"
+  ],
+  "/sys/class/thermal/cooling_device21/type": [
+   "PCIe_Port_Link_Speed_0000:00:00.0\n"
+  ],
+  "/sys/class/thermal/cooling_device22/cur_state": [
+   "0\n"
+  ],
+  "/sys/class/thermal/cooling_device22/type": [
+   "PCIe_Port_Link_Speed_0002:00:00.0\n"
+  ],
+  "/sys/class/thermal/cooling_device23/cur_state": [
+   "0\n"
+  ],
+  "/sys/class/thermal/cooling_device23/type": [
+   "PCIe_Port_Link_Speed_0004:00:00.0\n"
+  ],
+  "/sys/class/thermal/cooling_device24/cur_state": [
+   "0\n"
+  ],
+  "/sys/class/thermal/cooling_device24/type": [
+   "PCIe_Port_Link_Speed_0007:00:00.0\n"
+  ],
+  "/sys/class/thermal/cooling_device25/cur_state": [
+   "2\n"
+  ],
+  "/sys/class/thermal/cooling_device25/type": [
+   "PCIe_Port_Link_Speed_0009:00:00.0\n"
+  ],
+  "/sys/class/thermal/cooling_device26/cur_state": [
+   "-231\n"
+  ],
+  "/sys/class/thermal/cooling_device26/type": [
+   "PCIe_Port_Link_Speed_000f:00:00.0\n"
+  ],
+  "/sys/class/thermal/cooling_device3/cur_state": [
+   "0\n"
+  ],
+  "/sys/class/thermal/cooling_device3/type": [
+   "Processor\n"
+  ],
+  "/sys/class/thermal/cooling_device4/cur_state": [
+   "0\n"
+  ],
+  "/sys/class/thermal/cooling_device4/type": [
+   "Processor\n"
+  ],
+  "/sys/class/thermal/cooling_device5/cur_state": [
+   "0\n"
+  ],
+  "/sys/class/thermal/cooling_device5/type": [
+   "Processor\n"
+  ],
+  "/sys/class/thermal/cooling_device6/cur_state": [
+   "0\n"
+  ],
+  "/sys/class/thermal/cooling_device6/type": [
+   "Processor\n"
+  ],
+  "/sys/class/thermal/cooling_device7/cur_state": [
+   "0\n"
+  ],
+  "/sys/class/thermal/cooling_device7/type": [
+   "Processor\n"
+  ],
+  "/sys/class/thermal/cooling_device8/cur_state": [
+   "0\n"
+  ],
+  "/sys/class/thermal/cooling_device8/type": [
+   "Processor\n"
+  ],
+  "/sys/class/thermal/cooling_device9/cur_state": [
+   "0\n"
+  ],
+  "/sys/class/thermal/cooling_device9/type": [
+   "Processor\n"
+  ],
+  "/sys/class/thermal/thermal_zone0/temp": [
+   "85900\n"
+  ],
+  "/sys/class/thermal/thermal_zone0/type": [
+   "acpitz\n"
+  ],
+  "/sys/class/thermal/thermal_zone1/temp": [
+   "58700\n"
+  ],
+  "/sys/class/thermal/thermal_zone1/type": [
+   "acpitz\n"
+  ],
+  "/sys/class/thermal/thermal_zone2/temp": [
+   "65600\n"
+  ],
+  "/sys/class/thermal/thermal_zone2/type": [
+   "acpitz\n"
+  ],
+  "/sys/class/thermal/thermal_zone3/temp": [
+   "62700\n"
+  ],
+  "/sys/class/thermal/thermal_zone3/type": [
+   "acpitz\n"
+  ],
+  "/sys/class/thermal/thermal_zone4/temp": [
+   "85900\n"
+  ],
+  "/sys/class/thermal/thermal_zone4/type": [
+   "acpitz\n"
+  ],
+  "/sys/class/thermal/thermal_zone5/temp": [
+   "56700\n"
+  ],
+  "/sys/class/thermal/thermal_zone5/type": [
+   "acpitz\n"
+  ],
+  "/sys/class/thermal/thermal_zone6/temp": [
+   "65700\n"
+  ],
+  "/sys/class/thermal/thermal_zone6/type": [
+   "acpitz\n"
+  ],
+  "/sys/devices/system/cpu/cpu0/cache/index0/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu0/cache/index0/level": [
+   "1\n"
+  ],
+  "/sys/devices/system/cpu/cpu0/cache/index0/shared_cpu_list": [
+   "0\n"
+  ],
+  "/sys/devices/system/cpu/cpu0/cache/index0/size": [
+   "64K\n"
+  ],
+  "/sys/devices/system/cpu/cpu0/cache/index0/type": [
+   "Data\n"
+  ],
+  "/sys/devices/system/cpu/cpu0/cache/index0/ways_of_associativity": [
+   "4\n"
+  ],
+  "/sys/devices/system/cpu/cpu0/cache/index1/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu0/cache/index1/level": [
+   "1\n"
+  ],
+  "/sys/devices/system/cpu/cpu0/cache/index1/shared_cpu_list": [
+   "0\n"
+  ],
+  "/sys/devices/system/cpu/cpu0/cache/index1/size": [
+   "64K\n"
+  ],
+  "/sys/devices/system/cpu/cpu0/cache/index1/type": [
+   "Instruction\n"
+  ],
+  "/sys/devices/system/cpu/cpu0/cache/index1/ways_of_associativity": [
+   "4\n"
+  ],
+  "/sys/devices/system/cpu/cpu0/cache/index2/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu0/cache/index2/level": [
+   "2\n"
+  ],
+  "/sys/devices/system/cpu/cpu0/cache/index2/shared_cpu_list": [
+   "0\n"
+  ],
+  "/sys/devices/system/cpu/cpu0/cache/index2/size": [
+   "512K\n"
+  ],
+  "/sys/devices/system/cpu/cpu0/cache/index2/type": [
+   "Unified\n"
+  ],
+  "/sys/devices/system/cpu/cpu0/cache/index2/ways_of_associativity": [
+   "8\n"
+  ],
+  "/sys/devices/system/cpu/cpu0/cache/index3/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu0/cache/index3/level": [
+   "3\n"
+  ],
+  "/sys/devices/system/cpu/cpu0/cache/index3/shared_cpu_list": [
+   "0-9\n"
+  ],
+  "/sys/devices/system/cpu/cpu0/cache/index3/size": [
+   "8192K\n"
+  ],
+  "/sys/devices/system/cpu/cpu0/cache/index3/type": [
+   "Unified\n"
+  ],
+  "/sys/devices/system/cpu/cpu0/cache/index3/ways_of_associativity": [
+   "16\n"
+  ],
+  "/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_cur_freq": [
+   {
+    "errno": 13,
+    "error": "Permission denied"
+   }
+  ],
+  "/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq": [
+   "2808000\n"
+  ],
+  "/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_min_freq": [
+   "338000\n"
+  ],
+  "/sys/devices/system/cpu/cpu0/cpufreq/perf_limited": [
+   "0\n"
+  ],
+  "/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq": [
+   "2808000\n"
+  ],
+  "/sys/devices/system/cpu/cpu0/cpufreq/scaling_driver": [
+   "cppc_cpufreq\n"
+  ],
+  "/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor": [
+   "performance\n"
+  ],
+  "/sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq": [
+   "2808000\n"
+  ],
+  "/sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq": [
+   "338000\n"
+  ],
+  "/sys/devices/system/cpu/cpu0/regs/identification/midr_el1": [
+   "0x00000000410fd871\n"
+  ],
+  "/sys/devices/system/cpu/cpu0/topology/physical_package_id": [
+   "36\n"
+  ],
+  "/sys/devices/system/cpu/cpu1/cache/index0/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu1/cache/index0/level": [
+   "1\n"
+  ],
+  "/sys/devices/system/cpu/cpu1/cache/index0/shared_cpu_list": [
+   "1\n"
+  ],
+  "/sys/devices/system/cpu/cpu1/cache/index0/size": [
+   "64K\n"
+  ],
+  "/sys/devices/system/cpu/cpu1/cache/index0/type": [
+   "Data\n"
+  ],
+  "/sys/devices/system/cpu/cpu1/cache/index0/ways_of_associativity": [
+   "4\n"
+  ],
+  "/sys/devices/system/cpu/cpu1/cache/index1/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu1/cache/index1/level": [
+   "1\n"
+  ],
+  "/sys/devices/system/cpu/cpu1/cache/index1/shared_cpu_list": [
+   "1\n"
+  ],
+  "/sys/devices/system/cpu/cpu1/cache/index1/size": [
+   "64K\n"
+  ],
+  "/sys/devices/system/cpu/cpu1/cache/index1/type": [
+   "Instruction\n"
+  ],
+  "/sys/devices/system/cpu/cpu1/cache/index1/ways_of_associativity": [
+   "4\n"
+  ],
+  "/sys/devices/system/cpu/cpu1/cache/index2/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu1/cache/index2/level": [
+   "2\n"
+  ],
+  "/sys/devices/system/cpu/cpu1/cache/index2/shared_cpu_list": [
+   "1\n"
+  ],
+  "/sys/devices/system/cpu/cpu1/cache/index2/size": [
+   "512K\n"
+  ],
+  "/sys/devices/system/cpu/cpu1/cache/index2/type": [
+   "Unified\n"
+  ],
+  "/sys/devices/system/cpu/cpu1/cache/index2/ways_of_associativity": [
+   "8\n"
+  ],
+  "/sys/devices/system/cpu/cpu1/cache/index3/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu1/cache/index3/level": [
+   "3\n"
+  ],
+  "/sys/devices/system/cpu/cpu1/cache/index3/shared_cpu_list": [
+   "0-9\n"
+  ],
+  "/sys/devices/system/cpu/cpu1/cache/index3/size": [
+   "8192K\n"
+  ],
+  "/sys/devices/system/cpu/cpu1/cache/index3/type": [
+   "Unified\n"
+  ],
+  "/sys/devices/system/cpu/cpu1/cache/index3/ways_of_associativity": [
+   "16\n"
+  ],
+  "/sys/devices/system/cpu/cpu1/cpufreq/cpuinfo_cur_freq": [
+   {
+    "errno": 13,
+    "error": "Permission denied"
+   }
+  ],
+  "/sys/devices/system/cpu/cpu1/cpufreq/cpuinfo_max_freq": [
+   "2808000\n"
+  ],
+  "/sys/devices/system/cpu/cpu1/cpufreq/cpuinfo_min_freq": [
+   "338000\n"
+  ],
+  "/sys/devices/system/cpu/cpu1/cpufreq/perf_limited": [
+   "0\n"
+  ],
+  "/sys/devices/system/cpu/cpu1/cpufreq/scaling_cur_freq": [
+   "2808000\n"
+  ],
+  "/sys/devices/system/cpu/cpu1/cpufreq/scaling_driver": [
+   "cppc_cpufreq\n"
+  ],
+  "/sys/devices/system/cpu/cpu1/cpufreq/scaling_governor": [
+   "performance\n"
+  ],
+  "/sys/devices/system/cpu/cpu1/cpufreq/scaling_max_freq": [
+   "2808000\n"
+  ],
+  "/sys/devices/system/cpu/cpu1/cpufreq/scaling_min_freq": [
+   "338000\n"
+  ],
+  "/sys/devices/system/cpu/cpu1/regs/identification/midr_el1": [
+   "0x00000000410fd871\n"
+  ],
+  "/sys/devices/system/cpu/cpu1/topology/physical_package_id": [
+   "36\n"
+  ],
+  "/sys/devices/system/cpu/cpu10/cache/index0/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu10/cache/index0/level": [
+   "1\n"
+  ],
+  "/sys/devices/system/cpu/cpu10/cache/index0/shared_cpu_list": [
+   "10\n"
+  ],
+  "/sys/devices/system/cpu/cpu10/cache/index0/size": [
+   "64K\n"
+  ],
+  "/sys/devices/system/cpu/cpu10/cache/index0/type": [
+   "Data\n"
+  ],
+  "/sys/devices/system/cpu/cpu10/cache/index0/ways_of_associativity": [
+   "4\n"
+  ],
+  "/sys/devices/system/cpu/cpu10/cache/index1/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu10/cache/index1/level": [
+   "1\n"
+  ],
+  "/sys/devices/system/cpu/cpu10/cache/index1/shared_cpu_list": [
+   "10\n"
+  ],
+  "/sys/devices/system/cpu/cpu10/cache/index1/size": [
+   "64K\n"
+  ],
+  "/sys/devices/system/cpu/cpu10/cache/index1/type": [
+   "Instruction\n"
+  ],
+  "/sys/devices/system/cpu/cpu10/cache/index1/ways_of_associativity": [
+   "4\n"
+  ],
+  "/sys/devices/system/cpu/cpu10/cache/index2/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu10/cache/index2/level": [
+   "2\n"
+  ],
+  "/sys/devices/system/cpu/cpu10/cache/index2/shared_cpu_list": [
+   "10\n"
+  ],
+  "/sys/devices/system/cpu/cpu10/cache/index2/size": [
+   "512K\n"
+  ],
+  "/sys/devices/system/cpu/cpu10/cache/index2/type": [
+   "Unified\n"
+  ],
+  "/sys/devices/system/cpu/cpu10/cache/index2/ways_of_associativity": [
+   "8\n"
+  ],
+  "/sys/devices/system/cpu/cpu10/cache/index3/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu10/cache/index3/level": [
+   "3\n"
+  ],
+  "/sys/devices/system/cpu/cpu10/cache/index3/shared_cpu_list": [
+   "10-19\n"
+  ],
+  "/sys/devices/system/cpu/cpu10/cache/index3/size": [
+   "16384K\n"
+  ],
+  "/sys/devices/system/cpu/cpu10/cache/index3/type": [
+   "Unified\n"
+  ],
+  "/sys/devices/system/cpu/cpu10/cache/index3/ways_of_associativity": [
+   "16\n"
+  ],
+  "/sys/devices/system/cpu/cpu10/cpufreq/cpuinfo_cur_freq": [
+   {
+    "errno": 13,
+    "error": "Permission denied"
+   }
+  ],
+  "/sys/devices/system/cpu/cpu10/cpufreq/cpuinfo_max_freq": [
+   "2808000\n"
+  ],
+  "/sys/devices/system/cpu/cpu10/cpufreq/cpuinfo_min_freq": [
+   "338000\n"
+  ],
+  "/sys/devices/system/cpu/cpu10/cpufreq/perf_limited": [
+   "0\n"
+  ],
+  "/sys/devices/system/cpu/cpu10/cpufreq/scaling_cur_freq": [
+   "2808000\n"
+  ],
+  "/sys/devices/system/cpu/cpu10/cpufreq/scaling_driver": [
+   "cppc_cpufreq\n"
+  ],
+  "/sys/devices/system/cpu/cpu10/cpufreq/scaling_governor": [
+   "performance\n"
+  ],
+  "/sys/devices/system/cpu/cpu10/cpufreq/scaling_max_freq": [
+   "2808000\n"
+  ],
+  "/sys/devices/system/cpu/cpu10/cpufreq/scaling_min_freq": [
+   "338000\n"
+  ],
+  "/sys/devices/system/cpu/cpu10/regs/identification/midr_el1": [
+   "0x00000000410fd871\n"
+  ],
+  "/sys/devices/system/cpu/cpu10/topology/physical_package_id": [
+   "36\n"
+  ],
+  "/sys/devices/system/cpu/cpu11/cache/index0/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu11/cache/index0/level": [
+   "1\n"
+  ],
+  "/sys/devices/system/cpu/cpu11/cache/index0/shared_cpu_list": [
+   "11\n"
+  ],
+  "/sys/devices/system/cpu/cpu11/cache/index0/size": [
+   "64K\n"
+  ],
+  "/sys/devices/system/cpu/cpu11/cache/index0/type": [
+   "Data\n"
+  ],
+  "/sys/devices/system/cpu/cpu11/cache/index0/ways_of_associativity": [
+   "4\n"
+  ],
+  "/sys/devices/system/cpu/cpu11/cache/index1/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu11/cache/index1/level": [
+   "1\n"
+  ],
+  "/sys/devices/system/cpu/cpu11/cache/index1/shared_cpu_list": [
+   "11\n"
+  ],
+  "/sys/devices/system/cpu/cpu11/cache/index1/size": [
+   "64K\n"
+  ],
+  "/sys/devices/system/cpu/cpu11/cache/index1/type": [
+   "Instruction\n"
+  ],
+  "/sys/devices/system/cpu/cpu11/cache/index1/ways_of_associativity": [
+   "4\n"
+  ],
+  "/sys/devices/system/cpu/cpu11/cache/index2/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu11/cache/index2/level": [
+   "2\n"
+  ],
+  "/sys/devices/system/cpu/cpu11/cache/index2/shared_cpu_list": [
+   "11\n"
+  ],
+  "/sys/devices/system/cpu/cpu11/cache/index2/size": [
+   "512K\n"
+  ],
+  "/sys/devices/system/cpu/cpu11/cache/index2/type": [
+   "Unified\n"
+  ],
+  "/sys/devices/system/cpu/cpu11/cache/index2/ways_of_associativity": [
+   "8\n"
+  ],
+  "/sys/devices/system/cpu/cpu11/cache/index3/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu11/cache/index3/level": [
+   "3\n"
+  ],
+  "/sys/devices/system/cpu/cpu11/cache/index3/shared_cpu_list": [
+   "10-19\n"
+  ],
+  "/sys/devices/system/cpu/cpu11/cache/index3/size": [
+   "16384K\n"
+  ],
+  "/sys/devices/system/cpu/cpu11/cache/index3/type": [
+   "Unified\n"
+  ],
+  "/sys/devices/system/cpu/cpu11/cache/index3/ways_of_associativity": [
+   "16\n"
+  ],
+  "/sys/devices/system/cpu/cpu11/cpufreq/cpuinfo_cur_freq": [
+   {
+    "errno": 13,
+    "error": "Permission denied"
+   }
+  ],
+  "/sys/devices/system/cpu/cpu11/cpufreq/cpuinfo_max_freq": [
+   "2808000\n"
+  ],
+  "/sys/devices/system/cpu/cpu11/cpufreq/cpuinfo_min_freq": [
+   "338000\n"
+  ],
+  "/sys/devices/system/cpu/cpu11/cpufreq/perf_limited": [
+   "0\n"
+  ],
+  "/sys/devices/system/cpu/cpu11/cpufreq/scaling_cur_freq": [
+   "2808000\n"
+  ],
+  "/sys/devices/system/cpu/cpu11/cpufreq/scaling_driver": [
+   "cppc_cpufreq\n"
+  ],
+  "/sys/devices/system/cpu/cpu11/cpufreq/scaling_governor": [
+   "performance\n"
+  ],
+  "/sys/devices/system/cpu/cpu11/cpufreq/scaling_max_freq": [
+   "2808000\n"
+  ],
+  "/sys/devices/system/cpu/cpu11/cpufreq/scaling_min_freq": [
+   "338000\n"
+  ],
+  "/sys/devices/system/cpu/cpu11/regs/identification/midr_el1": [
+   "0x00000000410fd871\n"
+  ],
+  "/sys/devices/system/cpu/cpu11/topology/physical_package_id": [
+   "36\n"
+  ],
+  "/sys/devices/system/cpu/cpu12/cache/index0/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu12/cache/index0/level": [
+   "1\n"
+  ],
+  "/sys/devices/system/cpu/cpu12/cache/index0/shared_cpu_list": [
+   "12\n"
+  ],
+  "/sys/devices/system/cpu/cpu12/cache/index0/size": [
+   "64K\n"
+  ],
+  "/sys/devices/system/cpu/cpu12/cache/index0/type": [
+   "Data\n"
+  ],
+  "/sys/devices/system/cpu/cpu12/cache/index0/ways_of_associativity": [
+   "4\n"
+  ],
+  "/sys/devices/system/cpu/cpu12/cache/index1/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu12/cache/index1/level": [
+   "1\n"
+  ],
+  "/sys/devices/system/cpu/cpu12/cache/index1/shared_cpu_list": [
+   "12\n"
+  ],
+  "/sys/devices/system/cpu/cpu12/cache/index1/size": [
+   "64K\n"
+  ],
+  "/sys/devices/system/cpu/cpu12/cache/index1/type": [
+   "Instruction\n"
+  ],
+  "/sys/devices/system/cpu/cpu12/cache/index1/ways_of_associativity": [
+   "4\n"
+  ],
+  "/sys/devices/system/cpu/cpu12/cache/index2/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu12/cache/index2/level": [
+   "2\n"
+  ],
+  "/sys/devices/system/cpu/cpu12/cache/index2/shared_cpu_list": [
+   "12\n"
+  ],
+  "/sys/devices/system/cpu/cpu12/cache/index2/size": [
+   "512K\n"
+  ],
+  "/sys/devices/system/cpu/cpu12/cache/index2/type": [
+   "Unified\n"
+  ],
+  "/sys/devices/system/cpu/cpu12/cache/index2/ways_of_associativity": [
+   "8\n"
+  ],
+  "/sys/devices/system/cpu/cpu12/cache/index3/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu12/cache/index3/level": [
+   "3\n"
+  ],
+  "/sys/devices/system/cpu/cpu12/cache/index3/shared_cpu_list": [
+   "10-19\n"
+  ],
+  "/sys/devices/system/cpu/cpu12/cache/index3/size": [
+   "16384K\n"
+  ],
+  "/sys/devices/system/cpu/cpu12/cache/index3/type": [
+   "Unified\n"
+  ],
+  "/sys/devices/system/cpu/cpu12/cache/index3/ways_of_associativity": [
+   "16\n"
+  ],
+  "/sys/devices/system/cpu/cpu12/cpufreq/cpuinfo_cur_freq": [
+   {
+    "errno": 13,
+    "error": "Permission denied"
+   }
+  ],
+  "/sys/devices/system/cpu/cpu12/cpufreq/cpuinfo_max_freq": [
+   "2808000\n"
+  ],
+  "/sys/devices/system/cpu/cpu12/cpufreq/cpuinfo_min_freq": [
+   "338000\n"
+  ],
+  "/sys/devices/system/cpu/cpu12/cpufreq/perf_limited": [
+   "0\n"
+  ],
+  "/sys/devices/system/cpu/cpu12/cpufreq/scaling_cur_freq": [
+   "2808000\n"
+  ],
+  "/sys/devices/system/cpu/cpu12/cpufreq/scaling_driver": [
+   "cppc_cpufreq\n"
+  ],
+  "/sys/devices/system/cpu/cpu12/cpufreq/scaling_governor": [
+   "performance\n"
+  ],
+  "/sys/devices/system/cpu/cpu12/cpufreq/scaling_max_freq": [
+   "2808000\n"
+  ],
+  "/sys/devices/system/cpu/cpu12/cpufreq/scaling_min_freq": [
+   "338000\n"
+  ],
+  "/sys/devices/system/cpu/cpu12/regs/identification/midr_el1": [
+   "0x00000000410fd871\n"
+  ],
+  "/sys/devices/system/cpu/cpu12/topology/physical_package_id": [
+   "36\n"
+  ],
+  "/sys/devices/system/cpu/cpu13/cache/index0/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu13/cache/index0/level": [
+   "1\n"
+  ],
+  "/sys/devices/system/cpu/cpu13/cache/index0/shared_cpu_list": [
+   "13\n"
+  ],
+  "/sys/devices/system/cpu/cpu13/cache/index0/size": [
+   "64K\n"
+  ],
+  "/sys/devices/system/cpu/cpu13/cache/index0/type": [
+   "Data\n"
+  ],
+  "/sys/devices/system/cpu/cpu13/cache/index0/ways_of_associativity": [
+   "4\n"
+  ],
+  "/sys/devices/system/cpu/cpu13/cache/index1/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu13/cache/index1/level": [
+   "1\n"
+  ],
+  "/sys/devices/system/cpu/cpu13/cache/index1/shared_cpu_list": [
+   "13\n"
+  ],
+  "/sys/devices/system/cpu/cpu13/cache/index1/size": [
+   "64K\n"
+  ],
+  "/sys/devices/system/cpu/cpu13/cache/index1/type": [
+   "Instruction\n"
+  ],
+  "/sys/devices/system/cpu/cpu13/cache/index1/ways_of_associativity": [
+   "4\n"
+  ],
+  "/sys/devices/system/cpu/cpu13/cache/index2/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu13/cache/index2/level": [
+   "2\n"
+  ],
+  "/sys/devices/system/cpu/cpu13/cache/index2/shared_cpu_list": [
+   "13\n"
+  ],
+  "/sys/devices/system/cpu/cpu13/cache/index2/size": [
+   "512K\n"
+  ],
+  "/sys/devices/system/cpu/cpu13/cache/index2/type": [
+   "Unified\n"
+  ],
+  "/sys/devices/system/cpu/cpu13/cache/index2/ways_of_associativity": [
+   "8\n"
+  ],
+  "/sys/devices/system/cpu/cpu13/cache/index3/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu13/cache/index3/level": [
+   "3\n"
+  ],
+  "/sys/devices/system/cpu/cpu13/cache/index3/shared_cpu_list": [
+   "10-19\n"
+  ],
+  "/sys/devices/system/cpu/cpu13/cache/index3/size": [
+   "16384K\n"
+  ],
+  "/sys/devices/system/cpu/cpu13/cache/index3/type": [
+   "Unified\n"
+  ],
+  "/sys/devices/system/cpu/cpu13/cache/index3/ways_of_associativity": [
+   "16\n"
+  ],
+  "/sys/devices/system/cpu/cpu13/cpufreq/cpuinfo_cur_freq": [
+   {
+    "errno": 13,
+    "error": "Permission denied"
+   }
+  ],
+  "/sys/devices/system/cpu/cpu13/cpufreq/cpuinfo_max_freq": [
+   "2808000\n"
+  ],
+  "/sys/devices/system/cpu/cpu13/cpufreq/cpuinfo_min_freq": [
+   "338000\n"
+  ],
+  "/sys/devices/system/cpu/cpu13/cpufreq/perf_limited": [
+   "0\n"
+  ],
+  "/sys/devices/system/cpu/cpu13/cpufreq/scaling_cur_freq": [
+   "2808000\n"
+  ],
+  "/sys/devices/system/cpu/cpu13/cpufreq/scaling_driver": [
+   "cppc_cpufreq\n"
+  ],
+  "/sys/devices/system/cpu/cpu13/cpufreq/scaling_governor": [
+   "performance\n"
+  ],
+  "/sys/devices/system/cpu/cpu13/cpufreq/scaling_max_freq": [
+   "2808000\n"
+  ],
+  "/sys/devices/system/cpu/cpu13/cpufreq/scaling_min_freq": [
+   "338000\n"
+  ],
+  "/sys/devices/system/cpu/cpu13/regs/identification/midr_el1": [
+   "0x00000000410fd871\n"
+  ],
+  "/sys/devices/system/cpu/cpu13/topology/physical_package_id": [
+   "36\n"
+  ],
+  "/sys/devices/system/cpu/cpu14/cache/index0/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu14/cache/index0/level": [
+   "1\n"
+  ],
+  "/sys/devices/system/cpu/cpu14/cache/index0/shared_cpu_list": [
+   "14\n"
+  ],
+  "/sys/devices/system/cpu/cpu14/cache/index0/size": [
+   "64K\n"
+  ],
+  "/sys/devices/system/cpu/cpu14/cache/index0/type": [
+   "Data\n"
+  ],
+  "/sys/devices/system/cpu/cpu14/cache/index0/ways_of_associativity": [
+   "4\n"
+  ],
+  "/sys/devices/system/cpu/cpu14/cache/index1/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu14/cache/index1/level": [
+   "1\n"
+  ],
+  "/sys/devices/system/cpu/cpu14/cache/index1/shared_cpu_list": [
+   "14\n"
+  ],
+  "/sys/devices/system/cpu/cpu14/cache/index1/size": [
+   "64K\n"
+  ],
+  "/sys/devices/system/cpu/cpu14/cache/index1/type": [
+   "Instruction\n"
+  ],
+  "/sys/devices/system/cpu/cpu14/cache/index1/ways_of_associativity": [
+   "4\n"
+  ],
+  "/sys/devices/system/cpu/cpu14/cache/index2/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu14/cache/index2/level": [
+   "2\n"
+  ],
+  "/sys/devices/system/cpu/cpu14/cache/index2/shared_cpu_list": [
+   "14\n"
+  ],
+  "/sys/devices/system/cpu/cpu14/cache/index2/size": [
+   "512K\n"
+  ],
+  "/sys/devices/system/cpu/cpu14/cache/index2/type": [
+   "Unified\n"
+  ],
+  "/sys/devices/system/cpu/cpu14/cache/index2/ways_of_associativity": [
+   "8\n"
+  ],
+  "/sys/devices/system/cpu/cpu14/cache/index3/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu14/cache/index3/level": [
+   "3\n"
+  ],
+  "/sys/devices/system/cpu/cpu14/cache/index3/shared_cpu_list": [
+   "10-19\n"
+  ],
+  "/sys/devices/system/cpu/cpu14/cache/index3/size": [
+   "16384K\n"
+  ],
+  "/sys/devices/system/cpu/cpu14/cache/index3/type": [
+   "Unified\n"
+  ],
+  "/sys/devices/system/cpu/cpu14/cache/index3/ways_of_associativity": [
+   "16\n"
+  ],
+  "/sys/devices/system/cpu/cpu14/cpufreq/cpuinfo_cur_freq": [
+   {
+    "errno": 13,
+    "error": "Permission denied"
+   }
+  ],
+  "/sys/devices/system/cpu/cpu14/cpufreq/cpuinfo_max_freq": [
+   "2808000\n"
+  ],
+  "/sys/devices/system/cpu/cpu14/cpufreq/cpuinfo_min_freq": [
+   "338000\n"
+  ],
+  "/sys/devices/system/cpu/cpu14/cpufreq/perf_limited": [
+   "0\n"
+  ],
+  "/sys/devices/system/cpu/cpu14/cpufreq/scaling_cur_freq": [
+   "2808000\n"
+  ],
+  "/sys/devices/system/cpu/cpu14/cpufreq/scaling_driver": [
+   "cppc_cpufreq\n"
+  ],
+  "/sys/devices/system/cpu/cpu14/cpufreq/scaling_governor": [
+   "performance\n"
+  ],
+  "/sys/devices/system/cpu/cpu14/cpufreq/scaling_max_freq": [
+   "2808000\n"
+  ],
+  "/sys/devices/system/cpu/cpu14/cpufreq/scaling_min_freq": [
+   "338000\n"
+  ],
+  "/sys/devices/system/cpu/cpu14/regs/identification/midr_el1": [
+   "0x00000000410fd871\n"
+  ],
+  "/sys/devices/system/cpu/cpu14/topology/physical_package_id": [
+   "36\n"
+  ],
+  "/sys/devices/system/cpu/cpu15/cache/index0/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu15/cache/index0/level": [
+   "1\n"
+  ],
+  "/sys/devices/system/cpu/cpu15/cache/index0/shared_cpu_list": [
+   "15\n"
+  ],
+  "/sys/devices/system/cpu/cpu15/cache/index0/size": [
+   "64K\n"
+  ],
+  "/sys/devices/system/cpu/cpu15/cache/index0/type": [
+   "Data\n"
+  ],
+  "/sys/devices/system/cpu/cpu15/cache/index0/ways_of_associativity": [
+   "4\n"
+  ],
+  "/sys/devices/system/cpu/cpu15/cache/index1/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu15/cache/index1/level": [
+   "1\n"
+  ],
+  "/sys/devices/system/cpu/cpu15/cache/index1/shared_cpu_list": [
+   "15\n"
+  ],
+  "/sys/devices/system/cpu/cpu15/cache/index1/size": [
+   "64K\n"
+  ],
+  "/sys/devices/system/cpu/cpu15/cache/index1/type": [
+   "Instruction\n"
+  ],
+  "/sys/devices/system/cpu/cpu15/cache/index1/ways_of_associativity": [
+   "4\n"
+  ],
+  "/sys/devices/system/cpu/cpu15/cache/index2/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu15/cache/index2/level": [
+   "2\n"
+  ],
+  "/sys/devices/system/cpu/cpu15/cache/index2/shared_cpu_list": [
+   "15\n"
+  ],
+  "/sys/devices/system/cpu/cpu15/cache/index2/size": [
+   "2048K\n"
+  ],
+  "/sys/devices/system/cpu/cpu15/cache/index2/type": [
+   "Unified\n"
+  ],
+  "/sys/devices/system/cpu/cpu15/cache/index2/ways_of_associativity": [
+   "8\n"
+  ],
+  "/sys/devices/system/cpu/cpu15/cache/index3/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu15/cache/index3/level": [
+   "3\n"
+  ],
+  "/sys/devices/system/cpu/cpu15/cache/index3/shared_cpu_list": [
+   "10-19\n"
+  ],
+  "/sys/devices/system/cpu/cpu15/cache/index3/size": [
+   "16384K\n"
+  ],
+  "/sys/devices/system/cpu/cpu15/cache/index3/type": [
+   "Unified\n"
+  ],
+  "/sys/devices/system/cpu/cpu15/cache/index3/ways_of_associativity": [
+   "16\n"
+  ],
+  "/sys/devices/system/cpu/cpu15/cpufreq/cpuinfo_cur_freq": [
+   {
+    "errno": 13,
+    "error": "Permission denied"
+   }
+  ],
+  "/sys/devices/system/cpu/cpu15/cpufreq/cpuinfo_max_freq": [
+   "3900000\n"
+  ],
+  "/sys/devices/system/cpu/cpu15/cpufreq/cpuinfo_min_freq": [
+   "1378000\n"
+  ],
+  "/sys/devices/system/cpu/cpu15/cpufreq/perf_limited": [
+   "0\n"
+  ],
+  "/sys/devices/system/cpu/cpu15/cpufreq/scaling_cur_freq": [
+   "3900000\n"
+  ],
+  "/sys/devices/system/cpu/cpu15/cpufreq/scaling_driver": [
+   "cppc_cpufreq\n"
+  ],
+  "/sys/devices/system/cpu/cpu15/cpufreq/scaling_governor": [
+   "performance\n"
+  ],
+  "/sys/devices/system/cpu/cpu15/cpufreq/scaling_max_freq": [
+   "3900000\n"
+  ],
+  "/sys/devices/system/cpu/cpu15/cpufreq/scaling_min_freq": [
+   "1378000\n"
+  ],
+  "/sys/devices/system/cpu/cpu15/regs/identification/midr_el1": [
+   "0x00000000410fd851\n"
+  ],
+  "/sys/devices/system/cpu/cpu15/topology/physical_package_id": [
+   "36\n"
+  ],
+  "/sys/devices/system/cpu/cpu16/cache/index0/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu16/cache/index0/level": [
+   "1\n"
+  ],
+  "/sys/devices/system/cpu/cpu16/cache/index0/shared_cpu_list": [
+   "16\n"
+  ],
+  "/sys/devices/system/cpu/cpu16/cache/index0/size": [
+   "64K\n"
+  ],
+  "/sys/devices/system/cpu/cpu16/cache/index0/type": [
+   "Data\n"
+  ],
+  "/sys/devices/system/cpu/cpu16/cache/index0/ways_of_associativity": [
+   "4\n"
+  ],
+  "/sys/devices/system/cpu/cpu16/cache/index1/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu16/cache/index1/level": [
+   "1\n"
+  ],
+  "/sys/devices/system/cpu/cpu16/cache/index1/shared_cpu_list": [
+   "16\n"
+  ],
+  "/sys/devices/system/cpu/cpu16/cache/index1/size": [
+   "64K\n"
+  ],
+  "/sys/devices/system/cpu/cpu16/cache/index1/type": [
+   "Instruction\n"
+  ],
+  "/sys/devices/system/cpu/cpu16/cache/index1/ways_of_associativity": [
+   "4\n"
+  ],
+  "/sys/devices/system/cpu/cpu16/cache/index2/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu16/cache/index2/level": [
+   "2\n"
+  ],
+  "/sys/devices/system/cpu/cpu16/cache/index2/shared_cpu_list": [
+   "16\n"
+  ],
+  "/sys/devices/system/cpu/cpu16/cache/index2/size": [
+   "2048K\n"
+  ],
+  "/sys/devices/system/cpu/cpu16/cache/index2/type": [
+   "Unified\n"
+  ],
+  "/sys/devices/system/cpu/cpu16/cache/index2/ways_of_associativity": [
+   "8\n"
+  ],
+  "/sys/devices/system/cpu/cpu16/cache/index3/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu16/cache/index3/level": [
+   "3\n"
+  ],
+  "/sys/devices/system/cpu/cpu16/cache/index3/shared_cpu_list": [
+   "10-19\n"
+  ],
+  "/sys/devices/system/cpu/cpu16/cache/index3/size": [
+   "16384K\n"
+  ],
+  "/sys/devices/system/cpu/cpu16/cache/index3/type": [
+   "Unified\n"
+  ],
+  "/sys/devices/system/cpu/cpu16/cache/index3/ways_of_associativity": [
+   "16\n"
+  ],
+  "/sys/devices/system/cpu/cpu16/cpufreq/cpuinfo_cur_freq": [
+   {
+    "errno": 13,
+    "error": "Permission denied"
+   }
+  ],
+  "/sys/devices/system/cpu/cpu16/cpufreq/cpuinfo_max_freq": [
+   "3900000\n"
+  ],
+  "/sys/devices/system/cpu/cpu16/cpufreq/cpuinfo_min_freq": [
+   "1378000\n"
+  ],
+  "/sys/devices/system/cpu/cpu16/cpufreq/perf_limited": [
+   "0\n"
+  ],
+  "/sys/devices/system/cpu/cpu16/cpufreq/scaling_cur_freq": [
+   "3900000\n"
+  ],
+  "/sys/devices/system/cpu/cpu16/cpufreq/scaling_driver": [
+   "cppc_cpufreq\n"
+  ],
+  "/sys/devices/system/cpu/cpu16/cpufreq/scaling_governor": [
+   "performance\n"
+  ],
+  "/sys/devices/system/cpu/cpu16/cpufreq/scaling_max_freq": [
+   "3900000\n"
+  ],
+  "/sys/devices/system/cpu/cpu16/cpufreq/scaling_min_freq": [
+   "1378000\n"
+  ],
+  "/sys/devices/system/cpu/cpu16/regs/identification/midr_el1": [
+   "0x00000000410fd851\n"
+  ],
+  "/sys/devices/system/cpu/cpu16/topology/physical_package_id": [
+   "36\n"
+  ],
+  "/sys/devices/system/cpu/cpu17/cache/index0/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu17/cache/index0/level": [
+   "1\n"
+  ],
+  "/sys/devices/system/cpu/cpu17/cache/index0/shared_cpu_list": [
+   "17\n"
+  ],
+  "/sys/devices/system/cpu/cpu17/cache/index0/size": [
+   "64K\n"
+  ],
+  "/sys/devices/system/cpu/cpu17/cache/index0/type": [
+   "Data\n"
+  ],
+  "/sys/devices/system/cpu/cpu17/cache/index0/ways_of_associativity": [
+   "4\n"
+  ],
+  "/sys/devices/system/cpu/cpu17/cache/index1/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu17/cache/index1/level": [
+   "1\n"
+  ],
+  "/sys/devices/system/cpu/cpu17/cache/index1/shared_cpu_list": [
+   "17\n"
+  ],
+  "/sys/devices/system/cpu/cpu17/cache/index1/size": [
+   "64K\n"
+  ],
+  "/sys/devices/system/cpu/cpu17/cache/index1/type": [
+   "Instruction\n"
+  ],
+  "/sys/devices/system/cpu/cpu17/cache/index1/ways_of_associativity": [
+   "4\n"
+  ],
+  "/sys/devices/system/cpu/cpu17/cache/index2/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu17/cache/index2/level": [
+   "2\n"
+  ],
+  "/sys/devices/system/cpu/cpu17/cache/index2/shared_cpu_list": [
+   "17\n"
+  ],
+  "/sys/devices/system/cpu/cpu17/cache/index2/size": [
+   "2048K\n"
+  ],
+  "/sys/devices/system/cpu/cpu17/cache/index2/type": [
+   "Unified\n"
+  ],
+  "/sys/devices/system/cpu/cpu17/cache/index2/ways_of_associativity": [
+   "8\n"
+  ],
+  "/sys/devices/system/cpu/cpu17/cache/index3/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu17/cache/index3/level": [
+   "3\n"
+  ],
+  "/sys/devices/system/cpu/cpu17/cache/index3/shared_cpu_list": [
+   "10-19\n"
+  ],
+  "/sys/devices/system/cpu/cpu17/cache/index3/size": [
+   "16384K\n"
+  ],
+  "/sys/devices/system/cpu/cpu17/cache/index3/type": [
+   "Unified\n"
+  ],
+  "/sys/devices/system/cpu/cpu17/cache/index3/ways_of_associativity": [
+   "16\n"
+  ],
+  "/sys/devices/system/cpu/cpu17/cpufreq/cpuinfo_cur_freq": [
+   {
+    "errno": 13,
+    "error": "Permission denied"
+   }
+  ],
+  "/sys/devices/system/cpu/cpu17/cpufreq/cpuinfo_max_freq": [
+   "3900000\n"
+  ],
+  "/sys/devices/system/cpu/cpu17/cpufreq/cpuinfo_min_freq": [
+   "1378000\n"
+  ],
+  "/sys/devices/system/cpu/cpu17/cpufreq/perf_limited": [
+   "0\n"
+  ],
+  "/sys/devices/system/cpu/cpu17/cpufreq/scaling_cur_freq": [
+   "3900000\n"
+  ],
+  "/sys/devices/system/cpu/cpu17/cpufreq/scaling_driver": [
+   "cppc_cpufreq\n"
+  ],
+  "/sys/devices/system/cpu/cpu17/cpufreq/scaling_governor": [
+   "performance\n"
+  ],
+  "/sys/devices/system/cpu/cpu17/cpufreq/scaling_max_freq": [
+   "3900000\n"
+  ],
+  "/sys/devices/system/cpu/cpu17/cpufreq/scaling_min_freq": [
+   "1378000\n"
+  ],
+  "/sys/devices/system/cpu/cpu17/regs/identification/midr_el1": [
+   "0x00000000410fd851\n"
+  ],
+  "/sys/devices/system/cpu/cpu17/topology/physical_package_id": [
+   "36\n"
+  ],
+  "/sys/devices/system/cpu/cpu18/cache/index0/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu18/cache/index0/level": [
+   "1\n"
+  ],
+  "/sys/devices/system/cpu/cpu18/cache/index0/shared_cpu_list": [
+   "18\n"
+  ],
+  "/sys/devices/system/cpu/cpu18/cache/index0/size": [
+   "64K\n"
+  ],
+  "/sys/devices/system/cpu/cpu18/cache/index0/type": [
+   "Data\n"
+  ],
+  "/sys/devices/system/cpu/cpu18/cache/index0/ways_of_associativity": [
+   "4\n"
+  ],
+  "/sys/devices/system/cpu/cpu18/cache/index1/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu18/cache/index1/level": [
+   "1\n"
+  ],
+  "/sys/devices/system/cpu/cpu18/cache/index1/shared_cpu_list": [
+   "18\n"
+  ],
+  "/sys/devices/system/cpu/cpu18/cache/index1/size": [
+   "64K\n"
+  ],
+  "/sys/devices/system/cpu/cpu18/cache/index1/type": [
+   "Instruction\n"
+  ],
+  "/sys/devices/system/cpu/cpu18/cache/index1/ways_of_associativity": [
+   "4\n"
+  ],
+  "/sys/devices/system/cpu/cpu18/cache/index2/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu18/cache/index2/level": [
+   "2\n"
+  ],
+  "/sys/devices/system/cpu/cpu18/cache/index2/shared_cpu_list": [
+   "18\n"
+  ],
+  "/sys/devices/system/cpu/cpu18/cache/index2/size": [
+   "2048K\n"
+  ],
+  "/sys/devices/system/cpu/cpu18/cache/index2/type": [
+   "Unified\n"
+  ],
+  "/sys/devices/system/cpu/cpu18/cache/index2/ways_of_associativity": [
+   "8\n"
+  ],
+  "/sys/devices/system/cpu/cpu18/cache/index3/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu18/cache/index3/level": [
+   "3\n"
+  ],
+  "/sys/devices/system/cpu/cpu18/cache/index3/shared_cpu_list": [
+   "10-19\n"
+  ],
+  "/sys/devices/system/cpu/cpu18/cache/index3/size": [
+   "16384K\n"
+  ],
+  "/sys/devices/system/cpu/cpu18/cache/index3/type": [
+   "Unified\n"
+  ],
+  "/sys/devices/system/cpu/cpu18/cache/index3/ways_of_associativity": [
+   "16\n"
+  ],
+  "/sys/devices/system/cpu/cpu18/cpufreq/cpuinfo_cur_freq": [
+   {
+    "errno": 13,
+    "error": "Permission denied"
+   }
+  ],
+  "/sys/devices/system/cpu/cpu18/cpufreq/cpuinfo_max_freq": [
+   "3900000\n"
+  ],
+  "/sys/devices/system/cpu/cpu18/cpufreq/cpuinfo_min_freq": [
+   "1378000\n"
+  ],
+  "/sys/devices/system/cpu/cpu18/cpufreq/perf_limited": [
+   "0\n"
+  ],
+  "/sys/devices/system/cpu/cpu18/cpufreq/scaling_cur_freq": [
+   "3900000\n"
+  ],
+  "/sys/devices/system/cpu/cpu18/cpufreq/scaling_driver": [
+   "cppc_cpufreq\n"
+  ],
+  "/sys/devices/system/cpu/cpu18/cpufreq/scaling_governor": [
+   "performance\n"
+  ],
+  "/sys/devices/system/cpu/cpu18/cpufreq/scaling_max_freq": [
+   "3900000\n"
+  ],
+  "/sys/devices/system/cpu/cpu18/cpufreq/scaling_min_freq": [
+   "1378000\n"
+  ],
+  "/sys/devices/system/cpu/cpu18/regs/identification/midr_el1": [
+   "0x00000000410fd851\n"
+  ],
+  "/sys/devices/system/cpu/cpu18/topology/physical_package_id": [
+   "36\n"
+  ],
+  "/sys/devices/system/cpu/cpu19/cache/index0/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu19/cache/index0/level": [
+   "1\n"
+  ],
+  "/sys/devices/system/cpu/cpu19/cache/index0/shared_cpu_list": [
+   "19\n"
+  ],
+  "/sys/devices/system/cpu/cpu19/cache/index0/size": [
+   "64K\n"
+  ],
+  "/sys/devices/system/cpu/cpu19/cache/index0/type": [
+   "Data\n"
+  ],
+  "/sys/devices/system/cpu/cpu19/cache/index0/ways_of_associativity": [
+   "4\n"
+  ],
+  "/sys/devices/system/cpu/cpu19/cache/index1/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu19/cache/index1/level": [
+   "1\n"
+  ],
+  "/sys/devices/system/cpu/cpu19/cache/index1/shared_cpu_list": [
+   "19\n"
+  ],
+  "/sys/devices/system/cpu/cpu19/cache/index1/size": [
+   "64K\n"
+  ],
+  "/sys/devices/system/cpu/cpu19/cache/index1/type": [
+   "Instruction\n"
+  ],
+  "/sys/devices/system/cpu/cpu19/cache/index1/ways_of_associativity": [
+   "4\n"
+  ],
+  "/sys/devices/system/cpu/cpu19/cache/index2/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu19/cache/index2/level": [
+   "2\n"
+  ],
+  "/sys/devices/system/cpu/cpu19/cache/index2/shared_cpu_list": [
+   "19\n"
+  ],
+  "/sys/devices/system/cpu/cpu19/cache/index2/size": [
+   "2048K\n"
+  ],
+  "/sys/devices/system/cpu/cpu19/cache/index2/type": [
+   "Unified\n"
+  ],
+  "/sys/devices/system/cpu/cpu19/cache/index2/ways_of_associativity": [
+   "8\n"
+  ],
+  "/sys/devices/system/cpu/cpu19/cache/index3/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu19/cache/index3/level": [
+   "3\n"
+  ],
+  "/sys/devices/system/cpu/cpu19/cache/index3/shared_cpu_list": [
+   "10-19\n"
+  ],
+  "/sys/devices/system/cpu/cpu19/cache/index3/size": [
+   "16384K\n"
+  ],
+  "/sys/devices/system/cpu/cpu19/cache/index3/type": [
+   "Unified\n"
+  ],
+  "/sys/devices/system/cpu/cpu19/cache/index3/ways_of_associativity": [
+   "16\n"
+  ],
+  "/sys/devices/system/cpu/cpu19/cpufreq/cpuinfo_cur_freq": [
+   {
+    "errno": 13,
+    "error": "Permission denied"
+   }
+  ],
+  "/sys/devices/system/cpu/cpu19/cpufreq/cpuinfo_max_freq": [
+   "3900000\n"
+  ],
+  "/sys/devices/system/cpu/cpu19/cpufreq/cpuinfo_min_freq": [
+   "1378000\n"
+  ],
+  "/sys/devices/system/cpu/cpu19/cpufreq/perf_limited": [
+   "0\n"
+  ],
+  "/sys/devices/system/cpu/cpu19/cpufreq/scaling_cur_freq": [
+   "3900000\n"
+  ],
+  "/sys/devices/system/cpu/cpu19/cpufreq/scaling_driver": [
+   "cppc_cpufreq\n"
+  ],
+  "/sys/devices/system/cpu/cpu19/cpufreq/scaling_governor": [
+   "performance\n"
+  ],
+  "/sys/devices/system/cpu/cpu19/cpufreq/scaling_max_freq": [
+   "3900000\n"
+  ],
+  "/sys/devices/system/cpu/cpu19/cpufreq/scaling_min_freq": [
+   "1378000\n"
+  ],
+  "/sys/devices/system/cpu/cpu19/regs/identification/midr_el1": [
+   "0x00000000410fd851\n"
+  ],
+  "/sys/devices/system/cpu/cpu19/topology/physical_package_id": [
+   "36\n"
+  ],
+  "/sys/devices/system/cpu/cpu2/cache/index0/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu2/cache/index0/level": [
+   "1\n"
+  ],
+  "/sys/devices/system/cpu/cpu2/cache/index0/shared_cpu_list": [
+   "2\n"
+  ],
+  "/sys/devices/system/cpu/cpu2/cache/index0/size": [
+   "64K\n"
+  ],
+  "/sys/devices/system/cpu/cpu2/cache/index0/type": [
+   "Data\n"
+  ],
+  "/sys/devices/system/cpu/cpu2/cache/index0/ways_of_associativity": [
+   "4\n"
+  ],
+  "/sys/devices/system/cpu/cpu2/cache/index1/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu2/cache/index1/level": [
+   "1\n"
+  ],
+  "/sys/devices/system/cpu/cpu2/cache/index1/shared_cpu_list": [
+   "2\n"
+  ],
+  "/sys/devices/system/cpu/cpu2/cache/index1/size": [
+   "64K\n"
+  ],
+  "/sys/devices/system/cpu/cpu2/cache/index1/type": [
+   "Instruction\n"
+  ],
+  "/sys/devices/system/cpu/cpu2/cache/index1/ways_of_associativity": [
+   "4\n"
+  ],
+  "/sys/devices/system/cpu/cpu2/cache/index2/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu2/cache/index2/level": [
+   "2\n"
+  ],
+  "/sys/devices/system/cpu/cpu2/cache/index2/shared_cpu_list": [
+   "2\n"
+  ],
+  "/sys/devices/system/cpu/cpu2/cache/index2/size": [
+   "512K\n"
+  ],
+  "/sys/devices/system/cpu/cpu2/cache/index2/type": [
+   "Unified\n"
+  ],
+  "/sys/devices/system/cpu/cpu2/cache/index2/ways_of_associativity": [
+   "8\n"
+  ],
+  "/sys/devices/system/cpu/cpu2/cache/index3/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu2/cache/index3/level": [
+   "3\n"
+  ],
+  "/sys/devices/system/cpu/cpu2/cache/index3/shared_cpu_list": [
+   "0-9\n"
+  ],
+  "/sys/devices/system/cpu/cpu2/cache/index3/size": [
+   "8192K\n"
+  ],
+  "/sys/devices/system/cpu/cpu2/cache/index3/type": [
+   "Unified\n"
+  ],
+  "/sys/devices/system/cpu/cpu2/cache/index3/ways_of_associativity": [
+   "16\n"
+  ],
+  "/sys/devices/system/cpu/cpu2/cpufreq/cpuinfo_cur_freq": [
+   {
+    "errno": 13,
+    "error": "Permission denied"
+   }
+  ],
+  "/sys/devices/system/cpu/cpu2/cpufreq/cpuinfo_max_freq": [
+   "2808000\n"
+  ],
+  "/sys/devices/system/cpu/cpu2/cpufreq/cpuinfo_min_freq": [
+   "338000\n"
+  ],
+  "/sys/devices/system/cpu/cpu2/cpufreq/perf_limited": [
+   "0\n"
+  ],
+  "/sys/devices/system/cpu/cpu2/cpufreq/scaling_cur_freq": [
+   "2808000\n"
+  ],
+  "/sys/devices/system/cpu/cpu2/cpufreq/scaling_driver": [
+   "cppc_cpufreq\n"
+  ],
+  "/sys/devices/system/cpu/cpu2/cpufreq/scaling_governor": [
+   "performance\n"
+  ],
+  "/sys/devices/system/cpu/cpu2/cpufreq/scaling_max_freq": [
+   "2808000\n"
+  ],
+  "/sys/devices/system/cpu/cpu2/cpufreq/scaling_min_freq": [
+   "338000\n"
+  ],
+  "/sys/devices/system/cpu/cpu2/regs/identification/midr_el1": [
+   "0x00000000410fd871\n"
+  ],
+  "/sys/devices/system/cpu/cpu2/topology/physical_package_id": [
+   "36\n"
+  ],
+  "/sys/devices/system/cpu/cpu3/cache/index0/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu3/cache/index0/level": [
+   "1\n"
+  ],
+  "/sys/devices/system/cpu/cpu3/cache/index0/shared_cpu_list": [
+   "3\n"
+  ],
+  "/sys/devices/system/cpu/cpu3/cache/index0/size": [
+   "64K\n"
+  ],
+  "/sys/devices/system/cpu/cpu3/cache/index0/type": [
+   "Data\n"
+  ],
+  "/sys/devices/system/cpu/cpu3/cache/index0/ways_of_associativity": [
+   "4\n"
+  ],
+  "/sys/devices/system/cpu/cpu3/cache/index1/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu3/cache/index1/level": [
+   "1\n"
+  ],
+  "/sys/devices/system/cpu/cpu3/cache/index1/shared_cpu_list": [
+   "3\n"
+  ],
+  "/sys/devices/system/cpu/cpu3/cache/index1/size": [
+   "64K\n"
+  ],
+  "/sys/devices/system/cpu/cpu3/cache/index1/type": [
+   "Instruction\n"
+  ],
+  "/sys/devices/system/cpu/cpu3/cache/index1/ways_of_associativity": [
+   "4\n"
+  ],
+  "/sys/devices/system/cpu/cpu3/cache/index2/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu3/cache/index2/level": [
+   "2\n"
+  ],
+  "/sys/devices/system/cpu/cpu3/cache/index2/shared_cpu_list": [
+   "3\n"
+  ],
+  "/sys/devices/system/cpu/cpu3/cache/index2/size": [
+   "512K\n"
+  ],
+  "/sys/devices/system/cpu/cpu3/cache/index2/type": [
+   "Unified\n"
+  ],
+  "/sys/devices/system/cpu/cpu3/cache/index2/ways_of_associativity": [
+   "8\n"
+  ],
+  "/sys/devices/system/cpu/cpu3/cache/index3/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu3/cache/index3/level": [
+   "3\n"
+  ],
+  "/sys/devices/system/cpu/cpu3/cache/index3/shared_cpu_list": [
+   "0-9\n"
+  ],
+  "/sys/devices/system/cpu/cpu3/cache/index3/size": [
+   "8192K\n"
+  ],
+  "/sys/devices/system/cpu/cpu3/cache/index3/type": [
+   "Unified\n"
+  ],
+  "/sys/devices/system/cpu/cpu3/cache/index3/ways_of_associativity": [
+   "16\n"
+  ],
+  "/sys/devices/system/cpu/cpu3/cpufreq/cpuinfo_cur_freq": [
+   {
+    "errno": 13,
+    "error": "Permission denied"
+   }
+  ],
+  "/sys/devices/system/cpu/cpu3/cpufreq/cpuinfo_max_freq": [
+   "2808000\n"
+  ],
+  "/sys/devices/system/cpu/cpu3/cpufreq/cpuinfo_min_freq": [
+   "338000\n"
+  ],
+  "/sys/devices/system/cpu/cpu3/cpufreq/perf_limited": [
+   "0\n"
+  ],
+  "/sys/devices/system/cpu/cpu3/cpufreq/scaling_cur_freq": [
+   "2808000\n"
+  ],
+  "/sys/devices/system/cpu/cpu3/cpufreq/scaling_driver": [
+   "cppc_cpufreq\n"
+  ],
+  "/sys/devices/system/cpu/cpu3/cpufreq/scaling_governor": [
+   "performance\n"
+  ],
+  "/sys/devices/system/cpu/cpu3/cpufreq/scaling_max_freq": [
+   "2808000\n"
+  ],
+  "/sys/devices/system/cpu/cpu3/cpufreq/scaling_min_freq": [
+   "338000\n"
+  ],
+  "/sys/devices/system/cpu/cpu3/regs/identification/midr_el1": [
+   "0x00000000410fd871\n"
+  ],
+  "/sys/devices/system/cpu/cpu3/topology/physical_package_id": [
+   "36\n"
+  ],
+  "/sys/devices/system/cpu/cpu4/cache/index0/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu4/cache/index0/level": [
+   "1\n"
+  ],
+  "/sys/devices/system/cpu/cpu4/cache/index0/shared_cpu_list": [
+   "4\n"
+  ],
+  "/sys/devices/system/cpu/cpu4/cache/index0/size": [
+   "64K\n"
+  ],
+  "/sys/devices/system/cpu/cpu4/cache/index0/type": [
+   "Data\n"
+  ],
+  "/sys/devices/system/cpu/cpu4/cache/index0/ways_of_associativity": [
+   "4\n"
+  ],
+  "/sys/devices/system/cpu/cpu4/cache/index1/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu4/cache/index1/level": [
+   "1\n"
+  ],
+  "/sys/devices/system/cpu/cpu4/cache/index1/shared_cpu_list": [
+   "4\n"
+  ],
+  "/sys/devices/system/cpu/cpu4/cache/index1/size": [
+   "64K\n"
+  ],
+  "/sys/devices/system/cpu/cpu4/cache/index1/type": [
+   "Instruction\n"
+  ],
+  "/sys/devices/system/cpu/cpu4/cache/index1/ways_of_associativity": [
+   "4\n"
+  ],
+  "/sys/devices/system/cpu/cpu4/cache/index2/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu4/cache/index2/level": [
+   "2\n"
+  ],
+  "/sys/devices/system/cpu/cpu4/cache/index2/shared_cpu_list": [
+   "4\n"
+  ],
+  "/sys/devices/system/cpu/cpu4/cache/index2/size": [
+   "512K\n"
+  ],
+  "/sys/devices/system/cpu/cpu4/cache/index2/type": [
+   "Unified\n"
+  ],
+  "/sys/devices/system/cpu/cpu4/cache/index2/ways_of_associativity": [
+   "8\n"
+  ],
+  "/sys/devices/system/cpu/cpu4/cache/index3/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu4/cache/index3/level": [
+   "3\n"
+  ],
+  "/sys/devices/system/cpu/cpu4/cache/index3/shared_cpu_list": [
+   "0-9\n"
+  ],
+  "/sys/devices/system/cpu/cpu4/cache/index3/size": [
+   "8192K\n"
+  ],
+  "/sys/devices/system/cpu/cpu4/cache/index3/type": [
+   "Unified\n"
+  ],
+  "/sys/devices/system/cpu/cpu4/cache/index3/ways_of_associativity": [
+   "16\n"
+  ],
+  "/sys/devices/system/cpu/cpu4/cpufreq/cpuinfo_cur_freq": [
+   {
+    "errno": 13,
+    "error": "Permission denied"
+   }
+  ],
+  "/sys/devices/system/cpu/cpu4/cpufreq/cpuinfo_max_freq": [
+   "2808000\n"
+  ],
+  "/sys/devices/system/cpu/cpu4/cpufreq/cpuinfo_min_freq": [
+   "338000\n"
+  ],
+  "/sys/devices/system/cpu/cpu4/cpufreq/perf_limited": [
+   "0\n"
+  ],
+  "/sys/devices/system/cpu/cpu4/cpufreq/scaling_cur_freq": [
+   "2808000\n"
+  ],
+  "/sys/devices/system/cpu/cpu4/cpufreq/scaling_driver": [
+   "cppc_cpufreq\n"
+  ],
+  "/sys/devices/system/cpu/cpu4/cpufreq/scaling_governor": [
+   "performance\n"
+  ],
+  "/sys/devices/system/cpu/cpu4/cpufreq/scaling_max_freq": [
+   "2808000\n"
+  ],
+  "/sys/devices/system/cpu/cpu4/cpufreq/scaling_min_freq": [
+   "338000\n"
+  ],
+  "/sys/devices/system/cpu/cpu4/regs/identification/midr_el1": [
+   "0x00000000410fd871\n"
+  ],
+  "/sys/devices/system/cpu/cpu4/topology/physical_package_id": [
+   "36\n"
+  ],
+  "/sys/devices/system/cpu/cpu5/cache/index0/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu5/cache/index0/level": [
+   "1\n"
+  ],
+  "/sys/devices/system/cpu/cpu5/cache/index0/shared_cpu_list": [
+   "5\n"
+  ],
+  "/sys/devices/system/cpu/cpu5/cache/index0/size": [
+   "64K\n"
+  ],
+  "/sys/devices/system/cpu/cpu5/cache/index0/type": [
+   "Data\n"
+  ],
+  "/sys/devices/system/cpu/cpu5/cache/index0/ways_of_associativity": [
+   "4\n"
+  ],
+  "/sys/devices/system/cpu/cpu5/cache/index1/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu5/cache/index1/level": [
+   "1\n"
+  ],
+  "/sys/devices/system/cpu/cpu5/cache/index1/shared_cpu_list": [
+   "5\n"
+  ],
+  "/sys/devices/system/cpu/cpu5/cache/index1/size": [
+   "64K\n"
+  ],
+  "/sys/devices/system/cpu/cpu5/cache/index1/type": [
+   "Instruction\n"
+  ],
+  "/sys/devices/system/cpu/cpu5/cache/index1/ways_of_associativity": [
+   "4\n"
+  ],
+  "/sys/devices/system/cpu/cpu5/cache/index2/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu5/cache/index2/level": [
+   "2\n"
+  ],
+  "/sys/devices/system/cpu/cpu5/cache/index2/shared_cpu_list": [
+   "5\n"
+  ],
+  "/sys/devices/system/cpu/cpu5/cache/index2/size": [
+   "2048K\n"
+  ],
+  "/sys/devices/system/cpu/cpu5/cache/index2/type": [
+   "Unified\n"
+  ],
+  "/sys/devices/system/cpu/cpu5/cache/index2/ways_of_associativity": [
+   "8\n"
+  ],
+  "/sys/devices/system/cpu/cpu5/cache/index3/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu5/cache/index3/level": [
+   "3\n"
+  ],
+  "/sys/devices/system/cpu/cpu5/cache/index3/shared_cpu_list": [
+   "0-9\n"
+  ],
+  "/sys/devices/system/cpu/cpu5/cache/index3/size": [
+   "8192K\n"
+  ],
+  "/sys/devices/system/cpu/cpu5/cache/index3/type": [
+   "Unified\n"
+  ],
+  "/sys/devices/system/cpu/cpu5/cache/index3/ways_of_associativity": [
+   "16\n"
+  ],
+  "/sys/devices/system/cpu/cpu5/cpufreq/cpuinfo_cur_freq": [
+   {
+    "errno": 13,
+    "error": "Permission denied"
+   }
+  ],
+  "/sys/devices/system/cpu/cpu5/cpufreq/cpuinfo_max_freq": [
+   "3900000\n"
+  ],
+  "/sys/devices/system/cpu/cpu5/cpufreq/cpuinfo_min_freq": [
+   "1378000\n"
+  ],
+  "/sys/devices/system/cpu/cpu5/cpufreq/perf_limited": [
+   "0\n"
+  ],
+  "/sys/devices/system/cpu/cpu5/cpufreq/scaling_cur_freq": [
+   "3900000\n"
+  ],
+  "/sys/devices/system/cpu/cpu5/cpufreq/scaling_driver": [
+   "cppc_cpufreq\n"
+  ],
+  "/sys/devices/system/cpu/cpu5/cpufreq/scaling_governor": [
+   "performance\n"
+  ],
+  "/sys/devices/system/cpu/cpu5/cpufreq/scaling_max_freq": [
+   "3900000\n"
+  ],
+  "/sys/devices/system/cpu/cpu5/cpufreq/scaling_min_freq": [
+   "1378000\n"
+  ],
+  "/sys/devices/system/cpu/cpu5/regs/identification/midr_el1": [
+   "0x00000000410fd851\n"
+  ],
+  "/sys/devices/system/cpu/cpu5/topology/physical_package_id": [
+   "36\n"
+  ],
+  "/sys/devices/system/cpu/cpu6/cache/index0/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu6/cache/index0/level": [
+   "1\n"
+  ],
+  "/sys/devices/system/cpu/cpu6/cache/index0/shared_cpu_list": [
+   "6\n"
+  ],
+  "/sys/devices/system/cpu/cpu6/cache/index0/size": [
+   "64K\n"
+  ],
+  "/sys/devices/system/cpu/cpu6/cache/index0/type": [
+   "Data\n"
+  ],
+  "/sys/devices/system/cpu/cpu6/cache/index0/ways_of_associativity": [
+   "4\n"
+  ],
+  "/sys/devices/system/cpu/cpu6/cache/index1/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu6/cache/index1/level": [
+   "1\n"
+  ],
+  "/sys/devices/system/cpu/cpu6/cache/index1/shared_cpu_list": [
+   "6\n"
+  ],
+  "/sys/devices/system/cpu/cpu6/cache/index1/size": [
+   "64K\n"
+  ],
+  "/sys/devices/system/cpu/cpu6/cache/index1/type": [
+   "Instruction\n"
+  ],
+  "/sys/devices/system/cpu/cpu6/cache/index1/ways_of_associativity": [
+   "4\n"
+  ],
+  "/sys/devices/system/cpu/cpu6/cache/index2/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu6/cache/index2/level": [
+   "2\n"
+  ],
+  "/sys/devices/system/cpu/cpu6/cache/index2/shared_cpu_list": [
+   "6\n"
+  ],
+  "/sys/devices/system/cpu/cpu6/cache/index2/size": [
+   "2048K\n"
+  ],
+  "/sys/devices/system/cpu/cpu6/cache/index2/type": [
+   "Unified\n"
+  ],
+  "/sys/devices/system/cpu/cpu6/cache/index2/ways_of_associativity": [
+   "8\n"
+  ],
+  "/sys/devices/system/cpu/cpu6/cache/index3/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu6/cache/index3/level": [
+   "3\n"
+  ],
+  "/sys/devices/system/cpu/cpu6/cache/index3/shared_cpu_list": [
+   "0-9\n"
+  ],
+  "/sys/devices/system/cpu/cpu6/cache/index3/size": [
+   "8192K\n"
+  ],
+  "/sys/devices/system/cpu/cpu6/cache/index3/type": [
+   "Unified\n"
+  ],
+  "/sys/devices/system/cpu/cpu6/cache/index3/ways_of_associativity": [
+   "16\n"
+  ],
+  "/sys/devices/system/cpu/cpu6/cpufreq/cpuinfo_cur_freq": [
+   {
+    "errno": 13,
+    "error": "Permission denied"
+   }
+  ],
+  "/sys/devices/system/cpu/cpu6/cpufreq/cpuinfo_max_freq": [
+   "3900000\n"
+  ],
+  "/sys/devices/system/cpu/cpu6/cpufreq/cpuinfo_min_freq": [
+   "1378000\n"
+  ],
+  "/sys/devices/system/cpu/cpu6/cpufreq/perf_limited": [
+   "0\n"
+  ],
+  "/sys/devices/system/cpu/cpu6/cpufreq/scaling_cur_freq": [
+   "3900000\n"
+  ],
+  "/sys/devices/system/cpu/cpu6/cpufreq/scaling_driver": [
+   "cppc_cpufreq\n"
+  ],
+  "/sys/devices/system/cpu/cpu6/cpufreq/scaling_governor": [
+   "performance\n"
+  ],
+  "/sys/devices/system/cpu/cpu6/cpufreq/scaling_max_freq": [
+   "3900000\n"
+  ],
+  "/sys/devices/system/cpu/cpu6/cpufreq/scaling_min_freq": [
+   "1378000\n"
+  ],
+  "/sys/devices/system/cpu/cpu6/regs/identification/midr_el1": [
+   "0x00000000410fd851\n"
+  ],
+  "/sys/devices/system/cpu/cpu6/topology/physical_package_id": [
+   "36\n"
+  ],
+  "/sys/devices/system/cpu/cpu7/cache/index0/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu7/cache/index0/level": [
+   "1\n"
+  ],
+  "/sys/devices/system/cpu/cpu7/cache/index0/shared_cpu_list": [
+   "7\n"
+  ],
+  "/sys/devices/system/cpu/cpu7/cache/index0/size": [
+   "64K\n"
+  ],
+  "/sys/devices/system/cpu/cpu7/cache/index0/type": [
+   "Data\n"
+  ],
+  "/sys/devices/system/cpu/cpu7/cache/index0/ways_of_associativity": [
+   "4\n"
+  ],
+  "/sys/devices/system/cpu/cpu7/cache/index1/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu7/cache/index1/level": [
+   "1\n"
+  ],
+  "/sys/devices/system/cpu/cpu7/cache/index1/shared_cpu_list": [
+   "7\n"
+  ],
+  "/sys/devices/system/cpu/cpu7/cache/index1/size": [
+   "64K\n"
+  ],
+  "/sys/devices/system/cpu/cpu7/cache/index1/type": [
+   "Instruction\n"
+  ],
+  "/sys/devices/system/cpu/cpu7/cache/index1/ways_of_associativity": [
+   "4\n"
+  ],
+  "/sys/devices/system/cpu/cpu7/cache/index2/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu7/cache/index2/level": [
+   "2\n"
+  ],
+  "/sys/devices/system/cpu/cpu7/cache/index2/shared_cpu_list": [
+   "7\n"
+  ],
+  "/sys/devices/system/cpu/cpu7/cache/index2/size": [
+   "2048K\n"
+  ],
+  "/sys/devices/system/cpu/cpu7/cache/index2/type": [
+   "Unified\n"
+  ],
+  "/sys/devices/system/cpu/cpu7/cache/index2/ways_of_associativity": [
+   "8\n"
+  ],
+  "/sys/devices/system/cpu/cpu7/cache/index3/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu7/cache/index3/level": [
+   "3\n"
+  ],
+  "/sys/devices/system/cpu/cpu7/cache/index3/shared_cpu_list": [
+   "0-9\n"
+  ],
+  "/sys/devices/system/cpu/cpu7/cache/index3/size": [
+   "8192K\n"
+  ],
+  "/sys/devices/system/cpu/cpu7/cache/index3/type": [
+   "Unified\n"
+  ],
+  "/sys/devices/system/cpu/cpu7/cache/index3/ways_of_associativity": [
+   "16\n"
+  ],
+  "/sys/devices/system/cpu/cpu7/cpufreq/cpuinfo_cur_freq": [
+   {
+    "errno": 13,
+    "error": "Permission denied"
+   }
+  ],
+  "/sys/devices/system/cpu/cpu7/cpufreq/cpuinfo_max_freq": [
+   "3900000\n"
+  ],
+  "/sys/devices/system/cpu/cpu7/cpufreq/cpuinfo_min_freq": [
+   "1378000\n"
+  ],
+  "/sys/devices/system/cpu/cpu7/cpufreq/perf_limited": [
+   "0\n"
+  ],
+  "/sys/devices/system/cpu/cpu7/cpufreq/scaling_cur_freq": [
+   "3900000\n"
+  ],
+  "/sys/devices/system/cpu/cpu7/cpufreq/scaling_driver": [
+   "cppc_cpufreq\n"
+  ],
+  "/sys/devices/system/cpu/cpu7/cpufreq/scaling_governor": [
+   "performance\n"
+  ],
+  "/sys/devices/system/cpu/cpu7/cpufreq/scaling_max_freq": [
+   "3900000\n"
+  ],
+  "/sys/devices/system/cpu/cpu7/cpufreq/scaling_min_freq": [
+   "1378000\n"
+  ],
+  "/sys/devices/system/cpu/cpu7/regs/identification/midr_el1": [
+   "0x00000000410fd851\n"
+  ],
+  "/sys/devices/system/cpu/cpu7/topology/physical_package_id": [
+   "36\n"
+  ],
+  "/sys/devices/system/cpu/cpu8/cache/index0/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu8/cache/index0/level": [
+   "1\n"
+  ],
+  "/sys/devices/system/cpu/cpu8/cache/index0/shared_cpu_list": [
+   "8\n"
+  ],
+  "/sys/devices/system/cpu/cpu8/cache/index0/size": [
+   "64K\n"
+  ],
+  "/sys/devices/system/cpu/cpu8/cache/index0/type": [
+   "Data\n"
+  ],
+  "/sys/devices/system/cpu/cpu8/cache/index0/ways_of_associativity": [
+   "4\n"
+  ],
+  "/sys/devices/system/cpu/cpu8/cache/index1/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu8/cache/index1/level": [
+   "1\n"
+  ],
+  "/sys/devices/system/cpu/cpu8/cache/index1/shared_cpu_list": [
+   "8\n"
+  ],
+  "/sys/devices/system/cpu/cpu8/cache/index1/size": [
+   "64K\n"
+  ],
+  "/sys/devices/system/cpu/cpu8/cache/index1/type": [
+   "Instruction\n"
+  ],
+  "/sys/devices/system/cpu/cpu8/cache/index1/ways_of_associativity": [
+   "4\n"
+  ],
+  "/sys/devices/system/cpu/cpu8/cache/index2/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu8/cache/index2/level": [
+   "2\n"
+  ],
+  "/sys/devices/system/cpu/cpu8/cache/index2/shared_cpu_list": [
+   "8\n"
+  ],
+  "/sys/devices/system/cpu/cpu8/cache/index2/size": [
+   "2048K\n"
+  ],
+  "/sys/devices/system/cpu/cpu8/cache/index2/type": [
+   "Unified\n"
+  ],
+  "/sys/devices/system/cpu/cpu8/cache/index2/ways_of_associativity": [
+   "8\n"
+  ],
+  "/sys/devices/system/cpu/cpu8/cache/index3/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu8/cache/index3/level": [
+   "3\n"
+  ],
+  "/sys/devices/system/cpu/cpu8/cache/index3/shared_cpu_list": [
+   "0-9\n"
+  ],
+  "/sys/devices/system/cpu/cpu8/cache/index3/size": [
+   "8192K\n"
+  ],
+  "/sys/devices/system/cpu/cpu8/cache/index3/type": [
+   "Unified\n"
+  ],
+  "/sys/devices/system/cpu/cpu8/cache/index3/ways_of_associativity": [
+   "16\n"
+  ],
+  "/sys/devices/system/cpu/cpu8/cpufreq/cpuinfo_cur_freq": [
+   {
+    "errno": 13,
+    "error": "Permission denied"
+   }
+  ],
+  "/sys/devices/system/cpu/cpu8/cpufreq/cpuinfo_max_freq": [
+   "3900000\n"
+  ],
+  "/sys/devices/system/cpu/cpu8/cpufreq/cpuinfo_min_freq": [
+   "1378000\n"
+  ],
+  "/sys/devices/system/cpu/cpu8/cpufreq/perf_limited": [
+   "0\n"
+  ],
+  "/sys/devices/system/cpu/cpu8/cpufreq/scaling_cur_freq": [
+   "3900000\n"
+  ],
+  "/sys/devices/system/cpu/cpu8/cpufreq/scaling_driver": [
+   "cppc_cpufreq\n"
+  ],
+  "/sys/devices/system/cpu/cpu8/cpufreq/scaling_governor": [
+   "performance\n"
+  ],
+  "/sys/devices/system/cpu/cpu8/cpufreq/scaling_max_freq": [
+   "3900000\n"
+  ],
+  "/sys/devices/system/cpu/cpu8/cpufreq/scaling_min_freq": [
+   "1378000\n"
+  ],
+  "/sys/devices/system/cpu/cpu8/regs/identification/midr_el1": [
+   "0x00000000410fd851\n"
+  ],
+  "/sys/devices/system/cpu/cpu8/topology/physical_package_id": [
+   "36\n"
+  ],
+  "/sys/devices/system/cpu/cpu9/cache/index0/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu9/cache/index0/level": [
+   "1\n"
+  ],
+  "/sys/devices/system/cpu/cpu9/cache/index0/shared_cpu_list": [
+   "9\n"
+  ],
+  "/sys/devices/system/cpu/cpu9/cache/index0/size": [
+   "64K\n"
+  ],
+  "/sys/devices/system/cpu/cpu9/cache/index0/type": [
+   "Data\n"
+  ],
+  "/sys/devices/system/cpu/cpu9/cache/index0/ways_of_associativity": [
+   "4\n"
+  ],
+  "/sys/devices/system/cpu/cpu9/cache/index1/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu9/cache/index1/level": [
+   "1\n"
+  ],
+  "/sys/devices/system/cpu/cpu9/cache/index1/shared_cpu_list": [
+   "9\n"
+  ],
+  "/sys/devices/system/cpu/cpu9/cache/index1/size": [
+   "64K\n"
+  ],
+  "/sys/devices/system/cpu/cpu9/cache/index1/type": [
+   "Instruction\n"
+  ],
+  "/sys/devices/system/cpu/cpu9/cache/index1/ways_of_associativity": [
+   "4\n"
+  ],
+  "/sys/devices/system/cpu/cpu9/cache/index2/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu9/cache/index2/level": [
+   "2\n"
+  ],
+  "/sys/devices/system/cpu/cpu9/cache/index2/shared_cpu_list": [
+   "9\n"
+  ],
+  "/sys/devices/system/cpu/cpu9/cache/index2/size": [
+   "2048K\n"
+  ],
+  "/sys/devices/system/cpu/cpu9/cache/index2/type": [
+   "Unified\n"
+  ],
+  "/sys/devices/system/cpu/cpu9/cache/index2/ways_of_associativity": [
+   "8\n"
+  ],
+  "/sys/devices/system/cpu/cpu9/cache/index3/coherency_line_size": [
+   "64\n"
+  ],
+  "/sys/devices/system/cpu/cpu9/cache/index3/level": [
+   "3\n"
+  ],
+  "/sys/devices/system/cpu/cpu9/cache/index3/shared_cpu_list": [
+   "0-9\n"
+  ],
+  "/sys/devices/system/cpu/cpu9/cache/index3/size": [
+   "8192K\n"
+  ],
+  "/sys/devices/system/cpu/cpu9/cache/index3/type": [
+   "Unified\n"
+  ],
+  "/sys/devices/system/cpu/cpu9/cache/index3/ways_of_associativity": [
+   "16\n"
+  ],
+  "/sys/devices/system/cpu/cpu9/cpufreq/cpuinfo_cur_freq": [
+   {
+    "errno": 13,
+    "error": "Permission denied"
+   }
+  ],
+  "/sys/devices/system/cpu/cpu9/cpufreq/cpuinfo_max_freq": [
+   "3900000\n"
+  ],
+  "/sys/devices/system/cpu/cpu9/cpufreq/cpuinfo_min_freq": [
+   "1378000\n"
+  ],
+  "/sys/devices/system/cpu/cpu9/cpufreq/perf_limited": [
+   "0\n"
+  ],
+  "/sys/devices/system/cpu/cpu9/cpufreq/scaling_cur_freq": [
+   "3900000\n"
+  ],
+  "/sys/devices/system/cpu/cpu9/cpufreq/scaling_driver": [
+   "cppc_cpufreq\n"
+  ],
+  "/sys/devices/system/cpu/cpu9/cpufreq/scaling_governor": [
+   "performance\n"
+  ],
+  "/sys/devices/system/cpu/cpu9/cpufreq/scaling_max_freq": [
+   "3900000\n"
+  ],
+  "/sys/devices/system/cpu/cpu9/cpufreq/scaling_min_freq": [
+   "1378000\n"
+  ],
+  "/sys/devices/system/cpu/cpu9/regs/identification/midr_el1": [
+   "0x00000000410fd851\n"
+  ],
+  "/sys/devices/system/cpu/cpu9/topology/physical_package_id": [
+   "36\n"
+  ],
+  "/sys/devices/system/cpu/cpufreq/boost": [
+   "0\n"
+  ],
+  "/sys/devices/system/cpu/isolated": [
+   "\n"
+  ],
+  "/sys/devices/system/cpu/nohz_full": [
+   "              (null)\n"
+  ],
+  "/sys/devices/system/cpu/online": [
+   "0-19\n"
+  ],
+  "/sys/devices/system/cpu/smt/active": [
+   "0\n"
+  ],
+  "/sys/devices/system/cpu/smt/control": [
+   "notsupported\n"
+  ],
+  "/sys/devices/system/cpu/vulnerabilities/gather_data_sampling": [
+   "Not affected\n"
+  ],
+  "/sys/devices/system/cpu/vulnerabilities/ghostwrite": [
+   "Not affected\n"
+  ],
+  "/sys/devices/system/cpu/vulnerabilities/indirect_target_selection": [
+   "Not affected\n"
+  ],
+  "/sys/devices/system/cpu/vulnerabilities/itlb_multihit": [
+   "Not affected\n"
+  ],
+  "/sys/devices/system/cpu/vulnerabilities/l1tf": [
+   "Not affected\n"
+  ],
+  "/sys/devices/system/cpu/vulnerabilities/mds": [
+   "Not affected\n"
+  ],
+  "/sys/devices/system/cpu/vulnerabilities/meltdown": [
+   "Not affected\n"
+  ],
+  "/sys/devices/system/cpu/vulnerabilities/mmio_stale_data": [
+   "Not affected\n"
+  ],
+  "/sys/devices/system/cpu/vulnerabilities/old_microcode": [
+   "Not affected\n"
+  ],
+  "/sys/devices/system/cpu/vulnerabilities/reg_file_data_sampling": [
+   "Not affected\n"
+  ],
+  "/sys/devices/system/cpu/vulnerabilities/retbleed": [
+   "Not affected\n"
+  ],
+  "/sys/devices/system/cpu/vulnerabilities/spec_rstack_overflow": [
+   "Not affected\n"
+  ],
+  "/sys/devices/system/cpu/vulnerabilities/spec_store_bypass": [
+   "Mitigation: Speculative Store Bypass disabled via prctl\n"
+  ],
+  "/sys/devices/system/cpu/vulnerabilities/spectre_v1": [
+   "Mitigation: __user pointer sanitization\n"
+  ],
+  "/sys/devices/system/cpu/vulnerabilities/spectre_v2": [
+   "Mitigation: CSV2, BHB\n"
+  ],
+  "/sys/devices/system/cpu/vulnerabilities/srbds": [
+   "Not affected\n"
+  ],
+  "/sys/devices/system/cpu/vulnerabilities/tsa": [
+   "Not affected\n"
+  ],
+  "/sys/devices/system/cpu/vulnerabilities/tsx_async_abort": [
+   "Not affected\n"
+  ],
+  "/sys/devices/system/cpu/vulnerabilities/vmscape": [
+   "Not affected\n"
+  ],
+  "/sys/devices/system/node/node0/cpulist": [
+   "0-19\n"
+  ],
+  "/sys/devices/system/node/node0/meminfo": [
+   "Node 0 MemTotal:       125507832 kB\nNode 0 MemFree:         6210704 kB\nNode 0 MemUsed:        119297128 kB\nNode 0 SwapCached:        21252 kB\nNode 0 Active:         14080080 kB\nNode 0 Inactive:        5023944 kB\nNode 0 Active(anon):    8671512 kB\nNode 0 Inactive(anon):  1293044 kB\nNode 0 Active(file):    5408568 kB\nNode 0 Inactive(file):  3730900 kB\nNode 0 Unevictable:       24692 kB\nNode 0 Mlocked:           24416 kB\nNode 0 Dirty:              4940 kB\nNode 0 Writeback:             4 kB\nNode 0 FilePages:       9441208 kB\nNode 0 Mapped:          1626956 kB\nNode 0 AnonPages:       9694640 kB\nNode 0 Shmem:            275240 kB\nNode 0 KernelStack:       77536 kB\nNode 0 ShadowCallStack:   20224 kB\nNode 0 PageTables:       166300 kB\nNode 0 SecPageTables:    176912 kB\nNode 0 NFS_Unstable:          0 kB\nNode 0 Bounce:                0 kB\nNode 0 WritebackTmp:          0 kB\nNode 0 KReclaimable:    6500652 kB\nNode 0 Slab:            8136896 kB\nNode 0 SReclaimable:    6500652 kB\nNode 0 SUnreclaim:      1636244 kB\nNode 0 AnonHugePages:         0 kB\nNode 0 ShmemHugePages:        0 kB\nNode 0 ShmemPmdMapped:        0 kB\nNode 0 FileHugePages:     10240 kB\nNode 0 FilePmdMapped:         0 kB\nNode 0 HugePages_Total:     0\nNode 0 HugePages_Free:      0\nNode 0 HugePages_Surp:      0\n"
+  ],
+  "/sys/firmware/dmi/tables/smbios_entry_point": [
+   {
+    "errno": 13,
+    "error": "Permission denied"
+   }
+  ],
+  "/sys/fs/cgroup/cgroup.controllers": [
+   "cpuset cpu io memory hugetlb pids rdma misc dmem\n"
+  ],
+  "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/tmux-spawn-00000000-0000-0000-0000-000000000000.scope/cpu.max": [
+   "max 100000\n"
+  ],
+  "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/tmux-spawn-00000000-0000-0000-0000-000000000000.scope/cpuset.cpus.effective": [
+   {
+    "errno": 2,
+    "error": "No such file or directory"
+   }
+  ],
+  "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/tmux-spawn-00000000-0000-0000-0000-000000000000.scope/memory.max": [
+   "max\n"
+  ],
+  "/sys/kernel/mm/hugepages/hugepages-1048576kB/nr_hugepages": [
+   "0\n"
+  ],
+  "/sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages": [
+   "0\n"
+  ],
+  "/sys/kernel/mm/hugepages/hugepages-32768kB/nr_hugepages": [
+   "0\n"
+  ],
+  "/sys/kernel/mm/hugepages/hugepages-64kB/nr_hugepages": [
+   "0\n"
+  ],
+  "/sys/kernel/mm/transparent_hugepage/defrag": [
+   "always defer defer+madvise [madvise] never\n"
+  ],
+  "/sys/kernel/mm/transparent_hugepage/enabled": [
+   "always [madvise] never\n"
+  ]
+ },
+ "links": {
+  "/sys/class/net/enP2p1s0f0np0/device": "/sys/devices/pci0002:00/0002:00:00.0/0002:01:00.0",
+  "/sys/class/net/enP2p1s0f0np0/device/subsystem": "/sys/bus/pci",
+  "/sys/class/net/enP2p1s0f1np1/device": "/sys/devices/pci0002:00/0002:00:00.0/0002:01:00.1",
+  "/sys/class/net/enP2p1s0f1np1/device/subsystem": "/sys/bus/pci",
+  "/sys/class/net/enP7s7/device": "/sys/devices/pci0007:00/0007:00:00.0/0007:01:00.0",
+  "/sys/class/net/enP7s7/device/subsystem": "/sys/bus/pci",
+  "/sys/class/net/enp1s0f0np0/device": "/sys/devices/pci0000:00/0000:00:00.0/0000:01:00.0",
+  "/sys/class/net/enp1s0f0np0/device/subsystem": "/sys/bus/pci",
+  "/sys/class/net/enp1s0f1np1/device": "/sys/devices/pci0000:00/0000:00:00.0/0000:01:00.1",
+  "/sys/class/net/enp1s0f1np1/device/subsystem": "/sys/bus/pci",
+  "/sys/class/net/wlP9s9/device": "/sys/devices/pci0009:00/0009:00:00.0/0009:01:00.0",
+  "/sys/class/net/wlP9s9/device/subsystem": "/sys/bus/pci"
+ },
+ "snapshot_version": 1
+}

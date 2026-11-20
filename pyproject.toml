@@ -4,7 +4,9 @@ version = "0.1.0"
 description = "Tool-agnostic benchmark harness for network security engines: throughput, detection and a full system-under-test record"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "jsonschema>=4.23",
+]
 
 [project.scripts]
 mbench = "mbench.cli:main"
@@ -18,6 +20,7 @@ dev = [
     "mypy>=2.4",
     "pytest>=9.2",
     "ruff>=0.17",
+    "types-jsonschema>=4.23",
 ]
 
 [tool.ruff]

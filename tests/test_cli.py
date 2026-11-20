@@ -1,4 +1,7 @@
-"""The ``mbench`` entry point and its not-implemented subcommand stubs."""
+"""The ``mbench`` entry point and its not-implemented subcommand stubs.
+
+``sut`` and ``validate`` are implemented (#4): see test_sut_cli.py.
+"""
 
 from __future__ import annotations
 
@@ -13,11 +16,14 @@ from mbench.cli import EXIT_NOT_IMPLEMENTED, SUBCOMMANDS, Subcommand, main
 
 EXPECTED = {"sut", "corpus", "run", "sweep", "report", "validate"}
 EXPECTED_ISSUES = {"sut": 4, "corpus": 7, "run": 8, "sweep": 17, "report": 8, "validate": 4}
+IMPLEMENTED = {"sut", "validate"}
+STUBS = [s for s in SUBCOMMANDS if s.name not in IMPLEMENTED]
 
 
 def test_subcommands_are_the_planned_six() -> None:
     assert {s.name for s in SUBCOMMANDS} == EXPECTED
     assert {s.name: s.issue for s in SUBCOMMANDS} == EXPECTED_ISSUES
+    assert {s.name for s in SUBCOMMANDS if s.implemented} == IMPLEMENTED
 
 
 def test_help_lists_every_subcommand(capsys: pytest.CaptureFixture[str]) -> None:
@@ -29,7 +35,7 @@ def test_help_lists_every_subcommand(capsys: pytest.CaptureFixture[str]) -> None
         assert name in out
 
 
-@pytest.mark.parametrize("sub", SUBCOMMANDS, ids=lambda s: s.name)
+@pytest.mark.parametrize("sub", STUBS, ids=lambda s: s.name)
 def test_stub_exits_non_zero_naming_its_issue(
     sub: Subcommand, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -42,13 +48,11 @@ def test_stub_exits_non_zero_naming_its_issue(
 @pytest.mark.parametrize(
     ("argv", "issue"),
     [
-        (["sut", "-o", "sut.json"], 4),  # option first
-        (["sut", "--anonymise"], 4),
-        (["sut", "-o"], 4),  # option missing its value
         (["run", "campaigns/smoke.yaml", "--repeats", "5"], 8),  # positional first
-        (["run", "--rate", "5", "x"], 8),
+        (["run", "--rate", "5", "x"], 8),  # option first
+        (["run", "--rate"], 8),  # option missing its value
         (["corpus", "gen", "c-small", "--seed", "1"], 7),
-        (["validate", "--", "-weird-name.json"], 4),
+        (["report", "--", "-weird-name"], 8),
     ],
 )
 def test_stub_accepts_the_arguments_of_the_finished_command(
@@ -72,6 +76,8 @@ def test_unknown_option_without_subcommand_is_a_usage_error() -> None:
         ["--bogus", "sut"],
         ["--bogus", "run", "campaigns/smoke.yaml"],
         ["-x", "validate", "sut.json"],
+        ["sut", "--bogus"],  # an implemented subcommand parses strictly
+        ["validate"],  # validate needs a path
     ],
 )
 def test_unknown_option_before_subcommand_is_a_usage_error(argv: list[str]) -> None:
@@ -102,10 +108,10 @@ def test_version(capsys: pytest.CaptureFixture[str]) -> None:
 
 def test_module_entry_point() -> None:
     proc = subprocess.run(
-        [sys.executable, "-m", "mbench", "sut"], capture_output=True, text=True, check=False
+        [sys.executable, "-m", "mbench", "run"], capture_output=True, text=True, check=False
     )
     assert proc.returncode == EXIT_NOT_IMPLEMENTED
-    assert "mbench sut: not implemented yet (#4)" in proc.stderr
+    assert "mbench run: not implemented yet (#8)" in proc.stderr
 
 
 def test_console_script_installed_by_uv_sync() -> None:

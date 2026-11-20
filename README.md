@@ -14,5 +14,13 @@ uv run mypy                # types (strict)
 uv run pytest              # tests
 ```
 
-The subcommands are stubs for now: each exits with status 3 and
-`not implemented yet (#N)`, naming the issue that implements it (epic #1).
+`mbench sut` and `mbench validate` are implemented (#4):
+
+```sh
+uv run mbench sut -o sut.json       # system-under-test fingerprint, no sudo
+uv run mbench validate sut.json     # exit 0 when the record is complete
+```
+
+See [docs/sut-fingerprint.md](docs/sut-fingerprint.md). The other subcommands
+are stubs for now: each exits with status 3 and `not implemented yet (#N)`,
+naming the issue that implements it (epic #1).
