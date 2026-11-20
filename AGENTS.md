@@ -46,8 +46,14 @@ adds its command here.
 - **The private dgx-spark capture is never committed or published.** It stays
   local, and results and reports name it only by its label and sha256. No
   packet capture goes into git (`.gitignore` excludes them).
-- **The repo is private** (for now, epic #1). Keep it under montimage-projects; do not publish
-  its code, results or reports elsewhere.
+- **The repo is public** (Luong, 2026-11-20). Never commit host identifiers:
+  MAC or IP addresses, machine-id, UUIDs, serial numbers, usernames, home
+  paths or keys. The private capture stays out of git too (rule above).
+- **Tool-comparison reports stay out of git until reviewed.** A report that
+  compares tools (mmt vs Suricata vs Snort, the P5 `REPORT.md`) is never
+  committed or published until it passes a licence and fairness review. It
+  stays local, under `local/`, which `.gitignore` excludes. Until then only the
+  method and the harness are public.
 - **A run without a complete system-under-test record is invalid**
   ([methodology](docs/methodology.md)).
 - **Nothing is installed on the host.** Python dependencies live in the

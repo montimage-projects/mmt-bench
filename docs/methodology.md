@@ -102,6 +102,9 @@ alert-to-attack matching rule are added to this document by #5.
 - The harness never touches the production mmt-stack containers. It uses its
   own container names and data dirs.
 - Results are append-only: `results/<date>-<campaign>/` is never overwritten.
+- A tool-comparison report (mmt vs Suricata vs Snort, P5) is not committed
+  to `results/`. It stays local, under the git-ignored `local/`, until it
+  passes a licence and fairness review (design, decision 1).
 - Quiet host: when a campaign needs vLLM stopped, the harness prints the exact
   commands to stop and later restart `vllm-qwen.service` and
   `vllm-health-watchdog.timer`, and Luong runs them. The harness never runs

@@ -23,6 +23,9 @@ htmlcov/
 *.[eE][rR][fF].*
 # Local corpus data (downloaded, generated or private captures).
 corpus/data/
+# Local-only output: tool-comparison reports stay here until they pass a
+# licence and fairness review (AGENTS.md, design decision 1).
+local/
 
 # Editors and OS
 .idea/

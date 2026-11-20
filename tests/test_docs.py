@@ -88,13 +88,26 @@ RULES = [
     "Never touch the production mmt-stack containers",
     "Results are append-only",
     "The private dgx-spark capture is never committed or published",
-    "The repo is private",
+    "The repo is public",
+    "Never commit host identifiers",
+    "Tool-comparison reports stay out of git until reviewed",
 ]
 
 
 @pytest.mark.parametrize("rule", RULES)
 def test_agents_states_operating_rule(rule: str) -> None:
     assert rule in _read(AGENTS)
+
+
+def test_agents_no_longer_says_the_repo_is_private() -> None:
+    text = " ".join(_read(AGENTS).split())
+    assert "The repo is private" not in text
+    assert "licence and fairness review" in text
+
+
+def test_gitignore_keeps_local_only_reports_out_of_git() -> None:
+    lines = _read(ROOT / ".gitignore").splitlines()
+    assert "local/" in lines
 
 
 def test_agents_says_the_harness_prints_root_commands_for_luong() -> None:
@@ -125,7 +138,9 @@ def test_design_decisions_lists_the_five_epic_decisions() -> None:
     items = re.findall(r"^(\d+)\. ", decisions, re.MULTILINE)
     assert items == ["1", "2", "3", "4", "5"]
     for phrase in (
-        "stays private under montimage-projects",
+        'Was: "The repo stays private under montimage-projects for now."',
+        "the repo is public",
+        "stay out of git, local only, until they pass a licence and fairness review",
         "kept local only, never committed or published",
         "veth pair only",
         "the harness prints the commands and Luong runs them",

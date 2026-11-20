@@ -179,9 +179,16 @@ Every pcap carries its sha256, source, licence, size, packet count, average pack
 ## Decisions
 
 Luong's decisions, recorded in epic #1. They override the plan above where
-they differ.
+they differ. Decision 1 was replaced on 2026-11-20.
 
-1. The repo stays private under montimage-projects for now.
+1. **Replaced.** Was: "The repo stays private under montimage-projects for
+   now." Replaced by Luong's decision of 2026-11-20: the repo is public, under
+   montimage-projects (for free GitHub Actions). Tool-comparison reports (mmt
+   vs Suricata vs Snort, the P5 `REPORT.md`) stay out of git, local only, until
+   they pass a licence and fairness review; until then only the method and the
+   harness are public. This overrides "(private)" in the B2 heading and, for
+   comparison reports, "Results and reports are committed to `results/`" in
+   B9. It turns B10's "review before publishing" into a rule.
 2. An anonymised 1-h capture of dgx-spark's real traffic may be the benign
    corpus, kept local only, never committed or published. (B6 C-benign, B9.)
 3. The online mode uses a veth pair only for now (no ConnectX-7 cabling).
