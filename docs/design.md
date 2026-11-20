@@ -185,9 +185,8 @@ they differ.
 2. An anonymised 1-h capture of dgx-spark's real traffic may be the benign
    corpus, kept local only, never committed or published. (B6 C-benign, B9.)
 3. The online mode uses a veth pair only for now (no ConnectX-7 cabling).
-   This overrides "later into a cabled ConnectX-7 loop" in B5 and "Then
-   ConnectX-7 if a cable is added" in B8 P4: the ConnectX-7 path is out of
-   scope until a cable is added.
+   This narrows "later into a cabled ConnectX-7 loop" in B5: the ConnectX-7
+   path is out of scope until a cable is added, as B8 P4 already says.
 4. vLLM may be stopped for campaigns. Stopping it needs sudo, which agents do
    not have, so the harness prints the commands and Luong runs them. (B9.)
 5. Every run must carry the full system-under-test record (B4). A run without

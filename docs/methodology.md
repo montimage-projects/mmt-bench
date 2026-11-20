@@ -21,7 +21,7 @@ it in each run (#8).
 
 ## Fair comparison
 
-These rules apply to every campaign that compares tools, configs or rule sets:
+These rules apply to every campaign:
 
 - **The same pcaps**, identified by sha256.
 - **The same cores, pinned** (see [Pinning](#pinning)).
@@ -62,7 +62,7 @@ The highest replay rate the tool sustains without loss.
 - Each rate step lasts 60 s. A binary search finds the highest rate with drops
   under 0.1 %. Drops are the tool's own drops plus the kernel's `rx_dropped`
   and `rx_missed`.
-- `enP7s7`, dgx-spark's 1 GbE production NIC, is never used.
+- `enP7s7`, dgx-spark's 1 GbE Realtek NIC, is never used.
 - Reports label online numbers as veth numbers.
 
 ## Pinning

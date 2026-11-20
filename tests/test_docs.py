@@ -14,6 +14,9 @@ DESIGN = ROOT / "docs/design.md"
 METHODOLOGY = ROOT / "docs/methodology.md"
 CI = ROOT / ".github/workflows/ci.yml"
 
+#: How a shell command in ci.yml starts (not a YAML key such as ``python-version:``).
+COMMAND_PREFIXES = ("uv ", "python ", "python3 ")
+
 
 def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
@@ -21,7 +24,9 @@ def _read(path: Path) -> str:
 
 def _agents_commands() -> list[str]:
     """The commands in AGENTS.md's ``## Commands`` shell block, comments removed."""
-    section = _read(AGENTS).split("\n## Commands\n", 1)[1].split("\n## ", 1)[0]
+    text = _read(AGENTS)
+    assert "\n## Commands\n" in text, "AGENTS.md has no ## Commands section"
+    section = text.split("\n## Commands\n", 1)[1].split("\n## ", 1)[0]
     block = re.search(r"```sh\n(.*?)```", section, re.DOTALL)
     assert block is not None, "no ```sh block under ## Commands"
     commands = [line.split("#", 1)[0].strip() for line in block.group(1).splitlines()]
@@ -38,7 +43,7 @@ def _ci_run_lines() -> list[str]:
         line = line.strip()
         if line.startswith("run: "):
             line = line.removeprefix("run: ")
-        elif not line.startswith(("uv ", "python")):
+        elif not line.startswith(COMMAND_PREFIXES):
             continue
         lines.append(_without_locked(line))
     return lines
@@ -57,12 +62,24 @@ def test_agents_lists_install_lint_test_and_smoke_commands() -> None:
         assert any(c.startswith(expected) for c in commands), expected
 
 
+#: CI steps that set up the runner and have no local equivalent in AGENTS.md.
+CI_SETUP_ONLY = ("python -m pip install",)
+
+
 def test_agents_commands_are_the_ones_ci_runs() -> None:
-    # Each AGENTS.md command is one CI runs (``--locked`` aside), so the two
-    # cannot drift apart unnoticed.
+    # Each AGENTS.md command is one CI runs (``--locked`` aside).
     ci = _ci_run_lines()
     for command in _agents_commands():
         assert any(line.startswith(_without_locked(command)) for line in ci), command
+
+
+def test_every_ci_check_is_listed_in_agents() -> None:
+    # And the reverse: a check CI gains must be added to AGENTS.md too.
+    commands = [_without_locked(c) for c in _agents_commands()]
+    for line in _ci_run_lines():
+        if not line.startswith(COMMAND_PREFIXES) or line.startswith(CI_SETUP_ONLY):
+            continue
+        assert any(line.startswith(c) for c in commands), line
 
 
 #: A phrase from each operating rule that issue #3 requires.
@@ -80,6 +97,10 @@ def test_agents_states_operating_rule(rule: str) -> None:
     assert rule in _read(AGENTS)
 
 
+def test_agents_says_the_harness_prints_root_commands_for_luong() -> None:
+    assert "printed by the harness for Luong to run" in " ".join(_read(AGENTS).split())
+
+
 def test_claude_md_points_to_agents_without_restating_it() -> None:
     text = _read(CLAUDE)
     assert "[AGENTS.md](AGENTS.md)" in text
@@ -87,6 +108,7 @@ def test_claude_md_points_to_agents_without_restating_it() -> None:
     for rule in RULES:
         assert rule.lower() not in text.lower(), rule
     assert "```" not in text, "CLAUDE.md must not copy the command block"
+    assert len([line for line in text.splitlines() if line.strip()]) <= 6
 
 
 def test_design_has_track_b_sections_in_order_then_decisions() -> None:
@@ -97,7 +119,9 @@ def test_design_has_track_b_sections_in_order_then_decisions() -> None:
 
 
 def test_design_decisions_lists_the_five_epic_decisions() -> None:
-    decisions = _read(DESIGN).split("\n## Decisions\n", 1)[1]
+    text = _read(DESIGN)
+    assert "\n## Decisions\n" in text, "design.md has no ## Decisions section"
+    decisions = text.split("\n## Decisions\n", 1)[1]
     items = re.findall(r"^(\d+)\. ", decisions, re.MULTILINE)
     assert items == ["1", "2", "3", "4", "5"]
     for phrase in (
@@ -105,9 +129,9 @@ def test_design_decisions_lists_the_five_epic_decisions() -> None:
         "kept local only, never committed or published",
         "veth pair only",
         "the harness prints the commands and Luong runs them",
-        "A run without\n   it is invalid",
+        "A run without it is invalid",
     ):
-        assert phrase in decisions, phrase
+        assert phrase in " ".join(decisions.split()), phrase
 
 
 def test_design_has_no_track_a_content() -> None:

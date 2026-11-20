@@ -14,7 +14,9 @@ system-under-test with every run.
 ## Commands
 
 Python 3.12, managed with [uv](https://docs.astral.sh/uv/). Run from the repo
-root. CI runs the same checks (`.github/workflows/ci.yml`).
+root. CI runs the same checks (`.github/workflows/ci.yml`). They need a system
+Python 3.12; run `export UV_PYTHON_DOWNLOADS=never` first so uv never downloads
+an interpreter onto the host (CI sets the same).
 
 ```sh
 uv sync --locked                       # install: create .venv from uv.lock
@@ -44,7 +46,7 @@ adds its command here.
 - **The private dgx-spark capture is never committed or published.** It stays
   local, and results and reports name it only by its label and sha256. No
   packet capture goes into git (`.gitignore` excludes them).
-- **The repo is private.** Keep it under montimage-projects; do not publish
+- **The repo is private** (for now, epic #1). Keep it under montimage-projects; do not publish
   its code, results or reports elsewhere.
 - **A run without a complete system-under-test record is invalid**
   ([methodology](docs/methodology.md)).
