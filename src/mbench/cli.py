@@ -345,6 +345,11 @@ def _corpus_gen(ns: argparse.Namespace) -> int:
         entry, outcome = corpus.gen_entry(
             ns.manifest, spec, ns.seed, packets, flows, label, manifest
         )
+    except corpus.ManifestError as exc:
+        print(f"mbench corpus gen: {exc}", file=sys.stderr)
+        for problem in exc.problems:
+            print(f"  {problem}", file=sys.stderr)
+        return EXIT_USAGE
     except (OSError, ValueError) as exc:
         print(f"mbench corpus gen: {exc}", file=sys.stderr)
         return EXIT_USAGE
@@ -377,7 +382,13 @@ def _corpus_add(ns: argparse.Namespace) -> int:
         return EXIT_USAGE
     outcome = corpus.upsert(manifest, entry)
     if outcome != "unchanged":
-        corpus.save(ns.manifest, manifest)
+        try:
+            corpus.checked_save(ns.manifest, manifest)
+        except corpus.ManifestError as exc:
+            print(f"mbench corpus add: {exc}", file=sys.stderr)
+            for problem in exc.problems:
+                print(f"  {problem}", file=sys.stderr)
+            return EXIT_USAGE
     print(
         f"{entry['path']}: entry {outcome} (sha256 {entry['sha256']}, "
         f"{entry['packets']} packets of {entry['avg_packet_bytes']:g} B"

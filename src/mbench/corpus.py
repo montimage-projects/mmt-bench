@@ -303,6 +303,26 @@ def save(path: Path, manifest: dict[str, Any]) -> None:
         tmp.unlink(missing_ok=True)
 
 
+def checked_save(path: Path, manifest: dict[str, Any]) -> None:
+    """Save ``manifest`` only when it validates; leave ``path`` untouched.
+
+    Raises :class:`ManifestError` naming every problem otherwise. The guard
+    every write that merges caller-supplied fields goes through: fields the
+    schema constrains but :func:`entry_from_file` does not check
+    (``--source``, ``--licence``, ``--ground-truth``, ``--description``) or a
+    duplicate path must never leave a manifest :func:`load` would refuse.
+    """
+    from mbench import validate
+
+    problems = validate.manifest_errors(manifest)
+    if problems:
+        raise ManifestError(
+            f"{path}: refusing to write an INVALID manifest ({len(problems)} problems)",
+            problems,
+        )
+    save(path, manifest)
+
+
 def ordered(entry: dict[str, Any]) -> dict[str, Any]:
     """``entry`` with its fields in :data:`ENTRY_FIELDS` order."""
     return {k: entry[k] for k in ENTRY_FIELDS if k in entry}
@@ -442,7 +462,7 @@ def gen_entry(
         generator=generator_params(spec, seed, packets, flows),
     )
     upsert(manifest, entry)
-    save(manifest_path, manifest)
+    checked_save(manifest_path, manifest)
     return entry, "generated"
 
 

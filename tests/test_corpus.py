@@ -574,3 +574,125 @@ def test_cli_manifest_must_be_valid(tmp_path: Path, capsys: pytest.CaptureFixtur
     ):
         assert main(argv) == EXIT_INVALID
         assert "missing field" in capsys.readouterr().err
+
+
+# --- add/gen never write an invalid manifest -------------------------------------
+
+
+def test_checked_save_refuses_an_invalid_manifest(tmp_path: Path) -> None:
+    m = tmp_path / "manifest.yaml"
+    with pytest.raises(corpus.ManifestError) as exc:
+        corpus.checked_save(m, manifest(entry(source="")))
+    assert any("entries[0].source" in p for p in exc.value.problems)
+    assert not m.exists()
+
+
+@pytest.mark.parametrize(
+    ("extra", "field"),
+    [
+        (["--source", ""], "entries[1].source"),
+        (["--licence", ""], "entries[1].licence"),
+        (["--description", ""], "entries[1].description"),
+        (["--ground-truth", "../../etc/passwd"], "entries[1].ground_truth"),
+        (["--ground-truth", "/etc/passwd"], "entries[1].ground_truth"),
+    ],
+)
+def test_cli_add_refuses_to_write_an_invalid_manifest(
+    extra: list[str], field: str, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    m = tmp_path / "manifest.yaml"
+    out = tmp_path / "data" / "x.pcap"
+    corpus.generate(corpus.SETS["c-small"], 0, 30, 2, out)
+    corpus.save(m, manifest(entry(label="seed", path="data/seed.pcap")))
+    before = m.read_bytes()
+    argv = [
+        "corpus",
+        "add",
+        str(out),
+        "--source",
+        "s",
+        "--licence",
+        "l",
+        "--manifest",
+        str(m),
+        *extra,
+    ]
+    assert main(argv) == EXIT_USAGE
+    err = capsys.readouterr().err
+    assert "INVALID" in err and field in err
+    # The manifest on disk is byte-identical: nothing was written.
+    assert m.read_bytes() == before
+    assert [e["label"] for e in corpus.load(m)["entries"]] == ["seed"]
+
+
+def test_cli_add_refuses_a_second_entry_on_one_path(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    m = tmp_path / "manifest.yaml"
+    out = tmp_path / "data" / "x.pcap"
+    corpus.generate(corpus.SETS["c-small"], 0, 30, 2, out)
+    corpus.save(m, manifest(entry(label="seed", path="data/x.pcap")))
+    before = m.read_bytes()
+    assert (
+        main(
+            [
+                "corpus",
+                "add",
+                str(out),
+                "--label",
+                "other",
+                "--source",
+                "s",
+                "--licence",
+                "l",
+                "--manifest",
+                str(m),
+            ]
+        )
+        == EXIT_USAGE
+    )
+    assert "duplicate" in capsys.readouterr().err
+    assert m.read_bytes() == before
+
+
+def test_cli_add_still_registers_a_valid_entry(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    m = tmp_path / "manifest.yaml"
+    out = tmp_path / "data" / "x.pcap"
+    corpus.generate(corpus.SETS["c-small"], 0, 30, 2, out)
+    assert (
+        main(
+            [
+                "corpus",
+                "add",
+                str(out),
+                "--source",
+                "s",
+                "--licence",
+                "l",
+                "--ground-truth",
+                "truth/x.json",
+                "--manifest",
+                str(m),
+            ]
+        )
+        == EXIT_OK
+    )
+    assert "entry added" in capsys.readouterr().out
+    written = corpus.load(m)
+    assert validate.manifest_errors(written) == []
+    assert written["entries"][0]["ground_truth"] == "truth/x.json"
+
+
+def test_cli_gen_goes_through_the_same_guard(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    m = tmp_path / "manifest.yaml"
+    # gen writes data/c-small.pcap, which the seeded entry already uses: the
+    # upsert would leave two entries on one path.
+    corpus.save(m, manifest(entry(label="seed", path="data/c-small.pcap")))
+    before = m.read_bytes()
+    assert main(["corpus", "gen", "c-small", "--packets", "5", "--manifest", str(m)]) == EXIT_USAGE
+    assert "duplicate" in capsys.readouterr().err
+    assert m.read_bytes() == before
