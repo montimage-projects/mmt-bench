@@ -258,7 +258,7 @@ def tree_sha256(path: Path) -> str:
     if not path.is_dir():
         raise FileNotFoundError(f"no such file or directory: {path}")
     lines = []
-    for item in sorted(p for p in path.rglob("*") if p.is_file()):
+    for item in sorted(p for p in path.rglob("*") if p.is_file() and not p.is_symlink()):
         rel = item.relative_to(path).as_posix()
         lines.append(f"{hashlib.sha256(item.read_bytes()).hexdigest()}  {rel}\n")
     return hashlib.sha256("".join(lines).encode("utf-8")).hexdigest()
@@ -382,7 +382,8 @@ def _tools_item_schema() -> dict[str, Json]:
     from mbench import validate
 
     root = validate.schema()
-    # The run-scope ``tools`` array (allOf → then) is the one the runner fills.
+    # The tools item schema (identical in the base ``properties`` and the
+    # run-scope ``allOf → then`` branch).
     tools = root["properties"]["tools"]["anyOf"][0]
     return {
         "$schema": root["$schema"],

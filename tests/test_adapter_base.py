@@ -262,6 +262,15 @@ def test_tree_sha256_of_a_missing_path_fails(tmp_path: Path) -> None:
         tree_sha256(tmp_path / "absent")
 
 
+def test_tree_sha256_skips_symlinks_like_find_type_f(ruleset: Ruleset) -> None:
+    before = tree_sha256(ruleset.path)
+    # A symlink, even to a file inside the tree, is not hashed: it is not a
+    # regular file, so `find . -type f` would skip it too.
+    (ruleset.path / "link.rules").symlink_to(ruleset.path / "a.rules")
+    (ruleset.path / "dangling.rules").symlink_to(ruleset.path / "absent")
+    assert tree_sha256(ruleset.path) == before
+
+
 def test_config_record_holds_every_file_and_hashes_the_content(
     prepared: FakeAdapter, tmp_path: Path
 ) -> None:
