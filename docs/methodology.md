@@ -136,7 +136,11 @@ file by its `<pcap>.truth.json` name or its content and runs the same checks.
   and `dst`, each an IP address or a CIDR network's canonical address (a
   scan of a /24: `192.0.2.0/24`, never `192.0.2.5/24`).
 - `proto` (optional, lowercase): when given, only an alert with this protocol
-  matches.
+  matches. It is the protocol of the flow the attack runs on — `udp` for a
+  UDP scan — not the namespace of a rule's first condition (`ip.proto_id`
+  would wrongly say `ip`). For mmt-derived truth (`check/expect` rows),
+  take it from the rule's protocol list (`rule_inventory`), the same source
+  the adapter uses, or omit it.
 - `category` and `description` (optional) are reported, never matched: each
   tool names its categories its own way.
 - `rule_ids` (optional): per tool name (the adapter's `name`), the rule ids

@@ -1,0 +1,34 @@
+INFO_SEC: update "input.max_message_size" from 3000 to 32824
+Found 4 rules.
+1 - Rule id: 13
+	- type            : evasion
+	- events_count    : 2
+	- variables_count : 4
+	- variables       : ip.dst (178.14), ip.src (178.13), tcp.flags (354.6), tcp.payload_len (354.27)
+	- description     : Data in SYN packet.
+	- if_satisfied    : (nil)
+	- version         : 1.2.20 (a78a4fd - 2026-11-21 22:26:8), dpi version 1.10.3 (6a0afb46)
+2 - Rule id: 15
+	- type            : attack
+	- events_count    : 2
+	- variables_count : 4
+	- variables       : http.method (153.1), http.user_agent (153.7), ip.dst (178.14), ip.src (178.13)
+	- description     : Nikto detection
+	- if_satisfied    : (nil)
+	- version         : 1.2.20 (a78a4fd - 2026-11-21 22:26:8), dpi version 1.10.3 (6a0afb46)
+3 - Rule id: 4
+	- type            : attack
+	- events_count    : 3
+	- variables_count : 7
+	- variables       : arp.ar_op (30.5), arp.ar_sha (30.6), arp.ar_sip (30.7), arp.ar_tip (30.9), ethernet.dst (99.2), ethernet.packet_count (99.4099), ethernet.src (99.3)
+	- description     : IPv4 address conflict detection (RFC5227). Possible arp poisoning.
+	- if_satisfied    : (nil)
+	- version         : 1.2.20 (a78a4fd - 2026-11-21 22:26:11), dpi version 1.10.3 (6a0afb46)
+4 - Rule id: 5
+	- type            : attack
+	- events_count    : 2
+	- variables_count : 3
+	- variables       : arp.ar_op (30.5), arp.ar_sha (30.6), arp.ar_sip (30.7)
+	- description     : IPv4 address conflict detection (RFC5227). Possible arp poisoning.
+	- if_satisfied    : (nil)
+	- version         : 1.2.20 (a78a4fd - 2026-11-21 22:26:12), dpi version 1.10.3 (6a0afb46)
