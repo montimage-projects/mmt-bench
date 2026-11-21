@@ -101,7 +101,8 @@ Each pcap with attacks has a ground-truth file, `<pcap name>.truth.json`,
 which the corpus manifest names (#7). It lists the attacks the pcap contains,
 in terms every tool can be scored on: when, between which endpoints, over
 which protocol. `src/mbench/truth.py` loads it and checks it against
-`src/mbench/schemas/truth.schema.json`.
+`src/mbench/schemas/truth.schema.json`; `mbench validate` recognises a truth
+file by its `<pcap>.truth.json` name or its content and runs the same checks.
 
 ```json
 {

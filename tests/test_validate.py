@@ -196,6 +196,79 @@ def test_the_committed_corpus_manifest_validates(capsys: pytest.CaptureFixture[s
     assert "valid corpus manifest" in out and "local-only" in out
 
 
+# --- A ground-truth file (#26) ----------------------------------------------------
+
+
+def _truth(*attacks: dict[str, Any], **top: Any) -> dict[str, Any]:
+    return {
+        "schema_version": 1,
+        "pcap_sha256": "ab" * 32,
+        "attacks": list(attacks),
+        **top,
+    }
+
+
+def _attack(**over: Any) -> dict[str, Any]:
+    data: dict[str, Any] = {
+        "id": "a1",
+        "start": 1_700_000_000.0,
+        "end": 1_700_000_010.0,
+        "src": "192.0.2.20",
+        "dst": "198.51.100.0/24",
+        "proto": "tcp",
+    }
+    data.update(over)
+    return data
+
+
+def test_a_valid_truth_file_is_checked(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    path = write(tmp_path, _truth(_attack(), _attack(id="a2")), "x.truth.json")
+    assert main(["validate", str(path)]) == EXIT_OK
+    out = capsys.readouterr().out
+    assert f"{path}: valid ground truth (2 attacks, tolerance 1 s)" in out
+
+
+def test_a_truth_file_is_recognised_without_the_suffix(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # The content decides too: pcap_sha256 and attacks mark a truth file.
+    path = write(tmp_path, _truth(_attack()), "truth.json")
+    assert main(["validate", str(path)]) == EXIT_OK
+    out = capsys.readouterr().out
+    assert f"{path}: valid ground truth (1 attack, tolerance 1 s)" in out
+
+
+def test_the_truth_suffix_decides_the_kind(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # No schema_version: not a sut record, but a truth file by name, checked
+    # as one rather than reported unsupported.
+    path = tmp_path / "x.truth.json"
+    path.write_text(json.dumps({"pcap_sha256": "ab" * 32, "attacks": []}), encoding="utf-8")
+    assert main(["validate", str(path)]) == EXIT_INVALID
+    assert "missing field: schema_version" in capsys.readouterr().out
+
+
+def test_a_truth_schema_error_is_named(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    data = _truth(_attack())
+    del data["pcap_sha256"]
+    path = write(tmp_path, data, "x.truth.json")
+    assert main(["validate", str(path)]) == EXIT_INVALID
+    out = capsys.readouterr().out
+    assert "INVALID" in out and "missing field: pcap_sha256" in out
+
+
+def test_a_truth_semantic_error_is_named(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # An attack that ends before it starts passes the schema, so only
+    # truth.parse's own checks catch it.
+    path = write(tmp_path, _truth(_attack(end=1_699_999_000.0)), "x.truth.json")
+    assert main(["validate", str(path)]) == EXIT_INVALID
+    out = capsys.readouterr().out
+    assert "attacks[0].end: 1699999000.0 is before start" in out
+
+
 def test_invalid_json_is_invalid(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     path = tmp_path / "sut.json"
     path.write_text("{", encoding="utf-8")
