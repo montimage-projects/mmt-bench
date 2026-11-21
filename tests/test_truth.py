@@ -91,10 +91,20 @@ def test_several_alerts_for_one_attack_are_one_tp_and_no_fp() -> None:
     alerts = [_alert(T0 + i) for i in range(5)]
     result = truth.score(alerts, _gt(_attack()), tool=TOOL)
     assert (result.tp, result.fn, result.fp) == (1, 0, 0)
+    assert result.detection_rate == 1.0
     assert result.alerts == 5
     assert result.matched_alerts == 5
     assert result.alerts_per_attack == {"a1": 5}
     assert result.precision == 1.0
+
+
+def test_the_detection_rate_counts_attacks_not_alerts() -> None:
+    # 3 alerts detect 1 of 2 attacks: the rate is over attacks (0.5). A
+    # per-alert formula (matched alerts / attacks) would give 1.5.
+    gt = _gt(_attack(), _attack(id="a2", dst=OTHER))
+    result = truth.score([_alert(T0 + i) for i in range(3)], gt, tool=TOOL)
+    assert (result.tp, result.fn) == (1, 1)
+    assert result.detection_rate == 0.5
 
 
 # --- The matching rule --------------------------------------------------------------
