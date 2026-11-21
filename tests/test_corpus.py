@@ -696,3 +696,38 @@ def test_cli_gen_goes_through_the_same_guard(
     assert main(["corpus", "gen", "c-small", "--packets", "5", "--manifest", str(m)]) == EXIT_USAGE
     assert "duplicate" in capsys.readouterr().err
     assert m.read_bytes() == before
+
+
+def test_cli_check_unreadable_names_the_manifest_relative_path(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    m = tmp_path / "manifest.yaml"
+    entries: list[dict[str, Any]] = []
+    for name, local in (("x", False), ("y", True)):
+        f = tmp_path / "data" / f"{name}.pcap"
+        corpus.generate(corpus.SETS["c-small"], 0, 30, 2, f)
+        entries.append(
+            corpus.entry_from_file(
+                m,
+                f,
+                label=name,
+                source="s",
+                licence="l",
+                ground_truth=None,
+                local_only=local,
+            )
+        )
+    corpus.save(m, manifest(*entries))
+    # A parse failure (x, garbage bytes) and a read failure (y): neither may
+    # echo the resolved path.
+    (tmp_path / "data" / "x.pcap").write_bytes(b"garbage-not-a-pcap")
+
+    def denied(path: object) -> str:
+        raise PermissionError(13, "Permission denied", str(path))
+
+    monkeypatch.setattr(pcap, "sha256_file", denied)
+    assert main(["corpus", "check", "--manifest", str(m)]) == EXIT_INVALID
+    printed = capsys.readouterr().out
+    assert "x: UNREADABLE" in printed and "y: UNREADABLE" in printed
+    assert "data/x.pcap" in printed and "data/y.pcap" in printed
+    assert str(tmp_path) not in printed

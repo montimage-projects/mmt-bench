@@ -502,6 +502,19 @@ class Check:
     problems: tuple[str, ...] = ()
 
 
+def _problem(entry: dict[str, Any], file: Path, exc: OSError | pcap.CaptureError) -> str:
+    """The error text for an unreadable capture.
+
+    Names the entry's manifest-relative ``path``, never the resolved ``file``:
+    for a ``local_only`` entry only the manifest-relative name is
+    operator-facing.
+    """
+    rel = str(entry["path"])
+    if isinstance(exc, OSError) and exc.strerror:
+        return f"{rel}: {exc.strerror}"
+    return str(exc).replace(str(file), rel)
+
+
 def check_entry(manifest_path: Path, entry: dict[str, Any]) -> Check:
     """Compare a file with its entry: sha256 first, then the computed fields.
 
@@ -512,18 +525,15 @@ def check_entry(manifest_path: Path, entry: dict[str, Any]) -> Check:
     if not file.is_file():
         return Check(label, "missing", ("the file is not present",))
     st: pcap.Stats | None
-    if entry["local_only"]:
-        try:
+    try:
+        if entry["local_only"]:
             sha = pcap.sha256_file(file)
-        except OSError as exc:
-            return Check(label, "unreadable", (str(exc),))
-        st = None
-    else:
-        try:
+            st = None
+        else:
             st = pcap.stats(file)
-        except (OSError, pcap.CaptureError) as exc:
-            return Check(label, "unreadable", (str(exc),))
-        sha = st.sha256
+            sha = st.sha256
+    except (OSError, pcap.CaptureError) as exc:
+        return Check(label, "unreadable", (_problem(entry, file, exc),))
     if sha != entry["sha256"]:
         return Check(label, "mismatch", (f"sha256 is {sha}, manifest says {entry['sha256']}",))
     if st is None:
