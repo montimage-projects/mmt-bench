@@ -92,8 +92,85 @@ Each run's alerts are compared with the pcap's ground truth. Every adapter
 normalises its tool's alerts to one format (`ts, rule_id, category, src, dst,
 proto`), so `truth.py` scores every tool the same way: true positives, false
 negatives, false positives, detection rate and precision. The report shows the
-detection rate next to the throughput. The ground-truth file format and the
-alert-to-attack matching rule are added to this document by #5.
+detection rate next to the throughput. The ground-truth file and the matching
+rule are in [Ground truth](#ground-truth).
+
+## Ground truth
+
+Each pcap with attacks has a ground-truth file, `<pcap name>.truth.json`,
+which the corpus manifest names (#7). It lists the attacks the pcap contains,
+in terms every tool can be scored on: when, between which endpoints, over
+which protocol. `src/mbench/truth.py` loads it and checks it against
+`src/mbench/schemas/truth.schema.json`.
+
+```json
+{
+  "schema_version": 1,
+  "pcap_sha256": "0f8a5c6e3b1d2a4f6e8c0b2d4f6a8c0e2b4d6f8a0c2e4b6d8f0a2c4e6b8d0f2a",
+  "source": "mmt-security check/expect/10.http.port.csv",
+  "tolerance_s": 1.0,
+  "attacks": [
+    {
+      "id": "syn-flood-1",
+      "start": 1489508972.695759,
+      "end": 1489508972.698659,
+      "src": "192.0.2.20",
+      "dst": "198.51.100.0/24",
+      "proto": "tcp",
+      "category": "dos",
+      "description": "Half TCP handshakes without RST",
+      "rule_ids": {"mmt-probe": ["10"]}
+    }
+  ]
+}
+```
+
+- `schema_version` is 1. `pcap_sha256` is the sha256 of the pcap it
+  describes. `source` (optional) says where the labels come from.
+- `tolerance_s` (optional, default 1, at least 0): seconds an alert may fall
+  before an attack's start or after its end and still match it, because tools
+  time-stamp an alert at different packets of the attack.
+- Each attack has a unique `id`, a `start` and an `end` (packet time, in
+  seconds since the epoch; `end` not before `start`), and two endpoints `src`
+  and `dst`, each an IP address or a CIDR network (a scan of a /24).
+- `proto` (optional, lowercase): when given, only an alert with this protocol
+  matches.
+- `category` and `description` (optional) are reported, never matched: each
+  tool names its categories its own way.
+- `rule_ids` (optional): per tool name (the adapter's `name`), the rule ids
+  that detect the attack. When the scored tool has an entry, only an alert
+  with one of those rule ids matches; any other tool is matched without it.
+  This lets a tool's own expected output (mmt-security `check/expect`) be the
+  ground truth without making it binding on Suricata or Snort.
+
+An alert normalised by the adapter (`ts, rule_id, category, src, dst, proto`)
+**matches** an attack when all of these hold:
+
+1. `ts` is within `[start - tolerance_s, end + tolerance_s]`;
+2. its `src` and `dst` are the attack's two endpoints, in either direction (a
+   tool may report the reply packet), each address within its endpoint's
+   network;
+3. its `proto` equals the attack's `proto`, when the attack has one;
+4. its `rule_id` is in the attack's `rule_ids` for this tool, when there is
+   such an entry.
+
+Then, for one run:
+
+- **TP** is the number of attacks with at least one matching alert. Several
+  alerts for one attack make one TP, and none of them is an FP.
+- **FN** is the number of attacks with no matching alert.
+- **FP** is the number of alerts that match no attack.
+- **Detection rate** = TP / (TP + FN), over attacks.
+- **Precision** = matched alerts / all alerts, over alerts. Counting alerts,
+  not attacks, keeps both terms in one unit: a tool that raises ten alerts
+  for one attack and one stray alert has a precision of 10/11.
+- An alert that matches two overlapping attacks detects both, and counts
+  once as a matched alert.
+- A pcap without attacks has no detection rate, and a run without alerts has
+  no precision: both are reported as undefined, never as 0 or 1.
+
+The run's JSON keeps the alert count per attack, so a report can show which
+attacks a tool missed.
 
 ## Duration and safety
 

@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/montimage-projects/mmt-bench/schemas/truth.schema.json",
+  "title": "mmt-bench ground truth",
+  "description": "The attacks a pcap contains, which truth.py scores every tool's normalised alerts against (docs/methodology.md, Ground truth).",
+  "type": "object",
+  "required": ["schema_version", "pcap_sha256", "attacks"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {"const": 1},
+    "pcap_sha256": {
+      "description": "The sha256 of the pcap this ground truth describes.",
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "source": {
+      "description": "Where the labels come from (a check/expect file, a dataset's label file, a generator and its seed).",
+      "type": "string",
+      "minLength": 1
+    },
+    "tolerance_s": {
+      "description": "Seconds an alert may fall before an attack's start or after its end and still match it. Default 1.",
+      "type": "number",
+      "minimum": 0
+    },
+    "attacks": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/attack"}
+    }
+  },
+  "$defs": {
+    "endpoint": {
+      "description": "An IP address, or a network in CIDR form (a scan of a /24).",
+      "type": "string",
+      "minLength": 1
+    },
+    "attack": {
+      "type": "object",
+      "required": ["id", "start", "end", "src", "dst"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "start": {
+          "description": "Packet time of the attack's first packet, in seconds since the epoch.",
+          "type": "number",
+          "minimum": 0
+        },
+        "end": {
+          "description": "Packet time of the attack's last packet; not before start.",
+          "type": "number",
+          "minimum": 0
+        },
+        "src": {"$ref": "#/$defs/endpoint"},
+        "dst": {"$ref": "#/$defs/endpoint"},
+        "proto": {
+          "description": "When given, an alert matches only with this protocol.",
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_.+-]*$"
+        },
+        "category": {
+          "description": "The attack's class (scan, dos, sqli...). Reported, never matched.",
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {"type": "string"},
+        "rule_ids": {
+          "description": "Per tool name, the rule ids that detect this attack. When the scored tool has an entry, only an alert with one of these rule ids matches.",
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "minItems": 1,
+            "items": {"type": "string", "minLength": 1}
+          }
+        }
+      }
+    }
+  }
+}
