@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/montimage-projects/mmt-bench/schemas/corpus-manifest.schema.json",
+  "title": "mmt-bench corpus manifest (corpus/manifest.yaml)",
+  "description": "Every capture of the corpus, by sha256, with its source, licence, size, packet count, average packet size and ground-truth file (plan §B6). Captures are never committed: each path is under the manifest's git-ignored data/ directory. A local_only entry is shown in results and reports only by its label and sha256.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "entries"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "entries": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/entry"}
+    }
+  },
+  "$defs": {
+    "relative_path": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._+-]+(/[A-Za-z0-9._+-]+)*$",
+      "not": {"pattern": "(^|/)\\.\\.?(/|$)"}
+    },
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "label",
+        "path",
+        "sha256",
+        "size_bytes",
+        "packets",
+        "avg_packet_bytes",
+        "source",
+        "licence",
+        "ground_truth",
+        "local_only"
+      ],
+      "properties": {
+        "label": {
+          "description": "The name results and reports use, unique in the manifest.",
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"
+        },
+        "path": {
+          "description": "Relative to the manifest's directory, under its git-ignored data/ directory.",
+          "allOf": [{"$ref": "#/$defs/relative_path"}, {"pattern": "^data/"}]
+        },
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "size_bytes": {"description": "The file size.", "type": "integer", "minimum": 24},
+        "packets": {"description": "The packet count.", "type": "integer", "minimum": 0},
+        "avg_packet_bytes": {
+          "description": "The average original (wire) length of a packet, 2 decimals.",
+          "type": "number",
+          "minimum": 0
+        },
+        "source": {
+          "description": "Where the capture comes from: a URL, a dataset name, or the command that generated it.",
+          "type": "string",
+          "minLength": 1
+        },
+        "licence": {
+          "description": "An SPDX identifier or the dataset's own licence name.",
+          "type": "string",
+          "minLength": 1
+        },
+        "ground_truth": {
+          "description": "The ground-truth file, relative to the manifest's directory; null for a benign capture, where no alert is expected.",
+          "anyOf": [{"$ref": "#/$defs/relative_path"}, {"type": "null"}]
+        },
+        "local_only": {
+          "description": "True for a capture that is never committed or published (the anonymised dgx-spark capture): results and reports show only its label and sha256.",
+          "type": "boolean"
+        },
+        "description": {"type": "string", "minLength": 1},
+        "generator": {
+          "description": "For a set written by mbench corpus gen: the parameters that regenerate it byte for byte.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["set", "version", "seed", "packets", "flows", "frame_bytes"],
+          "properties": {
+            "set": {"enum": ["c-small", "c-large"]},
+            "version": {"type": "integer", "minimum": 1},
+            "seed": {"type": "integer", "minimum": 0},
+            "packets": {"type": "integer", "minimum": 1},
+            "flows": {"type": "integer", "minimum": 1},
+            "frame_bytes": {"type": "integer", "minimum": 50}
+          }
+        }
+      }
+    }
+  }
+}

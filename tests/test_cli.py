@@ -1,6 +1,7 @@
 """The ``mbench`` entry point and its not-implemented subcommand stubs.
 
 ``sut`` and ``validate`` are implemented (#4): see test_sut_cli.py.
+``corpus`` is implemented (#7): see test_corpus.py.
 """
 
 from __future__ import annotations
@@ -16,7 +17,7 @@ from mbench.cli import EXIT_NOT_IMPLEMENTED, SUBCOMMANDS, Subcommand, main
 
 EXPECTED = {"sut", "corpus", "run", "sweep", "report", "validate"}
 EXPECTED_ISSUES = {"sut": 4, "corpus": 7, "run": 8, "sweep": 17, "report": 8, "validate": 4}
-IMPLEMENTED = {"sut", "validate"}
+IMPLEMENTED = {"sut", "corpus", "validate"}
 STUBS = [s for s in SUBCOMMANDS if s.name not in IMPLEMENTED]
 
 
@@ -51,7 +52,6 @@ def test_stub_exits_non_zero_naming_its_issue(
         (["run", "campaigns/smoke.yaml", "--repeats", "5"], 8),  # positional first
         (["run", "--rate", "5", "x"], 8),  # option first
         (["run", "--rate"], 8),  # option missing its value
-        (["corpus", "gen", "c-small", "--seed", "1"], 7),
         (["report", "--", "-weird-name"], 8),
     ],
 )

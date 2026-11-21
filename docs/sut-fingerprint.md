@@ -190,7 +190,8 @@ sut.json: INVALID (2 problems)
 Exit status: 0 when every record is complete, 1 when one is incomplete or not
 JSON, 2 when a file cannot be read (missing, not readable, not UTF-8) or is not
 a kind of record it checks yet.
-Campaign files (#8) and the corpus manifest (#7) are added by their issues.
+The corpus manifest (`corpus/manifest.yaml`) is checked too (#7); campaign
+files are added by #8.
 
 ## Privacy
 

@@ -1,8 +1,10 @@
 """``mbench validate``: check a record for completeness.
 
-For now it checks sut.json records (#4) against the committed JSON Schema
-(``src/mbench/schemas/sut.schema.json``) and re-computes their ``sut_hash``.
-Campaign files (#8) and the corpus manifest (#7) are added by their issues.
+It checks sut.json records (#4) against the committed JSON Schema
+(``src/mbench/schemas/sut.schema.json``) and re-computes their ``sut_hash``,
+and the corpus manifest (#7, ``corpus/manifest.yaml``) against
+``src/mbench/schemas/corpus-manifest.schema.json``. Campaign files are added
+by #8.
 
 Every problem is reported by the dotted path of the field, for example
 ``missing field: host.cpu.core_types[0].governor``.
@@ -19,12 +21,14 @@ from importlib.resources import files
 from pathlib import Path
 from typing import Any
 
+import yaml
 from jsonschema import Draft202012Validator
 from jsonschema.exceptions import ValidationError
 
 from mbench import sut
 
 SUT_SCHEMA = "sut.schema.json"
+MANIFEST_SCHEMA = "corpus-manifest.schema.json"
 
 
 @cache
@@ -105,6 +109,44 @@ def sut_errors(record: Any) -> list[str]:
     return errors
 
 
+def manifest_errors(manifest: Any) -> list[str]:
+    """Every reason ``manifest`` is not a valid corpus manifest; empty if it is.
+
+    Beyond the schema: labels and paths are unique, and a generated entry's
+    packet count and average packet size match its generator parameters.
+    """
+    validator = Draft202012Validator(schema(MANIFEST_SCHEMA))
+    errors = sorted(
+        {
+            describe(leaf)
+            for error in validator.iter_errors(manifest)
+            for leaf in _leaf_errors(error)
+        }
+    )
+    if errors or not isinstance(manifest, dict):
+        return errors
+    first: dict[tuple[str, object], int] = {}
+    for i, entry in enumerate(manifest["entries"]):
+        for key in ("label", "path"):
+            seen = first.setdefault((key, entry[key]), i)
+            if seen != i:
+                errors.append(
+                    f"entries[{i}].{key}: duplicate {entry[key]!r} (also entries[{seen}])"
+                )
+        gen = entry.get("generator")
+        if gen is not None:
+            for key, expected in (
+                ("packets", gen["packets"]),
+                ("avg_packet_bytes", gen["frame_bytes"]),
+            ):
+                if entry[key] != expected:
+                    errors.append(
+                        f"entries[{i}].{key}: {entry[key]} "
+                        f"does not match its generator ({expected})"
+                    )
+    return errors
+
+
 @dataclass
 class Report:
     """The outcome of validating one file."""
@@ -115,6 +157,8 @@ class Report:
     fields: int = 0
     unavailable: list[tuple[str, str, str]] = field(default_factory=list)
     scope: str = ""
+    #: What a valid record of a kind other than ``sut`` holds, in a few words.
+    summary: str = ""
 
     @property
     def ok(self) -> bool:
@@ -142,9 +186,7 @@ def validate_file(path: str | Path) -> Report:
             f"{p}: unreadable: not UTF-8 text ({exc.reason} at byte {exc.start})"
         ) from None
     if p.suffix.lower() in {".yaml", ".yml"}:
-        raise UnsupportedRecord(
-            f"{p}: YAML records are not checked yet (campaigns: #8, corpus/manifest.yaml: #7)"
-        )
+        return _validate_yaml(p, text)
     try:
         record = json.loads(text)
     except ValueError as exc:
@@ -152,9 +194,31 @@ def validate_file(path: str | Path) -> Report:
     if not (isinstance(record, dict) and ("sut_hash" in record or "schema_version" in record)):
         raise UnsupportedRecord(
             f"{p}: not a sut.json record (no schema_version or sut_hash); "
-            "mbench validate checks sut.json for now (campaigns: #8, corpus manifest: #7)"
+            "mbench validate checks sut.json and corpus/manifest.yaml for now (campaigns: #8)"
         )
     report = Report(str(p), "sut", sut_errors(record), scope=str(record.get("scope", "")))
     report.fields = sut.field_count(record)
     report.unavailable = sut.unavailable_fields(record)
+    return report
+
+
+def is_manifest(path: Path, data: Any) -> bool:
+    """A file named ``manifest.yaml``, or a YAML mapping with ``entries``."""
+    return path.stem == "manifest" or (isinstance(data, dict) and "entries" in data)
+
+
+def _validate_yaml(p: Path, text: str) -> Report:
+    try:
+        data = yaml.safe_load(text)
+    except yaml.YAMLError as exc:
+        return Report(str(p), "yaml", [f"not valid YAML: {exc}"])
+    if not is_manifest(p, data):
+        raise UnsupportedRecord(
+            f"{p}: not a corpus manifest (no entries); campaign files are not checked yet (#8)"
+        )
+    report = Report(str(p), "corpus manifest", manifest_errors(data))
+    if report.ok:
+        entries = data["entries"]
+        local = sum(1 for e in entries if e["local_only"])
+        report.summary = f"{len(entries)} entries, {local} local-only"
     return report

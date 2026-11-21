@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "jsonschema>=4.23",
+    "pyyaml>=6.0.2,!=6.0.4",  # 6.0.4 is < 7 days old (2026-11-20): too new to trust
 ]
 
 [project.scripts]
@@ -21,6 +22,7 @@ dev = [
     "pytest>=9.2",
     "ruff>=0.17",
     "types-jsonschema>=4.23",
+    "types-pyyaml>=6.0.12",
 ]
 
 [tool.ruff]

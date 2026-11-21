@@ -1,10 +1,10 @@
 """The ``mbench`` command line.
 
 Each subcommand is filled in by its own issue in the mmt-bench v0 epic (#1).
-``sut`` and ``validate`` are implemented (#4). The others are still stubs that
-exit with :data:`EXIT_NOT_IMPLEMENTED` and name the issue that will implement
-them, so a script or CI job calling one fails loudly instead of silently doing
-nothing.
+``sut`` and ``validate`` are implemented (#4), ``corpus`` too (#7). The others
+are still stubs that exit with :data:`EXIT_NOT_IMPLEMENTED` and name the issue
+that will implement them, so a script or CI job calling one fails loudly
+instead of silently doing nothing.
 """
 
 from __future__ import annotations
@@ -15,6 +15,7 @@ import sys
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from mbench import __version__
 
@@ -187,7 +188,9 @@ def _write_sources(recorder: object, record: dict[str, object], alias: str, out:
 
 
 def _configure_validate(p: argparse.ArgumentParser) -> None:
-    p.add_argument("paths", nargs="+", metavar="PATH", help="record to check (sut.json)")
+    p.add_argument(
+        "paths", nargs="+", metavar="PATH", help="record to check (sut.json, corpus/manifest.yaml)"
+    )
     p.add_argument("-q", "--quiet", action="store_true", help="do not list the unavailable fields")
 
 
@@ -202,7 +205,9 @@ def _run_validate(ns: argparse.Namespace) -> int:
             print(f"mbench validate: {exc}", file=sys.stderr)
             status = max(status, EXIT_USAGE)
             continue
-        if report.ok:
+        if report.ok and report.kind != "sut":
+            print(f"{report.path}: valid {report.kind} ({report.summary})")
+        elif report.ok:
             print(
                 f"{report.path}: valid {report.kind} record (scope {report.scope}, "
                 f"{report.fields} fields, {len(report.unavailable)} unavailable)"
@@ -218,6 +223,211 @@ def _run_validate(ns: argparse.Namespace) -> int:
     return status
 
 
+# --- mbench corpus -------------------------------------------------------------
+
+
+def _configure_corpus(p: argparse.ArgumentParser) -> None:
+    from mbench import corpus
+
+    actions = p.add_subparsers(dest="action", metavar="<action>")
+    gen = actions.add_parser(
+        "gen",
+        help="generate a synthetic set and add it to the manifest",
+        description="Generate a synthetic pcap in pure Python under corpus/data/ "
+        "and add its entry to the manifest. Byte-for-byte deterministic: the same "
+        "set, seed, packet and flow counts always give the same file.",
+    )
+    gen.add_argument("set", choices=sorted(corpus.SETS), help="the synthetic set")
+    gen.add_argument("--seed", type=int, default=0, metavar="N", help="default: 0")
+    gen.add_argument(
+        "--packets",
+        type=int,
+        default=None,
+        metavar="N",
+        help="packet count (default: the set's own)",
+    )
+    gen.add_argument(
+        "--flows",
+        type=int,
+        default=None,
+        metavar="N",
+        help="distinct 5-tuples, round-robin (default: the set's own)",
+    )
+    gen.add_argument(
+        "--label", default=None, metavar="NAME", help="manifest label (default: the set name)"
+    )
+    gen.add_argument(
+        "--manifest",
+        type=Path,
+        default=corpus.DEFAULT_MANIFEST,
+        metavar="PATH",
+        help=f"default: {corpus.DEFAULT_MANIFEST}",
+    )
+    add = actions.add_parser(
+        "add",
+        help="register a local capture in the manifest",
+        description="Register a pcap or pcapng that lives under the manifest's "
+        "git-ignored data/ directory: every computed field comes from the file.",
+    )
+    add.add_argument("file", type=Path, metavar="PCAP", help="capture under corpus/data/")
+    add.add_argument("--label", default=None, metavar="NAME", help="default: the file stem")
+    add.add_argument("--source", required=True, metavar="TEXT", help="where it comes from")
+    add.add_argument("--licence", required=True, metavar="ID", help="SPDX id or licence name")
+    add.add_argument(
+        "--ground-truth",
+        default=None,
+        metavar="PATH",
+        help="expected-alerts file, relative to corpus/ (default: none)",
+    )
+    add.add_argument(
+        "--local-only",
+        action="store_true",
+        help="never committed or published: shown only by label and sha256",
+    )
+    add.add_argument("--description", default=None, metavar="TEXT")
+    add.add_argument(
+        "--manifest",
+        type=Path,
+        default=corpus.DEFAULT_MANIFEST,
+        metavar="PATH",
+        help=f"default: {corpus.DEFAULT_MANIFEST}",
+    )
+    check = actions.add_parser(
+        "check",
+        help="compare each capture present with its manifest sha256",
+        description="Verify every manifest entry whose file is present: sha256, "
+        "then size, packet count and average packet size. A missing file is "
+        "reported, never an error (captures are not committed); a mismatch or an "
+        "unreadable file exits non-zero.",
+    )
+    check.add_argument(
+        "labels", nargs="*", metavar="LABEL", help="check only these entries (default: all)"
+    )
+    check.add_argument(
+        "--manifest",
+        type=Path,
+        default=corpus.DEFAULT_MANIFEST,
+        metavar="PATH",
+        help=f"default: {corpus.DEFAULT_MANIFEST}",
+    )
+    p.set_defaults(corpus_help=p.format_help)
+
+
+def _load_manifest(path: Path, command: str) -> tuple[dict[str, Any] | None, int]:
+    """Load and validate the manifest for a corpus action; print why not."""
+    from mbench import corpus
+
+    try:
+        return corpus.load(path), EXIT_OK
+    except corpus.ManifestError as exc:
+        print(f"mbench corpus {command}: {exc}", file=sys.stderr)
+        for problem in exc.problems:
+            print(f"  {problem}", file=sys.stderr)
+        return None, EXIT_INVALID if exc.problems else EXIT_USAGE
+    except OSError as exc:
+        print(f"mbench corpus {command}: {exc}", file=sys.stderr)
+        return None, EXIT_USAGE
+
+
+def _corpus_gen(ns: argparse.Namespace) -> int:
+    from mbench import corpus
+
+    spec = corpus.SETS[ns.set]
+    label = ns.label or spec.name
+    packets = spec.packets if ns.packets is None else ns.packets
+    # The set's own flow count is clamped to what ``packets`` allows; an
+    # explicit --flows too large is an error.
+    flows = min(spec.flows, corpus.max_flows(spec, packets)) if ns.flows is None else ns.flows
+    manifest, status = _load_manifest(ns.manifest, "gen")
+    if manifest is None:
+        return status
+    try:
+        entry, outcome = corpus.gen_entry(
+            ns.manifest, spec, ns.seed, packets, flows, label, manifest
+        )
+    except (OSError, ValueError) as exc:
+        print(f"mbench corpus gen: {exc}", file=sys.stderr)
+        return EXIT_USAGE
+    print(
+        f"{entry['path']}: {outcome} ({entry['packets']} packets of "
+        f"{entry['avg_packet_bytes']:g} B, sha256 {entry['sha256']})"
+    )
+    return EXIT_OK
+
+
+def _corpus_add(ns: argparse.Namespace) -> int:
+    from mbench import corpus
+
+    manifest, status = _load_manifest(ns.manifest, "add")
+    if manifest is None:
+        return status
+    try:
+        entry = corpus.entry_from_file(
+            ns.manifest,
+            ns.file,
+            label=ns.label or ns.file.stem,
+            source=ns.source,
+            licence=ns.licence,
+            ground_truth=ns.ground_truth,
+            local_only=ns.local_only,
+            description=ns.description,
+        )
+    except (OSError, ValueError) as exc:
+        print(f"mbench corpus add: {exc}", file=sys.stderr)
+        return EXIT_USAGE
+    outcome = corpus.upsert(manifest, entry)
+    if outcome != "unchanged":
+        corpus.save(ns.manifest, manifest)
+    print(
+        f"{entry['path']}: entry {outcome} (sha256 {entry['sha256']}, "
+        f"{entry['packets']} packets of {entry['avg_packet_bytes']:g} B"
+        f"{', local-only' if entry['local_only'] else ''})"
+    )
+    return EXIT_OK
+
+
+def _corpus_check(ns: argparse.Namespace) -> int:
+    from mbench import corpus
+
+    manifest, status = _load_manifest(ns.manifest, "check")
+    if manifest is None:
+        return status
+    unknown = [label for label in ns.labels if corpus.find_entry(manifest, label) is None]
+    if unknown:
+        print(f"mbench corpus check: no manifest entry for {', '.join(unknown)}", file=sys.stderr)
+        return EXIT_USAGE
+    entries = (
+        [corpus.find_entry(manifest, label) for label in ns.labels]
+        if ns.labels
+        else manifest["entries"]
+    )
+    checks = [corpus.check_entry(ns.manifest, e) for e in entries if e is not None]
+    bad = 0
+    for check in checks:
+        if check.status == "ok":
+            print(f"{check.label}: ok")
+        else:
+            print(f"{check.label}: {check.status.upper()}")
+            for problem in check.problems:
+                print(f"  {problem}")
+            if check.status != "missing":
+                bad += 1
+    counts = {s: sum(1 for c in checks if c.status == s) for s in ("ok", "missing")}
+    print(f"{len(checks)} checked: {counts['ok']} ok, {counts['missing']} missing, {bad} failed")
+    return EXIT_INVALID if bad else EXIT_OK
+
+
+def _run_corpus(ns: argparse.Namespace) -> int:
+    if ns.action == "gen":
+        return _corpus_gen(ns)
+    if ns.action == "add":
+        return _corpus_add(ns)
+    if ns.action == "check":
+        return _corpus_check(ns)
+    print(ns.corpus_help(), file=sys.stderr)
+    return EXIT_USAGE
+
+
 SUBCOMMANDS: tuple[Subcommand, ...] = (
     Subcommand(
         "sut",
@@ -226,7 +436,13 @@ SUBCOMMANDS: tuple[Subcommand, ...] = (
         _configure_sut,
         _run_sut,
     ),
-    Subcommand("corpus", "manage and generate the pcap corpus", 7),
+    Subcommand(
+        "corpus",
+        "manage and generate the pcap corpus",
+        7,
+        _configure_corpus,
+        _run_corpus,
+    ),
     Subcommand("run", "run a campaign and write its results", 8),
     Subcommand("sweep", "run a parameter sweep across a campaign matrix", 17),
     Subcommand("report", "render REPORT.md from a results directory", 8),

@@ -1,0 +1,52 @@
+# The pcap corpus (plan §B6), checked by `mbench validate corpus/manifest.yaml`
+# against src/mbench/schemas/corpus-manifest.schema.json.
+#
+# Captures are never committed: each `path` is under corpus/data/, which git
+# ignores. `mbench corpus gen` regenerates the synthetic sets byte for byte,
+# `mbench corpus add` registers a local capture, and `mbench corpus check`
+# compares every file present with its sha256. A `local_only` entry is shown
+# in results and reports only by label and sha256.
+#
+# `mbench corpus gen` and `mbench corpus add` rewrite this file: comments other
+# than this header are not kept.
+
+schema_version: 1
+entries:
+- label: c-small
+  path: data/c-small.pcap
+  sha256: 9ba097f210f672e3f79ff64eb24e7bf88929dadbcab55c9f37491562dbcff9d2
+  size_bytes: 80000024
+  packets: 1000000
+  avg_packet_bytes: 64.0
+  source: 'synthetic: mbench corpus gen c-small --seed 0 --packets 1000000 --flows
+    1024'
+  licence: CC0-1.0
+  ground_truth: null
+  local_only: false
+  description: synthetic 64 B Ethernet/IPv4/UDP frames (packet-rate bound)
+  generator:
+    set: c-small
+    version: 1
+    seed: 0
+    packets: 1000000
+    flows: 1024
+    frame_bytes: 64
+- label: c-large
+  path: data/c-large.pcap
+  sha256: ccaaf1c6b8aa16f9c8dd3129262545cd9216d746b1277290f85f086e3fcbfd29
+  size_bytes: 151600024
+  packets: 100000
+  avg_packet_bytes: 1500.0
+  source: 'synthetic: mbench corpus gen c-large --seed 0 --packets 100000 --flows
+    1024'
+  licence: CC0-1.0
+  ground_truth: null
+  local_only: false
+  description: synthetic 1500 B Ethernet/IPv4/UDP frames (byte-rate bound)
+  generator:
+    set: c-large
+    version: 1
+    seed: 0
+    packets: 100000
+    flows: 1024
+    frame_bytes: 1500
