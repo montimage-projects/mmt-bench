@@ -19,7 +19,9 @@ uv run mbench corpus add data/x.pcap --source ... --licence ...
 
 `gen` needs no packet tool: the synthetic sets are written in pure Python and
 are byte-for-byte reproducible from the set, the seed and the packet and flow
-counts, which the entry records under `generator`.
+counts, which the entry records under `generator`. `gen` refuses a label it
+does not own, and checks the manifest it would write before the first capture
+byte: a refused run leaves `data/` and the manifest untouched.
 
 `check` exits non-zero when a file's sha256 differs from its entry. A missing
 file is reported but not an error: captures are not committed, so any of them

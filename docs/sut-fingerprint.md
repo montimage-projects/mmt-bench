@@ -190,8 +190,9 @@ sut.json: INVALID (2 problems)
 Exit status: 0 when every record is complete, 1 when one is incomplete or not
 JSON, 2 when a file cannot be read (missing, not readable, not UTF-8) or is not
 a kind of record it checks yet.
-The corpus manifest (`corpus/manifest.yaml`) is checked too (#7); campaign
-files are added by #8.
+The corpus manifest (`corpus/manifest.yaml`) is checked too (#7), and a
+pcap's ground-truth file (`<pcap>.truth.json`) since #26; campaign files are
+added by #8.
 
 ## Privacy
 
