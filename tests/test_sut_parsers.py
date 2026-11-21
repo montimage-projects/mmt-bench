@@ -229,15 +229,16 @@ def test_dmidecode_memory_synthetic() -> None:
     # Synthetic: a populated device and an empty slot (dgx-spark has no empty slot).
     text = (
         "Handle 0x0010, DMI type 17, 92 bytes\nMemory Device\n\tSize: 16 GB\n"
-        "\tType: LPDDR5X\n\tSpeed: 8533 MT/s\n\tConfigured Memory Speed: 8533 MT/s\n\n"
+        "\tType: LPDDR5X\n\tSpeed: 8533 MT/s\n\tConfigured Memory Speed: 7500 MT/s\n\n"
         "Handle 0x0011, DMI type 17, 92 bytes\nMemory Device\n\tSize: No Module Installed\n"
         "\tType: Unknown\n"
     )
     assert sut.parse_dmidecode_memory(text) == {
         "devices": 1,
         "types": ["LPDDR5X"],
+        # The two speeds differ, so a parser that swaps them fails here.
         "speeds": ["8533 MT/s"],
-        "configured_speeds": ["8533 MT/s"],
+        "configured_speeds": ["7500 MT/s"],
     }
 
 
@@ -302,6 +303,24 @@ def test_dmidecode_of_dgx_spark_is_unchanged_by_the_sanitiser() -> None:
     recorded = {"files": {}, "dirs": {}, "links": {}, "commands": {key: [answer]}}
     clean = hostsrc.sanitise_snapshot(recorded, ALIAS, ALIAS, set(), set())
     assert clean["commands"][key] == [answer]
+
+
+def test_raw_dmidecode_of_dgx_spark_is_recorded_as_the_fixture() -> None:
+    # The real answer with a handle line and every identifying field put back,
+    # all with synthetic values: the recorder must write the fixture.
+    raw = DMIDECODE_DGX_SPARK.replace(
+        "Memory Device\n",
+        "Handle 0x0010, DMI type 17, 92 bytes\nMemory Device\n"
+        "\tSerial Number: 00000000\n\tAsset Tag: AT-TEST\n\tPart Number: PN-TEST\n"
+        "\tLocator: DIMM-TEST\n\tBank Locator: BANK-TEST\n\tManufacturer: TestVendor\n",
+    )
+    assert raw != DMIDECODE_DGX_SPARK
+    assert hostsrc.reduce_dmidecode_memory(raw) == DMIDECODE_DGX_SPARK
+    key = hostsrc.command_key(["dmidecode", "-t", "17"])
+    answer = {"returncode": 0, "stdout": raw, "stderr": ""}
+    recorded = {"files": {}, "dirs": {}, "links": {}, "commands": {key: [answer]}}
+    clean = hostsrc.sanitise_snapshot(recorded, ALIAS, ALIAS, set(), set())
+    assert clean["commands"][key] == [{**answer, "stdout": DMIDECODE_DGX_SPARK}]
 
 
 def test_cpuinfo_serial_is_never_parsed() -> None:
