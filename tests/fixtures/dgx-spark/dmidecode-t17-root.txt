@@ -1,0 +1,5 @@
+Memory Device
+	Size: 128 GB
+	Type: LPDDR5
+	Speed: 8533 MT/s
+	Configured Memory Speed: 8533 MT/s

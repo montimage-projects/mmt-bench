@@ -235,8 +235,12 @@ replay produces; after changing the collector, regenerate it with:
 MBENCH_REGEN_FIXTURES=1 uv run pytest tests/test_sut_collect.py -k golden
 ```
 
-The `dmidecode` parser is tested on a synthetic sample, because dmidecode
-needs root on dgx-spark.
+That snapshot was captured without root, so it holds no `dmidecode` answer.
+`tests/fixtures/dgx-spark/dmidecode-t17-root.txt` is the answer of a
+`--record-sources` run as root on dgx-spark (2026-11-21), already sanitised:
+one memory device, 128 GB of LPDDR5 at 8533 MT/s. The `dmidecode` parser is
+tested on it, and on synthetic samples with an empty slot and with every
+identifying field.
 
 ## dgx-spark notes
 
