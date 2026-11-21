@@ -10,20 +10,20 @@ the production mmt-stack image.
 |-------|-----|
 | base image | `ubuntu:24.04@sha256:73b999393d07f2bf65a40373778a44dc9a6d54ad7718d29247d8ff9413c4d6a8` |
 | mmt-dpi | v1.10.3 release `.deb`, build `6a0afb46`; the release `SHA256SUMS` is itself pinned by `f7f7a809…ea6ed5`, and the `.deb` is verified against it |
-| mmt-security | `v1.2.20` = commit `a78a4fd4a33a3c4e218c1c4c11e7e1e23b6c7dff` from `SECURITY_REPO` (default upstream `Montimage/mmt-security`; the tag is re-checked against the commit at build time) |
+| mmt-security | fork `main` = commit `defefb7a3f39c70527d3e74d8f1150b7392ac050` from `SECURITY_REPO` (default `montimage-projects/mmt-security`; no tag names it, so `SECURITY_TAG` is empty) |
 | mmt-probe | commit `1e00441a00bba1d064ede2ef95b851428c2b0183` (branch `intact-new-features`, on top of v1.6.5; the STIX alert output needs it) |
 
 The probe is built with `SECURITY_MODULE` and `STIX_FORMAT`; security alerts
 come out as STIX bundles, other reports as JSON.
 
-mmt-security's source is a build argument, so the internal fork can be pinned
-with a one-line change:
+mmt-security's source is a build argument, so the upstream v1.2.20 baseline
+builds with a one-line change:
 
 ```sh
 docker build -t mmt-bench/mmt-probe:local tools/docker/mmt-probe \
-  --build-arg SECURITY_REPO=https://github.com/montimage-projects/mmt-security.git \
-  --build-arg SECURITY_COMMIT=<fork commit sha> \
-  --build-arg SECURITY_TAG=
+  --build-arg SECURITY_REPO=https://github.com/Montimage/mmt-security.git \
+  --build-arg SECURITY_TAG=v1.2.20 \
+  --build-arg SECURITY_COMMIT=a78a4fd4a33a3c4e218c1c4c11e7e1e23b6c7dff
 ```
 
 An empty `SECURITY_TAG` skips the tag→commit check; the source repo is

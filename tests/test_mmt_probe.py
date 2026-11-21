@@ -384,11 +384,11 @@ def test_build_flags_keys_have_no_leading_space(tmp_path: Path) -> None:
 
 def test_the_security_source_repo_is_recorded(tmp_path: Path) -> None:
     # /opt/mmt/VERSIONS's security_repo= pin reaches the tools record, so
-    # a fork-built image is visibly different from the upstream one.
+    # an upstream-built image is visibly different from the default fork.
     adapter, _, _ = _prepared(tmp_path)
     record = adapter.tools_record()
     assert record["version_strings"]["pin-security_repo"] == (
-        "https://github.com/Montimage/mmt-security.git"
+        "https://github.com/montimage-projects/mmt-security.git"
     )
 
 

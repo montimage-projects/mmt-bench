@@ -16,15 +16,17 @@ ARG UBUNTU_IMAGE=ubuntu:24.04@sha256:73b999393d07f2bf65a40373778a44dc9a6d54ad771
 ARG DPI_VERSION=1.10.3
 ARG DPI_BUILD=6a0afb46
 ARG DPI_SHA256SUMS_SHA256=f7f7a80990bdb3c98f48978ff2bf00fa649a5c70633c906bd666543449ea6ed5
-# mmt-security's source repo and commit: upstream Montimage/mmt-security by
-# default. The internal fork is pinned with
-#   --build-arg SECURITY_REPO=https://github.com/montimage-projects/mmt-security.git \
-#               SECURITY_COMMIT=<fork sha> SECURITY_TAG=
+# mmt-security's source repo and commit: the internal fork's main by
+# default (no tag names it, so SECURITY_TAG is empty). The upstream
+# v1.2.20 baseline builds with
+#   --build-arg SECURITY_REPO=https://github.com/Montimage/mmt-security.git \
+#               SECURITY_TAG=v1.2.20 \
+#               SECURITY_COMMIT=a78a4fd4a33a3c4e218c1c4c11e7e1e23b6c7dff
 # (SECURITY_TAG empty skips the tag→commit check; the repo lands in
 # /opt/mmt/VERSIONS either way).
-ARG SECURITY_REPO=https://github.com/Montimage/mmt-security.git
-ARG SECURITY_TAG=v1.2.20
-ARG SECURITY_COMMIT=a78a4fd4a33a3c4e218c1c4c11e7e1e23b6c7dff
+ARG SECURITY_REPO=https://github.com/montimage-projects/mmt-security.git
+ARG SECURITY_TAG=
+ARG SECURITY_COMMIT=defefb7a3f39c70527d3e74d8f1150b7392ac050
 ARG PROBE_COMMIT=1e00441a00bba1d064ede2ef95b851428c2b0183   # branch intact-new-features
 # Ubuntu packages (noble-updates/-security, 2026-11-19). Ubuntu removes a
 # version from the archive when it publishes the next update, and has no
@@ -60,7 +62,8 @@ RUN set -eux; \
     done
 # Sources, fetched by commit id (a force-pushed branch cannot change them),
 # checked; when SECURITY_TAG is set, the mmt-security tag must still name
-# the pinned commit (a fork pinned by sha sets SECURITY_TAG= to skip it).
+# the pinned commit (a pin no tag names — like the default fork commit —
+# sets SECURITY_TAG= to skip it).
 RUN set -eux; \
     fetch() { git init -q "$1"; git -C "$1" fetch -q --depth 1 "$2" "$3"; \
               git -C "$1" checkout -q FETCH_HEAD; test "$(git -C "$1" rev-parse HEAD)" = "$3"; }; \
