@@ -20,6 +20,7 @@ uv run pytest              # tests
 uv run mbench sut -o sut.json              # system-under-test fingerprint, no sudo
 uv run mbench validate sut.json            # exit 0 when the record is complete
 uv run mbench validate corpus/manifest.yaml
+uv run mbench validate x.truth.json        # a pcap's ground truth
 uv run mbench corpus gen c-small           # synthetic 64 B frames, deterministic
 uv run mbench corpus check                 # every capture present vs its sha256
 ```

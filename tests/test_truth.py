@@ -273,6 +273,16 @@ def test_load_rejects_invalid_json(tmp_path: Path) -> None:
             "attacks[0].dst: a network with host bits set (use 192.0.2.0/24)",
         ),
         (_truth(_attack(src="2001:db8::1/64")), "attacks[0].src: a network with host bits"),
+        # Non-canonical spellings have no host bits set: the error names the
+        # real problem, not "host bits set" (#26).
+        (
+            _truth(_attack(dst="2001:DB8::/64")),
+            "attacks[0].dst: a network not in canonical form (use 2001:db8::/64)",
+        ),
+        (
+            _truth(_attack(dst="192.0.2.0/255.255.255.0")),
+            "attacks[0].dst: a network not in canonical form (use 192.0.2.0/24)",
+        ),
         (_truth(_attack(), _attack()), "attacks[1].id: duplicate attack id"),
         # json.loads accepts NaN and Infinity; the schema's "number" lets them
         # through, and a non-finite span or tolerance would silently mis-score.

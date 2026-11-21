@@ -206,8 +206,8 @@ def max_flows(spec: SetSpec, packets: int) -> int:
     return min(packets, 1 << 20, max(1, FLOW_BUDGET_BYTES // spec.frame_bytes))
 
 
-def _checked_flows(spec: SetSpec, seed: int, packets: int, flows: int) -> list[_Flow]:
-    """Check the parameters and build the flows; see :func:`generate`."""
+def _check_params(spec: SetSpec, seed: int, packets: int, flows: int) -> None:
+    """The bounds :func:`generate` enforces, raised before any file is written."""
     if seed < 0:
         raise ValueError("the seed must be >= 0")
     if packets < 1:
@@ -216,6 +216,11 @@ def _checked_flows(spec: SetSpec, seed: int, packets: int, flows: int) -> list[_
         raise ValueError(f"the flow count must be between 1 and {max_flows(spec, packets)}")
     if spec.frame_bytes < MIN_FRAME_BYTES:  # pragma: no cover - the sets are fixed
         raise ValueError(f"frames must be at least {MIN_FRAME_BYTES} B")
+
+
+def _checked_flows(spec: SetSpec, seed: int, packets: int, flows: int) -> list[_Flow]:
+    """Check the parameters and build the flows; see :func:`generate`."""
+    _check_params(spec, seed, packets, flows)
     return _flows(spec, seed, flows)
 
 
@@ -421,8 +426,12 @@ def gen_entry(
     Returns the entry and ``generated`` or ``unchanged``. When the manifest
     already holds the same entry and the file still matches it, nothing is
     written. A ``label`` already used by an entry with no ``generator`` block
-    is refused: ``gen`` never overwrites a capture it does not own.
+    is refused: ``gen`` never overwrites a capture it does not own. And
+    every refusal happens before the first capture byte is written (#26): a
+    refused run leaves every file in ``data/`` and the manifest untouched.
     """
+    from mbench import validate
+
     out = manifest_path.parent / DATA_DIR / f"{label}.pcap"
     command = f"mbench corpus gen {spec.name} --seed {seed} --packets {packets} --flows {flows}"
     if not LABEL_RE.fullmatch(label):
@@ -432,35 +441,47 @@ def gen_entry(
         raise ValueError(
             f"{label}: the manifest uses this label for an entry that was not generated"
         )
+    _check_params(spec, seed, packets, flows)
+    provenance: dict[str, Any] = {
+        "source": f"synthetic: {command}",
+        "licence": GENERATED_LICENCE,
+        "ground_truth": None,
+        "local_only": False,
+        "description": spec.description,
+        "generator": generator_params(spec, seed, packets, flows),
+    }
+    # The manifest the upsert below would write is checked now, before the
+    # capture is: every field is known except the file's sha256 and size,
+    # which stand in for the real ones. A refused run has written nothing.
+    planned = ordered(
+        {
+            "label": label,
+            "path": f"{DATA_DIR}/{label}.pcap",
+            "sha256": "0" * 64,
+            # The file header is 24 B and each record header 16 B (mbench.pcap).
+            "size_bytes": 24 + packets * (16 + spec.frame_bytes),
+            "packets": packets,
+            "avg_packet_bytes": float(spec.frame_bytes),
+        }
+        | provenance
+    )
+    simulated = {**manifest, "entries": [*manifest.get("entries", [])]}
+    upsert(simulated, planned)
+    problems = validate.manifest_errors(simulated)
+    if problems:
+        raise ManifestError(
+            f"{manifest_path}: refusing to write an INVALID manifest ({len(problems)} problems)",
+            problems,
+        )
     if out.is_file():
         try:
-            candidate = entry_from_file(
-                manifest_path,
-                out,
-                label=label,
-                source=f"synthetic: {command}",
-                licence=GENERATED_LICENCE,
-                ground_truth=None,
-                local_only=False,
-                description=spec.description,
-                generator=generator_params(spec, seed, packets, flows),
-            )
+            candidate = entry_from_file(manifest_path, out, label=label, **provenance)
         except (OSError, pcap.CaptureError):
             candidate = None  # an unreadable file is regenerated below
         if candidate is not None and existing == candidate:
             return candidate, "unchanged"
     generate(spec, seed, packets, flows, out)
-    entry = entry_from_file(
-        manifest_path,
-        out,
-        label=label,
-        source=f"synthetic: {command}",
-        licence=GENERATED_LICENCE,
-        ground_truth=None,
-        local_only=False,
-        description=spec.description,
-        generator=generator_params(spec, seed, packets, flows),
-    )
+    entry = entry_from_file(manifest_path, out, label=label, **provenance)
     upsert(manifest, entry)
     checked_save(manifest_path, manifest)
     return entry, "generated"

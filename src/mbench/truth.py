@@ -55,10 +55,17 @@ def _endpoint(text: str) -> Network:
         network = ipaddress.ip_network(text, strict=False)
     except ValueError:
         raise ValueError(f"not an IP address or network: {text!r}") from None
-    # A CIDR written with host bits set ("192.0.2.5/24") is a typo, not a
-    # wider network: reject it instead of silently widening to {network}.
+    # A CIDR written in a non-canonical form is a typo, not a wider network:
+    # reject it instead of silently rewriting it to {network}, and name the
+    # real problem. Host bits set ("192.0.2.5/24", "2001:db8::1/64") fail a
+    # strict parse; other spellings ("2001:DB8::/64", "192.0.2.0/255.255.255.0")
+    # parse cleanly but are not the canonical text.
     if "/" in text and text != str(network):
-        raise ValueError(f"a network with host bits set (use {network}): {text!r}")
+        try:
+            ipaddress.ip_network(text, strict=True)
+        except ValueError:
+            raise ValueError(f"a network with host bits set (use {network}): {text!r}") from None
+        raise ValueError(f"a network not in canonical form (use {network}): {text!r}")
     return network
 
 

@@ -189,7 +189,10 @@ def _write_sources(recorder: object, record: dict[str, object], alias: str, out:
 
 def _configure_validate(p: argparse.ArgumentParser) -> None:
     p.add_argument(
-        "paths", nargs="+", metavar="PATH", help="record to check (sut.json, corpus/manifest.yaml)"
+        "paths",
+        nargs="+",
+        metavar="PATH",
+        help="record to check (sut.json, corpus/manifest.yaml, <pcap>.truth.json)",
     )
     p.add_argument("-q", "--quiet", action="store_true", help="do not list the unavailable fields")
 
@@ -459,7 +462,7 @@ SUBCOMMANDS: tuple[Subcommand, ...] = (
     Subcommand("report", "render REPORT.md from a results directory", 8),
     Subcommand(
         "validate",
-        "check a record (sut.json, campaign, manifest) for completeness",
+        "check a record (sut.json, campaign, manifest, truth) for completeness",
         4,
         _configure_validate,
         _run_validate,

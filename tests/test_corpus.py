@@ -696,6 +696,29 @@ def test_cli_gen_goes_through_the_same_guard(
     assert main(["corpus", "gen", "c-small", "--packets", "5", "--manifest", str(m)]) == EXIT_USAGE
     assert "duplicate" in capsys.readouterr().err
     assert m.read_bytes() == before
+    # The refusal came before any write: the capture was never generated (#26).
+    assert not (tmp_path / "data" / "c-small.pcap").exists()
+
+
+def test_cli_gen_refused_leaves_every_file_and_the_manifest_byte_identical(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    m = tmp_path / "manifest.yaml"
+    target = tmp_path / "data" / "c-small.pcap"
+    # The file gen would write is already registered under another label:
+    # overwriting it would corrupt that entry's sha256 (#24 re-review).
+    corpus.generate(corpus.SETS["c-large"], 1, 40, 3, target)
+    corpus.generate(corpus.SETS["c-small"], 2, 30, 2, tmp_path / "data" / "other.pcap")
+    owner = corpus.entry_from_file(
+        m, target, label="seed", source="s", licence="l", ground_truth=None, local_only=False
+    )
+    corpus.save(m, manifest(owner))
+    before = m.read_bytes()
+    hashes = {p.name: pcap.sha256_file(p) for p in (tmp_path / "data").iterdir()}
+    assert main(["corpus", "gen", "c-small", "--packets", "5", "--manifest", str(m)]) == EXIT_USAGE
+    assert "duplicate" in capsys.readouterr().err
+    assert m.read_bytes() == before
+    assert {p.name: pcap.sha256_file(p) for p in (tmp_path / "data").iterdir()} == hashes
 
 
 def test_cli_check_unreadable_names_the_manifest_relative_path(
