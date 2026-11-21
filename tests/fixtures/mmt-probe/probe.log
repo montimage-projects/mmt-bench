@@ -1,0 +1,22 @@
+mmt-probe: Loaded configuration from '/data/mmt-probe.conf'
+mmt-probe: Overridden value of configuration parameter 'thread-nb' by '0'
+mmt-probe: Start MMT-Security 1.2.20 (a78a4fd - Nov 21 2026 22:26:07)
+mmt-probe: MMT-Probe v1.6.5 (1e00441 - Nov 21 2026 22:26:14) is running on pid 1
+mmt-probe: Modules: DPI, PCAP, REPORT, SECURITY
+mmt-probe: MMT-DPI 1.10.3 (6a0afb46)
+mmt-probe: Starting PCAP mode to analyze '/pcap/14.illegal_port.pcap' using the main thread
+mmt-probe: Overridden the security parameter 'input.max_message_size' by 131072
+mmt-probe: Overridden the security parameter 'security.max_instances' by 16384
+mmt-probe: Registered 96 proto.atts to process 95 rules: meta.utime,meta.packet_len,meta.proto_hierarchy,meta.packet_index,arp.ar_op,arp.ar_sha,arp.ar_sip,arp.ar_tip,ethernet.proto,ethernet.dst,ethernet.src,ethernet.packet_count,ftp.packet_request,ftp.packet_request_parameter,gre.version,http.method,http.host,http.uri,http.user_agent,icmp.type,icmp.packet_count,ip.version,ip.tot_len,ip.identification,ip.rf_flag,ip.df_flag,ip.mf_flag,ip.frag_offset,ip.proto_ttl,ip.proto_id,ip.src,ip.dst,ip.opts_type,ip.padding_check,ip.client_addr,ip.server_addr,ip.client_port,ip.server_port,ip.ip_frag_packets_count,ip.packet_count,ipv6.src,ipv6.dst,ipv6.packet_count,sctp.dest_port,sctp.ch_type,sctp.packet_count,tcp.src_port,tcp.dest_port,tcp.seq_nb,tcp.ack_nb,tcp.flags,tcp.fin,tcp.rst,tcp.psh,tcp.urg,tcp.tcp_session_payload_up,tcp.payload_len,tcp.p_payload,udp.dest_port,sctp_data.data_tsn,sctp_data.data_stream,sctp_data.data_ppid,int.hop_switch_ids,int.packet_count,dtls.version,dtls.client_hello_cipher_suite,dtls.packet_count,http2.type,http2.header_method,http2.header_length,http2.payload_length,http2.p_payload,dicom.pdu_type,dicom.pdu_len,dicom.proto_version,dicom.called_ae_title,dicom.calling_ae_title,dicom.application_context,dicom.pdv_length,dicom.pdv_context,dicom.pdv_flags,dicom.command_field,dicom.patient_name,dicom.status,dicom.affected_sop_class_uid,dicom.message_id,dicom.abstract_syntax,dicom.data_set_type,ngap.procedure_code,ngap.amf_ue_id,ngap.ran_ue_id,nas_5g.message_type,nas_5g.security_type,nas_5g.message_authentication_code,nas_5g.sequence_number,nas_5g.p_data
+mmt-probe: Normally reached to the end of pcap file
+INFO_SEC: update "input.max_message_size" from 3000 to 32824
+INFO_SEC: Rule 79.dtls_v12_ciphersuites: no value of MMT_SEC_DTLS_CIPHER_ALLOWLIST
+INFO_SEC: Rule 95: no value of MMT_SEC_5G_DOS_NGAP_INITIALUEMESSAGE_MS_LIMIT
+INFO_SEC: Rule 96: no value of MMT_SEC_5G_DOS_HTTP2_MS_LIMIT
+INFO_SEC: Rule 96: set MMT_SEC_5G_DOS_HTTP2_MS_LIMIT=80
+INFO_SEC: MMT-Security 1.2.20 (a78a4fd - Nov 21 2026 22:26:07) is verifying 95 rules having 96 proto.atts using the main thread
+[1,1,"/pcap/14.illegal_port.pcap",1795300288.033619,"1.6.5 (1e00441 - Nov 21 2026 22:26:14)","1.10.3 (6a0afb46)","1.2.20 (a78a4fd - Nov 21 2026 22:26:07)"]
+ - rule 13 generated 1 verdicts
+mmt-probe: MMT processed 2 packets, dropped 0 packets (0.00%), generated 1 alerts
+mmt-probe: Exit normally MMT-Probe
+Bye

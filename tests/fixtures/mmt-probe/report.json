@@ -1,0 +1,79 @@
+[1,1,"/pcap/14.illegal_port.pcap",1795300288.033619,"1.6.5 (1e00441 - Nov 21 2026 22:26:14)","1.10.3 (6a0afb46)","1.2.20 (a78a4fd - Nov 21 2026 22:26:07)"]
+[{
+  "type": "bundle",
+  "id": "bundle--3c2cdee4-abf6-425d-8c27-468077dd1bbc",
+  "objects": [
+    {
+      "type": "identity",
+      "spec_version": "2.1",
+      "id": "identity--3c878ca1-549a-456e-962b-5b65c25b87a7",
+      "created": "1970-01-01T00:00:00.000Z",
+      "modified": "1970-01-01T00:00:00.000Z",
+      "name": "MMT-Probe 1",
+      "identity_class": "system",
+      "extensions": {
+        "x-probe-id-ext": {
+          "extension_type": "property-extension",
+          "probe-id": 1,
+          "input-source": "/pcap/14.illegal_port.pcap"
+        }
+      }
+    },
+    {
+      "type": "observed-data",
+      "spec_version": "2.1",
+      "id": "observed-data--03d9ba5a-5d91-412d-b621-9c19aec5a03b",
+      "created": "2017-04-14T15:14:44.795Z",
+      "modified": "2017-04-14T15:14:44.795Z",
+      "first_observed": "2017-04-14T15:14:44.795833Z",
+      "last_observed": "2017-04-14T15:14:44.795833Z",
+      "number_observed": 1,
+      "object_refs": [
+        "ipv4-addr--d4225212-01f6-5350-a90d-1c3ab38bad3f",
+        "ipv4-addr--a33d1b6f-5044-54fd-ab0a-a0e4743a7a40",
+        "x-attack-type--4bed3fca-b03b-461e-8f30-58600d92900d"
+      ],
+      "created_by_ref": "identity--3c878ca1-549a-456e-962b-5b65c25b87a7",
+      "extensions": {
+        "x-observed-data-ext": {
+          "extension_type": "property-extension",
+          "description": "Data in SYN packet."
+        }
+      }
+    },
+    {
+      "type": "ipv4-addr",
+      "spec_version": "2.1",
+      "id": "ipv4-addr--d4225212-01f6-5350-a90d-1c3ab38bad3f",
+      "value": "192.168.56.20"
+    },
+    {
+      "type": "ipv4-addr",
+      "spec_version": "2.1",
+      "id": "ipv4-addr--a33d1b6f-5044-54fd-ab0a-a0e4743a7a40",
+      "value": "192.168.0.101"
+    },
+    {
+      "type": "x-attack-type",
+      "id": "x-attack-type--4bed3fca-b03b-461e-8f30-58600d92900d",
+      "name": "Data in SYN packet.",
+      "created": "2017-04-14T15:14:44.795Z",
+      "modified": "2017-04-14T15:14:44.795Z",
+      "extensions": {
+        "x-attack-type-ext": {
+          "extension_type": "new-sdo",
+          "priority": "medium",
+          "verdict": "detected",
+          "rule_type": "evasion"
+        }
+      },
+      "external_references": [
+        {
+          "source_name": "mmt-security",
+          "external_id": "13"
+        }
+      ]
+    }
+  ]
+}]
+[100,1,"/pcap/14.illegal_port.pcap",1492182884.796375,1,0,"99.178.354.0","99.178.354.0",1,134,20,2,74,20,1,60,0,1,1492182884.795833,"192.168.56.20","192.168.0.101","08:00:27:9B:F1:3A","52:54:00:12:35:02",1,2195,2195,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]

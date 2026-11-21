@@ -1,0 +1,176 @@
+[1,1,"/opt/mmt/check/pcap/4.5.arp_spoof.pcap",1795300334.168702,"1.6.5 (1e00441 - Nov 21 2026 22:26:14)","1.10.3 (6a0afb46)","1.2.20 (a78a4fd - Nov 21 2026 22:26:07)"]
+[{
+  "type": "bundle",
+  "id": "bundle--a51fdbb6-4e1f-4217-9253-0e7f653ebc05",
+  "objects": [
+    {
+      "type": "identity",
+      "spec_version": "2.1",
+      "id": "identity--df03c314-f818-44b1-9bd3-dc705058bd45",
+      "created": "1970-01-01T00:00:00.000Z",
+      "modified": "1970-01-01T00:00:00.000Z",
+      "name": "MMT-Probe 1",
+      "identity_class": "system",
+      "extensions": {
+        "x-probe-id-ext": {
+          "extension_type": "property-extension",
+          "probe-id": 1,
+          "input-source": "/opt/mmt/check/pcap/4.5.arp_spoof.pcap"
+        }
+      }
+    },
+    {
+      "type": "observed-data",
+      "spec_version": "2.1",
+      "id": "observed-data--d9ba90cb-a81f-4fbb-8db8-c69394827dcf",
+      "created": "2014-01-06T22:56:29.446Z",
+      "modified": "2014-01-06T22:56:29.446Z",
+      "first_observed": "2014-01-06T22:56:29.446972Z",
+      "last_observed": "2014-01-06T22:56:29.446972Z",
+      "number_observed": 1,
+      "object_refs": [
+        "ipv4-addr--17a6c10d-d386-5136-8870-bbab4f8aeeb3",
+        "mac-addr--559cf9de-93f7-5764-96ac-270848ae0f6e",
+        "mac-addr--f28030eb-d521-5988-9f90-d55f92ae0681",
+        "x-attack-type--2edcfc27-9a01-4312-a555-20abf8612b0a"
+      ],
+      "created_by_ref": "identity--df03c314-f818-44b1-9bd3-dc705058bd45",
+      "extensions": {
+        "x-observed-data-ext": {
+          "extension_type": "property-extension",
+          "description": "IPv4 address conflict detection (RFC5227). Possible arp poisoning."
+        }
+      }
+    },
+    {
+      "type": "ipv4-addr",
+      "spec_version": "2.1",
+      "id": "ipv4-addr--17a6c10d-d386-5136-8870-bbab4f8aeeb3",
+      "value": "192.168.47.1"
+    },
+    {
+      "type": "mac-addr",
+      "spec_version": "2.1",
+      "id": "mac-addr--559cf9de-93f7-5764-96ac-270848ae0f6e",
+      "value": "00:0c:29:1d:b3:b1"
+    },
+    {
+      "type": "mac-addr",
+      "spec_version": "2.1",
+      "id": "mac-addr--f28030eb-d521-5988-9f90-d55f92ae0681",
+      "value": "00:50:56:c0:00:08"
+    },
+    {
+      "type": "x-attack-type",
+      "id": "x-attack-type--2edcfc27-9a01-4312-a555-20abf8612b0a",
+      "name": "IPv4 address conflict detection (RFC5227). Possible arp poisoning.",
+      "created": "2014-01-06T22:56:29.446Z",
+      "modified": "2014-01-06T22:56:29.446Z",
+      "extensions": {
+        "x-attack-type-ext": {
+          "extension_type": "new-sdo",
+          "priority": "high",
+          "verdict": "detected",
+          "rule_type": "attack"
+        }
+      },
+      "external_references": [
+        {
+          "source_name": "mmt-security",
+          "external_id": "4"
+        }
+      ]
+    }
+  ]
+}]
+[{
+  "type": "bundle",
+  "id": "bundle--a57aebc8-05aa-468d-8127-066686b8f885",
+  "objects": [
+    {
+      "type": "identity",
+      "spec_version": "2.1",
+      "id": "identity--df03c314-f818-44b1-9bd3-dc705058bd45",
+      "created": "1970-01-01T00:00:00.000Z",
+      "modified": "1970-01-01T00:00:00.000Z",
+      "name": "MMT-Probe 1",
+      "identity_class": "system",
+      "extensions": {
+        "x-probe-id-ext": {
+          "extension_type": "property-extension",
+          "probe-id": 1,
+          "input-source": "/opt/mmt/check/pcap/4.5.arp_spoof.pcap"
+        }
+      }
+    },
+    {
+      "type": "observed-data",
+      "spec_version": "2.1",
+      "id": "observed-data--1deb08a4-bc45-4691-baef-9169d1e647c9",
+      "created": "2014-01-06T22:56:29.446Z",
+      "modified": "2014-01-06T22:56:29.446Z",
+      "first_observed": "2014-01-06T22:56:29.446972Z",
+      "last_observed": "2014-01-06T22:56:29.446972Z",
+      "number_observed": 1,
+      "object_refs": [
+        "mac-addr--f28030eb-d521-5988-9f90-d55f92ae0681",
+        "ipv4-addr--17a6c10d-d386-5136-8870-bbab4f8aeeb3",
+        "mac-addr--559cf9de-93f7-5764-96ac-270848ae0f6e",
+        "x-attack-type--7b115675-d6b0-4d98-a7ee-8a5c533d3eb6"
+      ],
+      "created_by_ref": "identity--df03c314-f818-44b1-9bd3-dc705058bd45",
+      "extensions": {
+        "x-observed-data-ext": {
+          "extension_type": "property-extension",
+          "description": "IPv4 address conflict detection (RFC5227). Possible arp poisoning."
+        }
+      }
+    },
+    {
+      "type": "mac-addr",
+      "spec_version": "2.1",
+      "id": "mac-addr--f28030eb-d521-5988-9f90-d55f92ae0681",
+      "value": "00:50:56:c0:00:08"
+    },
+    {
+      "type": "ipv4-addr",
+      "spec_version": "2.1",
+      "id": "ipv4-addr--17a6c10d-d386-5136-8870-bbab4f8aeeb3",
+      "value": "192.168.47.1"
+    },
+    {
+      "type": "mac-addr",
+      "spec_version": "2.1",
+      "id": "mac-addr--559cf9de-93f7-5764-96ac-270848ae0f6e",
+      "value": "00:0c:29:1d:b3:b1"
+    },
+    {
+      "type": "x-attack-type",
+      "id": "x-attack-type--7b115675-d6b0-4d98-a7ee-8a5c533d3eb6",
+      "name": "IPv4 address conflict detection (RFC5227). Possible arp poisoning.",
+      "created": "2014-01-06T22:56:29.446Z",
+      "modified": "2014-01-06T22:56:29.446Z",
+      "extensions": {
+        "x-attack-type-ext": {
+          "extension_type": "new-sdo",
+          "priority": "high",
+          "verdict": "detected",
+          "rule_type": "attack"
+        }
+      },
+      "external_references": [
+        {
+          "source_name": "mmt-security",
+          "external_id": "5"
+        }
+      ]
+    }
+  ]
+}]
+[99,1,"/opt/mmt/check/pcap/4.5.arp_spoof.pcap",1389048994.433441,1,30,"99.30",0,11664,7800,276,0,0,0,0,0,0,1389048986.340873]
+[100,1,"/opt/mmt/check/pcap/4.5.arp_spoof.pcap",1389048985.031961,1,81,"99.178.376.81","99.178.376.81",4,3420,3000,10,3420,3000,10,0,0,0,1389048985.016355,"192.168.47.254","255.255.255.255","00:50:56:F9:F5:54","00:0C:29:0F:71:A3",2,68,67,0,0,0,0,0,0,0,0,0,0,0,0,0,10,0]
+[100,1,"/opt/mmt/check/pcap/4.5.arp_spoof.pcap",1389048985.031862,1,81,"99.178.376.81","99.178.376.81",4,3580,3160,10,3580,3160,10,0,0,0,1389048985.016165,"192.168.47.200","255.255.255.255","00:0C:29:0F:71:A3","FF:FF:FF:FF:FF:FF",1,67,68,0,0,0,0,0,0,0,0,0,0,0,0,0,10,0]
+[100,1,"/opt/mmt/check/pcap/4.5.arp_spoof.pcap",1389048994.401741,1,90,"99.178.376.90","99.178.376.90",4,2050,1882,4,2050,1882,4,0,0,0,1389048994.369592,"192.168.47.1","192.168.47.255","00:50:56:C0:00:08","FF:FF:FF:FF:FF:FF",4,17500,17500,0,0,0,0,0,0,0,0,0,0,0,0,0,8,0]
+[100,1,"/opt/mmt/check/pcap/4.5.arp_spoof.pcap",1389048995.082931,1,82,"99.182.376.82","99.182.376.82",4,447,261,3,447,261,3,0,0,0,1389048992.082627,"fe80::64bf:98b9:777d:dc42","ff02::1:2","00:50:56:C0:00:08","33:33:00:01:00:02",3,547,546,0,0,0,0,0,0,0,0,0,0,0,0,0,10,0]
+[99,1,"/opt/mmt/check/pcap/4.5.arp_spoof.pcap",1389049004.433425,2,30,"99.30",0,1008,672,24,0,0,0,0,0,0,1389048996.933718]
+[100,1,"/opt/mmt/check/pcap/4.5.arp_spoof.pcap",1389048999.082862,2,82,"99.182.376.82","99.182.376.82",4,149,87,1,149,87,1,0,0,0,1389048992.082627,"fe80::64bf:98b9:777d:dc42","ff02::1:2","00:50:56:C0:00:08","33:33:00:01:00:02",3,547,546,0,0,0,0,0,0,0,0,0,0,0,0,0,10,0]
