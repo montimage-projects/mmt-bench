@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import pytest
-from sutfixtures import command_stdout, file_text, snapshot
+from sutfixtures import ALIAS, FIXTURES, command_stdout, file_text, snapshot
 
 from mbench import hostsrc, sut
 
@@ -226,7 +226,7 @@ def test_pid_stat() -> None:
 
 
 def test_dmidecode_memory_synthetic() -> None:
-    # Not captured on dgx-spark: dmidecode needs root there. Synthetic sample.
+    # Synthetic: a populated device and an empty slot (dgx-spark has no empty slot).
     text = (
         "Handle 0x0010, DMI type 17, 92 bytes\nMemory Device\n\tSize: 16 GB\n"
         "\tType: LPDDR5X\n\tSpeed: 8533 MT/s\n\tConfigured Memory Speed: 8533 MT/s\n\n"
@@ -263,6 +263,45 @@ def test_dmidecode_reduced_to_the_fields_the_parser_reads() -> None:
         assert secret not in reduced
     assert sut.parse_dmidecode_memory(reduced) == sut.parse_dmidecode_memory(DMIDECODE_AS_ROOT)
     assert sut.parse_dmidecode_memory(reduced)["devices"] == 1
+
+
+#: The real ``dmidecode -t 17`` answer of dgx-spark, recorded as root with
+#: ``mbench sut --record-sources`` on 2026-11-21 (#22): one memory device.
+DMIDECODE_DGX_SPARK = (FIXTURES / "dmidecode-t17-root.txt").read_text(encoding="utf-8")
+
+
+def _dmidecode_fields(text: str) -> list[tuple[str, str]]:
+    return [
+        (key.strip(), value.strip())
+        for key, _, value in (line.partition(":") for line in text.splitlines()[1:])
+    ]
+
+
+def test_dmidecode_memory_of_dgx_spark() -> None:
+    assert DMIDECODE_DGX_SPARK.splitlines()[0] == "Memory Device"
+    # The parser reports no size: the size decides whether a device is populated.
+    assert dict(_dmidecode_fields(DMIDECODE_DGX_SPARK))["Size"] == "128 GB"
+    assert sut.parse_dmidecode_memory(DMIDECODE_DGX_SPARK) == {
+        "devices": 1,
+        "types": ["LPDDR5"],
+        "speeds": ["8533 MT/s"],
+        "configured_speeds": ["8533 MT/s"],
+    }
+
+
+def test_dmidecode_of_dgx_spark_is_unchanged_by_the_sanitiser() -> None:
+    assert [key for key, _ in _dmidecode_fields(DMIDECODE_DGX_SPARK)] == list(
+        hostsrc.DMIDECODE_MEMORY_KEYS
+    )
+    for field in ("Serial", "Asset Tag", "Part Number", "Locator", "Manufacturer"):
+        assert field not in DMIDECODE_DGX_SPARK
+    assert hostsrc.reduce_dmidecode_memory(DMIDECODE_DGX_SPARK) == DMIDECODE_DGX_SPARK
+    assert hostsrc.sanitise_text(DMIDECODE_DGX_SPARK, ALIAS, ALIAS) == DMIDECODE_DGX_SPARK
+    key = hostsrc.command_key(["dmidecode", "-t", "17"])
+    answer = {"returncode": 0, "stdout": DMIDECODE_DGX_SPARK, "stderr": ""}
+    recorded = {"files": {}, "dirs": {}, "links": {}, "commands": {key: [answer]}}
+    clean = hostsrc.sanitise_snapshot(recorded, ALIAS, ALIAS, set(), set())
+    assert clean["commands"][key] == [answer]
 
 
 def test_cpuinfo_serial_is_never_parsed() -> None:
