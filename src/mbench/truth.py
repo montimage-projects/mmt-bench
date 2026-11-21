@@ -51,7 +51,15 @@ class TruthError(ValueError):
 
 
 def _endpoint(text: str) -> Network:
-    return ipaddress.ip_network(text, strict=False)
+    try:
+        network = ipaddress.ip_network(text, strict=False)
+    except ValueError:
+        raise ValueError(f"not an IP address or network: {text!r}") from None
+    # A CIDR written with host bits set ("192.0.2.5/24") is a typo, not a
+    # wider network: reject it instead of silently widening to {network}.
+    if "/" in text and text != str(network):
+        raise ValueError(f"a network with host bits set (use {network}): {text!r}")
+    return network
 
 
 @dataclass(frozen=True)
@@ -122,8 +130,8 @@ def parse(data: Json) -> GroundTruth:
         for key in ("src", "dst"):
             try:
                 endpoints[key] = _endpoint(raw[key])
-            except ValueError:
-                problems.append(f"{where}.{key}: not an IP address or network: {raw[key]!r}")
+            except ValueError as exc:
+                problems.append(f"{where}.{key}: {exc}")
         if len(endpoints) < 2:
             continue
         attacks.append(
@@ -175,7 +183,7 @@ def _in(address: str, network: Network) -> bool:
     return ipaddress.ip_address(address) in network
 
 
-def matches(alert: Alert, attack: Attack, tolerance_s: float, tool: str | None = None) -> bool:
+def matches(alert: Alert, attack: Attack, tolerance_s: float, tool: str) -> bool:
     """Whether ``alert`` (from ``tool``) is a detection of ``attack``."""
     if not attack.start - tolerance_s <= alert.ts <= attack.end + tolerance_s:
         return False
@@ -185,7 +193,7 @@ def matches(alert: Alert, attack: Attack, tolerance_s: float, tool: str | None =
         return False
     if attack.proto is not None and alert.proto != attack.proto:
         return False
-    rule_ids = attack.rule_ids.get(tool) if tool is not None else None
+    rule_ids = attack.rule_ids.get(tool)
     return rule_ids is None or alert.rule_id in rule_ids
 
 
@@ -232,13 +240,15 @@ class Score:
         }
 
 
-def score(alerts: Iterable[Alert], truth: GroundTruth, tool: str | None = None) -> Score:
+def score(alerts: Iterable[Alert], truth: GroundTruth, *, tool: str) -> Score:
     """Score ``alerts`` from ``tool`` against ``truth``.
 
-    ``tool`` is the adapter's :attr:`~mbench.adapters.base.Adapter.name`; it
-    selects each attack's ``rule_ids`` entry. An alert may match several
-    attacks (overlapping attacks on one flow): it then detects each of them,
-    and counts once in ``matched_alerts``.
+    ``tool`` is required — it is the adapter's
+    :attr:`~mbench.adapters.base.Adapter.name` and selects each attack's
+    ``rule_ids`` entry, so a forgotten tool name cannot silently ignore the
+    restriction and count wrong rule ids as detections. An alert may match
+    several attacks (overlapping attacks on one flow): it then detects each
+    of them, and counts once in ``matched_alerts``.
     """
     per_attack = {attack.id: 0 for attack in truth.attacks}
     alert_list = list(alerts)

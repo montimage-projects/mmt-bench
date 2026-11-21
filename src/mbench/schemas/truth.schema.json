@@ -30,7 +30,7 @@
   },
   "$defs": {
     "endpoint": {
-      "description": "An IP address, or a network in CIDR form (a scan of a /24).",
+      "description": "An IP address, or a network's canonical address in CIDR form (a scan of a /24).",
       "type": "string",
       "minLength": 1
     },

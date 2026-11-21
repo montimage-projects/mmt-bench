@@ -22,6 +22,9 @@ ATTACKER = "192.0.2.20"
 VICTIM = "198.51.100.102"
 OTHER = "203.0.113.9"
 
+#: The scored tool's name; ``score`` requires it (``FakeAdapter.name``).
+TOOL = "fake-tool"
+
 
 def _attack(**overrides: Any) -> dict[str, Any]:
     data: dict[str, Any] = {
@@ -62,7 +65,7 @@ def _alert(ts: float = T0 + 1, **overrides: Any) -> Alert:
 
 
 def test_exact_match() -> None:
-    result = truth.score([_alert()], _gt(_attack()))
+    result = truth.score([_alert()], _gt(_attack()), tool=TOOL)
     assert (result.tp, result.fn, result.fp) == (1, 0, 0)
     assert result.detection_rate == 1.0
     assert result.precision == 1.0
@@ -70,7 +73,7 @@ def test_exact_match() -> None:
 
 
 def test_missed_attack() -> None:
-    result = truth.score([_alert()], _gt(_attack(), _attack(id="a2", dst=OTHER)))
+    result = truth.score([_alert()], _gt(_attack(), _attack(id="a2", dst=OTHER)), tool=TOOL)
     assert (result.tp, result.fn, result.fp) == (1, 1, 0)
     assert result.detection_rate == 0.5
     assert result.missed == ["a2"]
@@ -78,7 +81,7 @@ def test_missed_attack() -> None:
 
 def test_false_positive() -> None:
     fp = _alert(src=OTHER, dst="203.0.113.10")
-    result = truth.score([_alert(), fp], _gt(_attack()))
+    result = truth.score([_alert(), fp], _gt(_attack()), tool=TOOL)
     assert (result.tp, result.fn, result.fp) == (1, 0, 1)
     assert result.precision == 0.5
     assert result.false_positives == (fp,)
@@ -86,7 +89,7 @@ def test_false_positive() -> None:
 
 def test_several_alerts_for_one_attack_are_one_tp_and_no_fp() -> None:
     alerts = [_alert(T0 + i) for i in range(5)]
-    result = truth.score(alerts, _gt(_attack()))
+    result = truth.score(alerts, _gt(_attack()), tool=TOOL)
     assert (result.tp, result.fn, result.fp) == (1, 0, 0)
     assert result.alerts == 5
     assert result.matched_alerts == 5
@@ -107,85 +110,100 @@ def test_several_alerts_for_one_attack_are_one_tp_and_no_fp() -> None:
     ],
 )
 def test_the_time_window_is_the_span_widened_by_the_tolerance(ts: float, hit: bool) -> None:
-    assert truth.score([_alert(ts)], _gt(_attack())).tp == int(hit)
+    assert truth.score([_alert(ts)], _gt(_attack()), tool=TOOL).tp == int(hit)
 
 
 def test_the_tolerance_is_set_per_file() -> None:
     gt = _gt(_attack(), tolerance_s=0)
-    assert truth.score([_alert(T0 - 0.5)], gt).tp == 0
-    assert truth.score([_alert(T0 - 0.5)], _gt(_attack(), tolerance_s=5)).tp == 1
+    assert truth.score([_alert(T0 - 0.5)], gt, tool=TOOL).tp == 0
+    assert truth.score([_alert(T0 - 0.5)], _gt(_attack(), tolerance_s=5), tool=TOOL).tp == 1
     assert _gt(_attack()).tolerance_s == truth.DEFAULT_TOLERANCE_S == 1.0
 
 
 def test_endpoints_match_in_either_direction() -> None:
     reply = _alert(src=VICTIM, dst=ATTACKER)
-    assert truth.score([reply], _gt(_attack())).tp == 1
+    assert truth.score([reply], _gt(_attack()), tool=TOOL).tp == 1
 
 
 def test_one_wrong_endpoint_does_not_match() -> None:
-    result = truth.score([_alert(dst=OTHER), _alert(src=OTHER)], _gt(_attack()))
+    result = truth.score([_alert(dst=OTHER), _alert(src=OTHER)], _gt(_attack()), tool=TOOL)
     assert (result.tp, result.fp) == (0, 2)
 
 
 def test_an_endpoint_can_be_a_network() -> None:
     gt = _gt(_attack(dst="198.51.100.0/24"))
-    assert truth.score([_alert(dst="198.51.100.7")], gt).tp == 1
-    assert truth.score([_alert(dst="198.51.101.7")], gt).tp == 0
+    assert truth.score([_alert(dst="198.51.100.7")], gt, tool=TOOL).tp == 1
+    assert truth.score([_alert(dst="198.51.101.7")], gt, tool=TOOL).tp == 0
 
 
 def test_ipv6_endpoints_match_canonically() -> None:
     gt = _gt(_attack(src="2001:db8::1", dst="2001:DB8:0:0::2"))
-    assert truth.score([_alert(src="2001:db8:0::1", dst="2001:db8::2")], gt).tp == 1
+    alert = _alert(src="2001:db8:0::1", dst="2001:db8::2")
+    assert truth.score([alert], gt, tool=TOOL).tp == 1
     # An IPv4 alert never matches an IPv6 attack.
-    assert truth.score([_alert()], gt).tp == 0
+    assert truth.score([_alert()], gt, tool=TOOL).tp == 0
 
 
 def test_the_protocol_must_match_when_the_attack_names_one() -> None:
-    assert truth.score([_alert(proto="udp")], _gt(_attack())).tp == 0
+    assert truth.score([_alert(proto="udp")], _gt(_attack()), tool=TOOL).tp == 0
     no_proto = _attack()
     del no_proto["proto"]
-    assert truth.score([_alert(proto="udp")], _gt(no_proto)).tp == 1
+    assert truth.score([_alert(proto="udp")], _gt(no_proto), tool=TOOL).tp == 1
 
 
 def test_rule_ids_restrict_only_the_tool_they_name() -> None:
     gt = _gt(_attack(rule_ids={"mmt-probe": ["10", "11"]}))
     assert truth.score([_alert(rule_id="11")], gt, tool="mmt-probe").tp == 1
-    assert truth.score([_alert(rule_id="99")], gt, tool="mmt-probe").tp == 0
-    # Another tool, or no tool given: the attack's rule ids do not apply.
+    # Another tool name: the attack's rule ids do not apply.
     assert truth.score([_alert(rule_id="sid:2001219")], gt, tool="suricata").tp == 1
-    assert truth.score([_alert(rule_id="99")], gt).tp == 1
+
+
+def test_a_wrong_rule_id_for_the_named_tool_is_no_tp() -> None:
+    gt = _gt(_attack(rule_ids={"mmt-probe": ["10", "11"]}))
+    result = truth.score([_alert(rule_id="99")], gt, tool="mmt-probe")
+    assert (result.tp, result.fn, result.fp) == (0, 1, 1)
+    assert result.detection_rate == 0.0
+
+
+def test_the_tool_name_is_required() -> None:
+    gt = _gt(_attack(rule_ids={"mmt-probe": ["10"]}))
+    with pytest.raises(TypeError):
+        truth.score([_alert()], gt)  # type: ignore[call-arg]
+    with pytest.raises(TypeError):
+        truth.matches(_alert(), gt.attacks[0], gt.tolerance_s)  # type: ignore[call-arg]
 
 
 def test_one_alert_can_detect_overlapping_attacks() -> None:
     gt = _gt(_attack(), _attack(id="a2", start=T0 + 5, end=T0 + 20))
-    result = truth.score([_alert(T0 + 6)], gt)
+    result = truth.score([_alert(T0 + 6)], gt, tool=TOOL)
     assert (result.tp, result.fn, result.fp) == (2, 0, 0)
     assert result.matched_alerts == 1
 
 
 def test_the_category_is_not_matched() -> None:
-    assert truth.score([_alert(category="whatever")], _gt(_attack(category="scan"))).tp == 1
+    gt = _gt(_attack(category="scan"))
+    assert truth.score([_alert(category="whatever")], gt, tool=TOOL).tp == 1
 
 
 # --- Undefined ratios ---------------------------------------------------------------
 
 
 def test_a_benign_pcap_has_no_detection_rate() -> None:
-    result = truth.score([_alert()], _gt())
+    result = truth.score([_alert()], _gt(), tool=TOOL)
     assert (result.tp, result.fn, result.fp) == (0, 0, 1)
     assert result.detection_rate is None
     assert result.precision == 0.0
 
 
 def test_no_alert_has_no_precision() -> None:
-    result = truth.score([], _gt(_attack()))
+    result = truth.score([], _gt(_attack()), tool=TOOL)
     assert (result.tp, result.fn, result.fp) == (0, 1, 0)
     assert result.detection_rate == 0.0
     assert result.precision is None
 
 
 def test_score_to_dict_is_json() -> None:
-    result = truth.score([_alert(), _alert(src=OTHER)], _gt(_attack()))
+    result = truth.score([_alert(), _alert(src=OTHER)], _gt(_attack()), tool=TOOL)
     assert json.loads(json.dumps(result.to_dict())) == {
         "tp": 1,
         "fn": 0,
@@ -238,6 +256,13 @@ def test_load_rejects_invalid_json(tmp_path: Path) -> None:
         (_truth(_attack(rule_ids={"mmt-probe": []})), "attacks[0].rule_ids.mmt-probe"),
         (_truth(_attack(end=T0 - 1)), "attacks[0].end: "),
         (_truth(_attack(src="not-an-ip")), "attacks[0].src: not an IP address or network"),
+        # A CIDR with host bits set is rejected, not silently widened to
+        # its network address: it is a typo in the truth file.
+        (
+            _truth(_attack(dst="192.0.2.5/24")),
+            "attacks[0].dst: a network with host bits set (use 192.0.2.0/24)",
+        ),
+        (_truth(_attack(src="2001:db8::1/64")), "attacks[0].src: a network with host bits"),
         (_truth(_attack(), _attack()), "attacks[1].id: duplicate attack id"),
         # json.loads accepts NaN and Infinity; the schema's "number" lets them
         # through, and a non-finite span or tolerance would silently mis-score.

@@ -132,16 +132,20 @@ which protocol. `src/mbench/truth.py` loads it and checks it against
   time-stamp an alert at different packets of the attack.
 - Each attack has a unique `id`, a `start` and an `end` (packet time, in
   seconds since the epoch; `end` not before `start`), and two endpoints `src`
-  and `dst`, each an IP address or a CIDR network (a scan of a /24).
+  and `dst`, each an IP address or a CIDR network's canonical address (a
+  scan of a /24: `192.0.2.0/24`, never `192.0.2.5/24`).
 - `proto` (optional, lowercase): when given, only an alert with this protocol
   matches.
 - `category` and `description` (optional) are reported, never matched: each
   tool names its categories its own way.
 - `rule_ids` (optional): per tool name (the adapter's `name`), the rule ids
-  that detect the attack. When the scored tool has an entry, only an alert
-  with one of those rule ids matches; any other tool is matched without it.
-  This lets a tool's own expected output (mmt-security `check/expect`) be the
-  ground truth without making it binding on Suricata or Snort.
+  that detect the attack. The score is always computed for one named tool —
+  `truth.score` requires it, so a forgotten tool name cannot let the wrong
+  rule ids count as detections. When the named tool has an entry, only an
+  alert with one of those rule ids matches; any other tool is matched
+  without it. This lets a tool's own expected output (mmt-security
+  `check/expect`) be the ground truth without making it binding on Suricata
+  or Snort.
 
 An alert normalised by the adapter (`ts, rule_id, category, src, dst, proto`)
 **matches** an attack when all of these hold:
@@ -151,8 +155,8 @@ An alert normalised by the adapter (`ts, rule_id, category, src, dst, proto`)
    tool may report the reply packet), each address within its endpoint's
    network;
 3. its `proto` equals the attack's `proto`, when the attack has one;
-4. its `rule_id` is in the attack's `rule_ids` for this tool, when there is
-   such an entry.
+4. its `rule_id` is in the attack's `rule_ids` for the scored tool, when
+   there is such an entry.
 
 Then, for one run:
 
