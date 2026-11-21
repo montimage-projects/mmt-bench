@@ -427,17 +427,63 @@ def _netbooted(hostname: str) -> dict[str, Any]:
     return data
 
 
-def test_anonymise_replaces_the_hostname_in_the_cmdline() -> None:
+def test_hostname_parameters_are_redacted_in_the_cmdline() -> None:
+    # *hostname= values are redacted like ip=, anonymised or not, so the
+    # recorded cmdline never carries the hostname (#21).
     record = _collect(_netbooted("bench-host"), alias="sut")
     assert record["os"]["cmdline"] == (
-        "BOOT_IMAGE=/vmlinuz ro ip=<redacted> BOOTIF=<redacted> systemd.hostname=sut quiet"
+        "BOOT_IMAGE=/vmlinuz ro ip=<redacted> BOOTIF=<redacted> systemd.hostname=<redacted> quiet"
     )
     assert "bench-host" not in json.dumps(record)
     plain = _collect(_netbooted("bench-host"), alias=None)
-    assert "systemd.hostname=bench-host" in plain["os"]["cmdline"]
+    assert plain["os"]["cmdline"] == record["os"]["cmdline"]
     # The hostname is not hashed, inside the command line either.
     assert plain["sut_hash"] == record["sut_hash"]
-    assert _collect(_netbooted("other-host"), alias=None)["sut_hash"] == record["sut_hash"]
+
+
+def test_hosts_differing_only_in_hostname_get_the_same_sut_hash() -> None:
+    # Two hosts with identical hardware, OS and cmdline, one named bench-host
+    # and one other-host, report the same record (#21).
+    bench = _collect(_netbooted("bench-host"), alias=None)
+    other = _collect(_netbooted("other-host"), alias=None)
+    assert bench["host"]["hostname"] != other["host"]["hostname"]
+    assert bench["os"]["cmdline"] == other["os"]["cmdline"]
+    assert bench["sut_hash"] == other["sut_hash"]
+
+
+def _lvm_host(hostname: str) -> dict[str, Any]:
+    # An Ubuntu LVM install names its volumes after the host: the hostname is
+    # embedded in the root device path (the example of #21).
+    data = copy.deepcopy(snapshot())
+    data["files"]["/proc/sys/kernel/hostname"] = [f"{hostname}\n"]
+    data["files"]["/proc/cmdline"] = [
+        "BOOT_IMAGE=/vmlinuz-6.8.0-51-generic root=/dev/mapper/ubuntu--vg-ubuntu--lv "
+        f"ro hostname={hostname} systemd.hostname={hostname} console=tty1 quiet splash\n"
+    ]
+    return data
+
+
+def test_anonymise_keeps_a_hostname_shaped_device_path() -> None:
+    # `ubuntu` in ubuntu--vg-ubuntu--lv is a volume name, not the hostname;
+    # only the hostname= parameter values are redacted (#21).
+    record = _collect(_lvm_host("ubuntu"), alias="sut")
+    assert record["os"]["cmdline"] == (
+        "BOOT_IMAGE=/vmlinuz-6.8.0-51-generic root=/dev/mapper/ubuntu--vg-ubuntu--lv "
+        "ro hostname=<redacted> systemd.hostname=<redacted> console=tty1 quiet splash"
+    )
+    assert record["host"]["hostname"] == "sut"
+    plain = _collect(_lvm_host("ubuntu"), alias=None)
+    assert plain["os"]["cmdline"] == record["os"]["cmdline"]
+
+
+def test_a_cloned_lvm_image_does_not_change_the_sut_hash() -> None:
+    # A cloned disk keeps the ubuntu--vg volumes on a host named lab2: the
+    # cmdline is identical, so the hash is too.
+    ubuntu = _collect(_lvm_host("ubuntu"), alias=None)
+    lab2 = _collect(_lvm_host("lab2"), alias=None)
+    assert lab2["os"]["cmdline"].count("ubuntu--vg") == 1
+    assert lab2["os"]["cmdline"] == ubuntu["os"]["cmdline"]
+    assert lab2["sut_hash"] == ubuntu["sut_hash"]
 
 
 # --- Recording and sanitising ---------------------------------------------------
@@ -466,6 +512,24 @@ def test_sanitise_text() -> None:
         f"dash {hostsrc.DOC_DASH_MAC} bootif 00-00-00-00-00-00-00 "
         f"full {hostsrc.DOC_IPV6} uuid {hostsrc.ZERO_UUID} "
         "key 00:00:00:00:00:00:00:00:00 version 6.17.0 fw 28.45.4028"
+    )
+
+
+def test_sanitise_keeps_the_hostname_inside_paths_and_versions() -> None:
+    # \bubuntu\b also matched ubuntu--vg and version suffixes; the hostname is
+    # now rewritten only where it stands alone (a hostname= value, an ip=
+    # field, a bare token), never inside a longer dash-, dot- or word-token
+    # (#21).
+    raw = (
+        "root=/dev/mapper/ubuntu--vg-ubuntu--lv ro systemd.hostname=ubuntu "
+        "BOOT_IMAGE=/boot/vmlinuz-6.8.0-ubuntu ip=:::::ubuntu:eth0:off "
+        "opt=ubuntu-iso v=1.2.3-ubuntu1 host=ubuntu\n"
+    )
+    clean = hostsrc.sanitise_text(raw, "ubuntu", "sut")
+    assert clean == (
+        "root=/dev/mapper/ubuntu--vg-ubuntu--lv ro systemd.hostname=sut "
+        "BOOT_IMAGE=/boot/vmlinuz-6.8.0-ubuntu ip=:::::sut:eth0:off "
+        "opt=ubuntu-iso v=1.2.3-ubuntu1 host=sut\n"
     )
 
 

@@ -97,13 +97,16 @@ def test_cmdline_redacts_host_identifying_values() -> None:
         "BOOT_IMAGE=/vmlinuz ro ip=192.0.2.10::192.0.2.1:255.255.255.0:bench-host:eth0:off "
         "nfsroot=192.0.2.1:/srv/nfs/bench-host,vers=4 BOOTIF=01-02-00-00-00-00-02 "
         "androidboot.serialno=SN-TEST-0001 serialno=SN-TEST-0002 "
+        "hostname=bench-host systemd.hostname=bench-host rd.hostname=bench-host "
         "ifname=boot0:02:00:00:00:00:03 netconsole=6665@192.0.2.10/eth0,6666@192.0.2.1/ "
         "hwaddr=02-00-00-00-00-05 server=198.51.100.7 console=ttyS0,115200 quiet\n"
     )
     assert sut.parse_cmdline(raw) == (
         "BOOT_IMAGE=/vmlinuz ro ip=<redacted> nfsroot=<redacted> BOOTIF=<redacted> "
-        "androidboot.serialno=<redacted> serialno=<redacted> ifname=boot0:<mac> "
-        "netconsole=<redacted> hwaddr=<mac> server=<ip> console=ttyS0,115200 quiet"
+        "androidboot.serialno=<redacted> serialno=<redacted> "
+        "hostname=<redacted> systemd.hostname=<redacted> rd.hostname=<redacted> "
+        "ifname=boot0:<mac> netconsole=<redacted> hwaddr=<mac> server=<ip> "
+        "console=ttyS0,115200 quiet"
     )
 
 

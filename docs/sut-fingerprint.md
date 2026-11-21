@@ -151,8 +151,9 @@ spaces) of:
 - `host`, without `hostname`, `hostname_anonymised` and
   `cpu.core_types[].scaling_max_mhz` (a thermal or power limit lowers it; the
   hardware maximum `cpuinfo_max_mhz` is hashed);
-- `os`, with the hostname (or its alias) inside `cmdline` replaced by
-  `<hostname>`;
+- `os` as recorded: its `cmdline` never holds the hostname — every
+  `*hostname=` value is `<redacted>`, and a hostname embedded in another
+  value (a device path, a version string) is kept verbatim;
 - the physical NICs in `nics` (or the `nics` marker), without `under_test`,
   `irqs[].affinity` (irqbalance rewrites it) and `irqs[].effective_affinity`
   (where the kernel last placed the interrupt), and without the link state
@@ -203,10 +204,13 @@ of the mbench checkout.
 
 In the kernel command line (`os.cmdline`), filesystem UUIDs become `<uuid>`;
 the values of `ip=`, `nfsroot=`, `nfsaddrs=`, `BOOTIF=`, `netconsole=`,
-`rd.iscsi.initiator=`, `iscsi_initiator=` and any `*serialno=` become
-`<redacted>`; any other MAC address (colon- or dash-separated) becomes `<mac>`
-and any IPv4 address `<ip>`. `--anonymise` replaces the hostname, in
-`host.hostname` and inside `os.cmdline`.
+`rd.iscsi.initiator=`, `iscsi_initiator=`, any `*serialno=` and any
+`*hostname=` (`hostname=`, `systemd.hostname=` ...) become `<redacted>`; any
+other MAC address (colon- or dash-separated) becomes `<mac>` and any IPv4
+address `<ip>`. `--anonymise` replaces `host.hostname`. A hostname embedded in
+another value, such as the volume names of an Ubuntu LVM root
+(`root=/dev/mapper/ubuntu--vg-ubuntu--lv`), is kept verbatim: it names the
+volume, not the host.
 
 ## Test fixtures
 

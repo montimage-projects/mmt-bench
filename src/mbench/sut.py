@@ -212,10 +212,13 @@ _UUID = re.compile(
 
 #: Kernel parameters whose whole value can identify one host or its network:
 #: the netboot address, NFS root and PXE boot interface, the netconsole target,
-#: the iSCSI initiator name, and any vendor ``*serialno=``.
+#: the iSCSI initiator name, any vendor ``*serialno=``, and any ``*hostname=``
+#: (``hostname=``, ``systemd.hostname=`` ...): ``os.cmdline`` then never holds
+#: the hostname, so it is hashed as recorded and ``--anonymise`` has nothing
+#: left to rewrite there (#21).
 _CMDLINE_REDACTED = re.compile(
     r"(?<!\S)(?P<key>ip|nfsroot|nfsaddrs|BOOTIF|netconsole|rd\.iscsi\.initiator"
-    r"|iscsi_initiator|[\w.-]*serialno)=\S*",
+    r"|iscsi_initiator|[\w.-]*serialno|[\w.-]*hostname)=\S*",
     re.IGNORECASE,
 )
 #: MAC addresses, colon- or dash-separated, and longer hex strings of that form.
@@ -230,18 +233,16 @@ def parse_cmdline(text: str) -> str:
 
     Filesystem UUIDs (``root=UUID=...``) become ``<uuid>``; the values of the
     parameters in :data:`_CMDLINE_REDACTED` (``ip=``, ``nfsroot=``,
-    ``BOOTIF=``, ``*serialno=`` ...) become ``<redacted>``; any other MAC
-    address becomes ``<mac>`` and any IPv4 address ``<ip>``.
+    ``BOOTIF=``, ``*serialno=``, ``*hostname=`` ...) become ``<redacted>``; any
+    other MAC address becomes ``<mac>`` and any IPv4 address ``<ip>``. A
+    hostname embedded in another value (the ``ubuntu`` of
+    ``root=/dev/mapper/ubuntu--vg-ubuntu--lv``) is kept as is: it names the
+    volume, not the host (#21).
     """
     text = _CMDLINE_REDACTED.sub(lambda m: f"{m.group('key')}=<redacted>", text.strip())
     text = _UUID.sub("<uuid>", text)
     text = _CMDLINE_MAC.sub("<mac>", text)
     return _CMDLINE_IPV4.sub("<ip>", text)
-
-
-def replace_word(text: str, word: str, replacement: str) -> str:
-    """``text`` with every whole-word ``word`` (a hostname) replaced."""
-    return re.sub(rf"\b{re.escape(word)}\b", replacement, text) if word else text
 
 
 def parse_sysfs_cpumask_text(text: str) -> str:
@@ -974,9 +975,6 @@ class Collector:
         cmdline = self.text("/proc/cmdline")
         if isinstance(cmdline, str):
             cmdline = parse_cmdline(cmdline)
-            real = self.real_hostname()
-            if self.opts.alias is not None and isinstance(real, str):
-                cmdline = replace_word(cmdline, real, self.opts.alias)
         return {
             "distro": distro,
             "kernel": {
@@ -1509,9 +1507,8 @@ _HASH_LINK_STATE_FIELDS = ("operstate", "speed_mbps", "duplex")
 def hash_input(record: dict[str, Json]) -> dict[str, Json]:
     """The part of ``record`` that :func:`sut_hash` covers."""
     host = copy.deepcopy(record["host"])
-    hostname: Json = None
     if isinstance(host, dict):
-        hostname = host.pop("hostname", None)
+        host.pop("hostname", None)
         host.pop("hostname_anonymised", None)
         cpu = host.get("cpu")
         core_types = cpu.get("core_types") if isinstance(cpu, dict) else None
@@ -1526,12 +1523,10 @@ def hash_input(record: dict[str, Json]) -> dict[str, Json]:
                     ]
                 if isinstance(core_type.get("variants"), dict):
                     core_type["variants"].pop(key, None)
+    # The command line is hashed as recorded: its *hostname= values are
+    # already <redacted>, and nothing else in it is rewritten. The hash then
+    # depends on the recorded line only, never on the hostname (#21).
     os_section = copy.deepcopy(record["os"])
-    # The hostname (or its alias) inside the command line is not hashed, so
-    # --anonymise leaves the hash unchanged.
-    cmdline = os_section.get("cmdline") if isinstance(os_section, dict) else None
-    if isinstance(cmdline, str) and isinstance(hostname, str):
-        os_section["cmdline"] = replace_word(cmdline, hostname, "<hostname>")
     nics: Json
     raw_nics = record.get("nics")
     if is_unavailable(raw_nics):
