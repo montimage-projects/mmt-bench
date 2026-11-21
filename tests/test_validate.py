@@ -171,7 +171,29 @@ def test_unreadable_or_unsupported_files_exit_2(
     campaign.write_text("question: x\n", encoding="utf-8")
     assert main(["validate", str(campaign)]) == EXIT_USAGE
     err = capsys.readouterr().err
-    assert "#8" in err and "#7" in err
+    assert "#8" in err  # campaign files are checked by #8
+
+
+def test_a_yaml_manifest_is_checked(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    # The corpus manifest is a checked record kind since #7.
+    path = tmp_path / "manifest.yaml"
+    path.write_text("schema_version: 1\nentries: []\n", encoding="utf-8")
+    assert main(["validate", str(path)]) == EXIT_OK
+    assert "valid corpus manifest" in capsys.readouterr().out
+    path.write_text("schema_version: 1\nentries: [{label: x}]\n", encoding="utf-8")
+    assert main(["validate", str(path)]) == EXIT_INVALID
+    assert "missing field: entries[0].path" in capsys.readouterr().out
+    path.write_text("not: [closed\n", encoding="utf-8")
+    assert main(["validate", str(path)]) == EXIT_INVALID
+    assert "not valid YAML" in capsys.readouterr().out
+
+
+def test_the_committed_corpus_manifest_validates(capsys: pytest.CaptureFixture[str]) -> None:
+    manifest = ROOT / "corpus/manifest.yaml"
+    assert manifest.is_file()
+    assert main(["validate", str(manifest)]) == EXIT_OK
+    out = capsys.readouterr().out
+    assert "valid corpus manifest" in out and "local-only" in out
 
 
 def test_invalid_json_is_invalid(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:

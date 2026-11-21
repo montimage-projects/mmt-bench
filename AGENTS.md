@@ -24,13 +24,15 @@ uv run ruff check .                    # lint
 uv run ruff format --check .           # formatting
 uv run mypy                            # types (strict)
 python3 tools/ci/check_action_pins.py  # workflows: actions/* only, SHA-pinned
+python3 tools/ci/check_no_captures.py  # no packet capture is tracked by git
 uv run pytest                          # tests
 uv run mbench --help                   # smoke: the CLI lists its subcommands
 ```
 
-The subcommands are stubs until their issue lands: each exits with status 3
-and `not implemented yet (#N)`. The 10-s smoke campaign comes with #9, which
-adds its command here.
+`mbench sut`, `mbench validate` and `mbench corpus` are implemented; the other
+subcommands are stubs until their issue lands: each exits with status 3 and
+`not implemented yet (#N)`. The 10-s smoke campaign comes with #9, which adds
+its command here.
 
 ## Operating rules
 
