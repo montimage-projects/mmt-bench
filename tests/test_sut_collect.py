@@ -548,6 +548,37 @@ def test_sanitise_keeps_the_hostname_inside_paths_and_versions() -> None:
     assert hostsrc.sanitise_text(raw, "myhost.example.lan", "sut") == (
         "ip=::::sut:eth0:off hostname=sut fqdn=sut\n"
     )
+    # A trailing dot is not part of the name and does not shield it: the
+    # name is rewritten and the dot stays.
+    raw = (
+        "a=myhost. b=myhost.example.lan. c=myhost..lan "
+        "ks=http://myhost.example.lan./ks.cfg route=myhost.example.lan./24\n"
+    )
+    assert hostsrc.sanitise_text(raw, "myhost", "sut") == (
+        "a=sut. b=sut. c=sut..lan ks=http://sut./ks.cfg route=sut./24\n"
+    )
+    # The match is case-insensitive, as hostnames are (RFC 1123), in both
+    # directions: a kernel `MyHost` rewrites every casing below, and a
+    # kernel `myhost` rewrites `MyHost`.
+    raw = "a=myhost b=MYHOST c=myhost.example.lan d=MyHost x=xmyhost y=myhost2\n"
+    assert hostsrc.sanitise_text(raw, "MyHost", "sut") == (
+        "a=sut b=sut c=sut d=sut x=xmyhost y=myhost2\n"
+    )
+    assert (
+        hostsrc.sanitise_text("a=MyHost b=MYHOST.EXAMPLE.LAN\n", "myhost", "sut") == "a=sut b=sut\n"
+    )
+    # An IP-looking or all-digits first label is not derived: a bare `10`
+    # next to `10.0.0.9`, or a `1234` next to `1234.lan`, is a number, not
+    # the host — while the hostname itself is still rewritten.
+    raw = "host=10.0.0.9 n=10 other=10.0.0.10\n"
+    assert hostsrc.sanitise_text(raw, "10.0.0.9", "sut") == (
+        f"host=sut n=10 other={hostsrc.DOC_IPV4}\n"
+    )
+    assert (
+        hostsrc.sanitise_text("id=1234.lan n=1234 bare=1234\n", "1234.lan", "sut")
+        == "id=sut n=1234 bare=1234\n"
+    )
+    assert hostsrc.sanitise_text("n=1234\n", "1234", "sut") == "n=sut\n"
 
 
 @pytest.mark.parametrize(
@@ -573,8 +604,9 @@ def test_fixtures_are_already_sanitised() -> None:
 
 
 def _hostname_recording() -> dict[str, Any]:
-    """A synthetic recording carrying `myhost` and `myhost.example.lan` in
-    every carrier the collector can record (the review of PR #28, B1)."""
+    """A synthetic recording carrying `myhost` and `myhost.example.lan` —
+    lowercase, mixed-case and trailing-dot forms — in every carrier the
+    collector can record (the review of PR #28, B1-B3)."""
     return {
         "snapshot_version": 1,
         "constants": {"euid": 1000, "page_size": 4096, "clock_ticks": 100},
@@ -587,7 +619,9 @@ def _hostname_recording() -> dict[str, Any]:
                 "nfsroot=10.0.0.1:/export/myhost.example.lan "
                 "rd.iscsi.initiator=iqn.1991-05.com.example:myhost.example.lan "
                 "netconsole=4444@10.0.0.1/eth0,9353@myhost.example.lan/02:00:00:00:00:09 "
-                "ks=http://myhost.example.lan/ks.cfg "
+                "ks=http://myhost.example.lan./ks.cfg "
+                "route=myhost.example.lan./24 short=myhost. dbl=myhost..lan "
+                "tag=MyHost caps=MYHOST "
                 "iscsi_initiator=iqn.2003-01.org.myhost:disk1 "
                 "rd.hostname=node-myhost.internal opt=myhost-iso\n"
             ],
@@ -599,11 +633,11 @@ def _hostname_recording() -> dict[str, Any]:
             "/proc/self/cgroup": ["0::/machine.slice/machine-myhost.scope\n"],
             "/proc/sys/kernel/hostname": ["myhost.example.lan\n"],
             "/proc/sys/kernel/version": [
-                "#1 SMP PREEMPT_DYNAMIC builder@myhost.example.lan Wed Nov 18 10:00:00 UTC 2026\n"
+                "#1 SMP PREEMPT_DYNAMIC builder@MyHost.Example.Lan Wed Nov 18 10:00:00 UTC 2026\n"
             ],
             "/sys/class/dmi/id/product_version": ["myhost.example.lan\n"],
             "/sys/class/net/wan.myhost.example.lan/mtu": ["1500\n"],
-            "/proc/7/stat": ["7 (myhost-agent) S 1 7 7 0 -1 4194304 100\n"],
+            "/proc/7/stat": ["7 (MyHost-Agent) S 1 7 7 0 -1 4194304 100\n"],
         },
         "dirs": {
             "/proc": [["7", "cpuinfo", "self"]],
@@ -632,10 +666,11 @@ def _hostname_recording() -> dict[str, Any]:
 
 def test_sanitise_rewrites_the_hostname_in_every_carrier() -> None:
     # The recording is written to be committed to a public repo, so no
-    # `myhost` may survive in a standalone or dotted position (B1). A kernel
+    # `myhost` may survive in a standalone or dotted position (B1), in any
+    # casing (B3), and a trailing dot does not shield it (B2). A kernel
     # hostname that is itself the FQDN gives the same result: its first
     # label is rewritten too.
-    for hostname in ("myhost", "myhost.example.lan"):
+    for hostname in ("myhost", "MyHost", "myhost.example.lan", "MyHost.Example.Lan"):
         clean = hostsrc.sanitise_snapshot(
             _hostname_recording(),
             hostname,
@@ -644,8 +679,11 @@ def test_sanitise_rewrites_the_hostname_in_every_carrier() -> None:
             {"eth0", "wan.myhost.example.lan"},
         )
         text = json.dumps(clean)
-        assert "myhost.example.lan" not in text
-        assert re.search(r"(?<![\w-])myhost(?:\.[\w-]+)*(?![\w.-])", text) is None
+        assert "myhost.example.lan" not in text.lower()
+        assert (
+            re.search(r"(?<![\w-])myhost(?:\.[\w-]+)*(?![\w-])(?!\.[\w-])", text, re.IGNORECASE)
+            is None
+        )
         cmdline = clean["files"]["/proc/cmdline"][0]
         for rewritten in (
             "hostname=sut",
@@ -655,7 +693,12 @@ def test_sanitise_rewrites_the_hostname_in_every_carrier() -> None:
             f"nfsroot={hostsrc.DOC_IPV4}:/export/sut",
             "rd.iscsi.initiator=iqn.1991-05.com.example:sut",
             "9353@sut/",
-            "ks=http://sut/ks.cfg",
+            "ks=http://sut./ks.cfg",
+            "route=sut./24",
+            "short=sut.",
+            "dbl=sut..lan",
+            "tag=sut",
+            "caps=sut",
             "iscsi_initiator=iqn.2003-01.org.sut:disk1",
         ):
             assert rewritten in cmdline, (hostname, rewritten)
@@ -670,14 +713,14 @@ def test_sanitise_rewrites_the_hostname_in_every_carrier() -> None:
         assert clean["commands"][key][0]["stdout"] == "Id=sut\n"
         # The only survivors are `-`- or word-joined tokens, which cannot be
         # told from a device-mapper name or a version suffix.
-        assert set(re.findall(r"[\w.-]*myhost[\w.-]*", text)) == {
+        assert set(re.findall(r"[\w.-]*myhost[\w.-]*", text, re.IGNORECASE)) == {
             "myhost--vg-myhost--lv",
             "myhost--vg-swap_1",
             "vmlinuz-6.8.0-myhost",
             "myhost-iso",
             "myhost0",
             "machine-myhost.scope",
-            "myhost-agent",
+            "MyHost-Agent",
             "node-myhost.internal",
         }
 

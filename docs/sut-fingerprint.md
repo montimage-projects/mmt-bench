@@ -229,15 +229,22 @@ uv run mbench sut --anonymise dgx-spark --record-sources tests/fixtures/dgx-spar
 
 `--record-sources` sanitises before writing: the hostname becomes the alias
 wherever it stands as a whole label — a `hostname=`/`ip=` value, a bare
-token, or one label of a dotted name — and a following dotted tail goes with
-it (`myhost.example.lan` becomes `sut`, `iqn.…org.myhost:` becomes
-`iqn.…org.sut:`); when the kernel hostname is an FQDN its first label is
-rewritten too, so a bare `myhost` in `ip=::::myhost:eth0` does not survive.
-A dash- or word-joined occurrence is kept as captured — it cannot be told
+token, or one label of a dotted name — matched case-insensitively (RFC 1123
+hostnames are case-insensitive), and a following dotted tail goes with it
+(`myhost.example.lan` becomes `sut`, `iqn.…org.myhost:` becomes
+`iqn.…org.sut:`). A trailing dot is not part of the name and does not
+shield it: `myhost.` and `myhost.example.lan.` become `sut.`. When the
+kernel hostname is an FQDN its first label is rewritten too, so a bare
+`myhost` in `ip=::::myhost:eth0` does not survive — unless the hostname is
+an IPv4 address or the first label is all digits, which are not derived:
+`10.0.0.9` does not earn a `10` that would eat every standalone `10`. A
+dash- or word-joined occurrence is kept as captured — it cannot be told
 from a volume name or a version string — so the only residuals a recording
-can still carry are tokens like `ubuntu--vg-ubuntu--lv`,
-`vmlinuz-6.8.0-ubuntu`, `opt=ubuntu-iso`, `1.2.3-ubuntu1`, `myhost-agent`,
-`myhost0`, `node-myhost.internal` and `myhost--vg-myhost--lv`.
+can still carry are `-`- or word-joined tokens like
+`ubuntu--vg-ubuntu--lv`, `vmlinuz-6.8.0-ubuntu`, `opt=ubuntu-iso`,
+`1.2.3-ubuntu1`, `myhost-agent`, `myhost0`, `node-myhost.internal` and
+`myhost--vg-myhost--lv`, and, under an IP-shaped or all-digits first
+label, that bare label itself (a standalone `10` next to `10.0.0.9`).
 MAC addresses (colon- or dash-separated) become `02:00:00:00:00:01`, IPv4
 addresses `192.0.2.1`, IPv6 addresses `2001:db8::1`, UUIDs the nil UUID, long
 colon- or dash-hex strings (RSS keys, `BOOTIF=01-...`) become zeros,
