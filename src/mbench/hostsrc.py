@@ -315,18 +315,30 @@ ZERO_UUID = "00000000-0000-0000-0000-000000000000"
 def sanitise_text(text: str, hostname: str | None, alias: str) -> str:
     """Strip host identity from captured text.
 
-    Replaces the hostname with ``alias`` where it stands alone — a
-    ``hostname=`` or ``ip=`` value, a bare token — but not inside a longer
-    dash-, dot- or word-token, so a device path like
-    ``ubuntu--vg-ubuntu--lv`` or a version string like ``6.8.0-ubuntu`` is kept
-    as captured (#21). MAC addresses (colon- or dash-separated) become a
-    documentation MAC, longer colon- or dash-hex strings (RSS hash keys,
-    ``BOOTIF=01-...``) become zeros, UUIDs (filesystem, daemon and
-    cgroup scope ids) become the nil UUID, IPv4 addresses a documentation
-    address, and IPv6 addresses a documentation address.
+    Replaces the hostname with ``alias`` where it appears as a whole label —
+    a ``hostname=`` or ``ip=`` value, a bare token, or one label of a dotted
+    name — and swallows a following dotted tail, so ``myhost.example.lan``
+    becomes the alias (the domain is hidden too) and
+    ``iqn.2003-01.org.myhost:`` becomes ``iqn.2003-01.org.<alias>:``. A dash-
+    or word-joined occurrence is kept as captured: a device path like
+    ``ubuntu--vg-ubuntu--lv`` or a version string like ``6.8.0-ubuntu``
+    cannot be told from the hostname (#21). When the recorded hostname is an
+    FQDN, its first label is rewritten too, so a bare ``myhost`` in
+    ``ip=::::myhost:eth0`` does not survive. MAC addresses (colon- or
+    dash-separated) become a documentation MAC, longer colon- or dash-hex
+    strings (RSS hash keys, ``BOOTIF=01-...``) become zeros, UUIDs
+    (filesystem, daemon and cgroup scope ids) become the nil UUID, IPv4
+    addresses a documentation address, and IPv6 addresses a documentation
+    address.
     """
     if hostname:
-        text = re.sub(rf"(?<![\w.-]){re.escape(hostname)}(?![\w.-])", alias, text)
+        names = sorted(
+            {n for n in {hostname, hostname.partition(".")[0]} if n},
+            key=len,
+            reverse=True,
+        )
+        pattern = "|".join(re.escape(n) for n in names)
+        text = re.sub(rf"(?<![\w-])(?:{pattern})(?:\.[\w-]+)*(?![\w.-])", alias, text)
     text = _LONG_HEX.sub(lambda m: ":".join("00" for _ in m.group(0).split(":")), text)
     text = _MAC.sub(DOC_MAC, text)
     text = _DASH_LONG_HEX.sub(lambda m: "-".join("00" for _ in m.group(0).split("-")), text)

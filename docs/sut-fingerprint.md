@@ -190,7 +190,12 @@ sut.json: INVALID (2 problems)
 
 Exit status: 0 when every record is complete, 1 when one is incomplete or not
 JSON, 2 when a file cannot be read (missing, not readable, not UTF-8) or is not
-a kind of record it checks yet.
+a kind of record it checks yet. A `sut_hash` mismatch is not always
+corruption: a record collected before #21 whose kernel command line named the
+host — a `*hostname=` value, or the hostname inside another parameter —
+legitimately fails the check, because `*hostname=` is now recorded as
+`<redacted>` and the line is hashed as recorded; stored-hash comparisons
+across that change differ the same way.
 The corpus manifest (`corpus/manifest.yaml`) is checked too (#7); campaign
 files are added by #8.
 
@@ -221,7 +226,17 @@ on dgx-spark, captured with:
 uv run mbench sut --anonymise dgx-spark --record-sources tests/fixtures/dgx-spark/sources.json -o /dev/null
 ```
 
-`--record-sources` sanitises before writing: the hostname becomes the alias,
+`--record-sources` sanitises before writing: the hostname becomes the alias
+wherever it stands as a whole label — a `hostname=`/`ip=` value, a bare
+token, or one label of a dotted name — and a following dotted tail goes with
+it (`myhost.example.lan` becomes `sut`, `iqn.…org.myhost:` becomes
+`iqn.…org.sut:`); when the kernel hostname is an FQDN its first label is
+rewritten too, so a bare `myhost` in `ip=::::myhost:eth0` does not survive.
+A dash- or word-joined occurrence is kept as captured — it cannot be told
+from a volume name or a version string — so the only residuals a recording
+can still carry are tokens like `ubuntu--vg-ubuntu--lv`,
+`vmlinuz-6.8.0-ubuntu`, `opt=ubuntu-iso`, `1.2.3-ubuntu1`, `myhost-agent`,
+`myhost0`, `node-myhost.internal` and `myhost--vg-myhost--lv`.
 MAC addresses (colon- or dash-separated) become `02:00:00:00:00:01`, IPv4
 addresses `192.0.2.1`, IPv6 addresses `2001:db8::1`, UUIDs the nil UUID, long
 colon- or dash-hex strings (RSS keys, `BOOTIF=01-...`) become zeros,
