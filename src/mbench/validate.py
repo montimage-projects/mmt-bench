@@ -2,9 +2,11 @@
 
 It checks sut.json records (#4) against the committed JSON Schema
 (``src/mbench/schemas/sut.schema.json``) and re-computes their ``sut_hash``,
-and the corpus manifest (#7, ``corpus/manifest.yaml``) against
-``src/mbench/schemas/corpus-manifest.schema.json``. Campaign files are added
-by #8.
+the corpus manifest (#7, ``corpus/manifest.yaml``) against
+``src/mbench/schemas/corpus-manifest.schema.json``, and a pcap's
+ground-truth file (#26, ``<pcap>.truth.json``) against
+``src/mbench/schemas/truth.schema.json`` plus the checks of
+:func:`mbench.truth.parse`. Campaign files are added by #8.
 
 Every problem is reported by the dotted path of the field, for example
 ``missing field: host.cpu.core_types[0].governor``.
@@ -191,14 +193,40 @@ def validate_file(path: str | Path) -> Report:
         record = json.loads(text)
     except ValueError as exc:
         return Report(str(p), "json", [f"not valid JSON: {exc}"])
+    if is_truth(p, record):
+        return _validate_truth(p, record)
     if not (isinstance(record, dict) and ("sut_hash" in record or "schema_version" in record)):
         raise UnsupportedRecord(
-            f"{p}: not a sut.json record (no schema_version or sut_hash); "
-            "mbench validate checks sut.json and corpus/manifest.yaml for now (campaigns: #8)"
+            f"{p}: not a record mbench validate checks (no schema_version or "
+            "sut_hash, and not a truth file); it checks sut.json, "
+            "corpus/manifest.yaml and <pcap>.truth.json (campaigns: #8)"
         )
     report = Report(str(p), "sut", sut_errors(record), scope=str(record.get("scope", "")))
     report.fields = sut.field_count(record)
     report.unavailable = sut.unavailable_fields(record)
+    return report
+
+
+def is_truth(path: Path, data: Any) -> bool:
+    """A file named ``<pcap>.truth.json``, or a JSON object holding
+    ``pcap_sha256`` and ``attacks``."""
+    return path.name.endswith(".truth.json") or (
+        isinstance(data, dict) and "pcap_sha256" in data and "attacks" in data
+    )
+
+
+def _validate_truth(p: Path, data: Any) -> Report:
+    """Check a ground-truth file: the schema, then ``truth.parse``'s own checks."""
+    from mbench import truth
+
+    report = Report(str(p), "ground truth")
+    try:
+        gt = truth.parse(data)
+    except truth.TruthError as exc:
+        report.errors = exc.problems
+        return report
+    n = len(gt.attacks)
+    report.summary = f"{n} attack{'s' if n != 1 else ''}, tolerance {gt.tolerance_s:g} s"
     return report
 
 

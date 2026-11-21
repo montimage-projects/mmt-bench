@@ -196,8 +196,9 @@ host — a `*hostname=` value, or the hostname inside another parameter —
 legitimately fails the check, because `*hostname=` is now recorded as
 `<redacted>` and the line is hashed as recorded; stored-hash comparisons
 across that change differ the same way.
-The corpus manifest (`corpus/manifest.yaml`) is checked too (#7); campaign
-files are added by #8.
+The corpus manifest (`corpus/manifest.yaml`) is checked too (#7), and a
+pcap's ground-truth file (`<pcap>.truth.json`) since #26; campaign files are
+added by #8.
 
 ## Privacy
 
