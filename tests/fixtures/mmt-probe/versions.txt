@@ -1,5 +1,6 @@
 dpi=1.10.3
 security=v1.2.20 (a78a4fd4a33a3c4e218c1c4c11e7e1e23b6c7dff)
+security_repo=https://github.com/Montimage/mmt-security.git
 probe=1e00441a00bba1d064ede2ef95b851428c2b0183
 probe_modules=SECURITY_MODULE STIX_FORMAT
 libpcap0.8t64=1.10.4-4.1ubuntu3.1
@@ -13,8 +14,8 @@ build_uuid-dev=2.39.3-9ubuntu6.6
 build_apt_pins=exact
 INFO_SEC: update "input.max_message_size" from 3000 to 32824
 Version:
-- MMT-Probe 1.6.5 (1e00441 - Nov 21 2026 22:26:14)
+- MMT-Probe 1.6.5 (1e00441 - Nov 21 2026 22:54:42)
 - MMT-DPI 1.10.3 (6a0afb46)
-- MMT-Security 1.2.20 (a78a4fd - Nov 21 2026 22:26:07)
+- MMT-Security 1.2.20 (a78a4fd - Nov 21 2026 22:54:36)
 - Modules: DPI, PCAP, REPORT, SECURITY
 - MMT_BASE: /opt/mmt

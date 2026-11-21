@@ -73,7 +73,6 @@ _REPORT_STATUS = 200
 _REPORT_PROTO_NO_SESSION = 99
 _REPORT_SESSION = 100
 _REPORT_SECURITY = 10
-_REPORT_VERSION = 1
 
 #: Index of the volume fields inside a report's JSON array (0-based).
 _SESSION_DATA_VOLUME = 9
@@ -355,6 +354,9 @@ def _stix_alert(
 def _trace_alert(value: Sequence[Json], protocol_of: Mapping[str, Sequence[str]]) -> Alert | None:
     """A legacy ``[10,...]`` security report (a non-STIX build) as an :class:`Alert`.
 
+    Untested legacy: the pinned image is STIX-only, so no recorded output
+    exercises this path; it is kept for a build without ``STIX_FORMAT``.
+
     The report's last field is the trace: ``{"event_N": {"timestamp": t,
     "attributes": [["proto.att", v], ...]}, ...}``; the proto is the first
     attribute's protocol, the endpoints the first ``ip.src``/``ip.dst`` (or
@@ -521,7 +523,10 @@ security {{
     rules-mask              = ""
     output-channel          = {{file}}   # STIX 2.1 bundles (STIX_FORMAT build)
     report-rule-description = true
-    ignore-remain-flow      = true
+    # false reports every verdict (the detection-fair default); true caps a
+    # flow at its first verdict — mmt-stack's throughput setting, which
+    # under-measures detection on scan and flood pcaps.
+    ignore-remain-flow      = {ignore_remain_flow}
     stix-priority           = ""
     input.max-message-size  = 131072
     security.max-instances  = 16384
@@ -559,9 +564,22 @@ reconstruct-data ftp  {{ enable = false }}
 
 #: The two fair-comparison profiles (docs/methodology.md): the mmt-stack
 #: proven values, and the same config with the buffers tuned for throughput.
+#: ``ignore_remain_flow`` is a profile value so the recorded config shows
+#: what a run used; both profiles set false — with true the probe reports
+#: only a flow's first verdict, which under-measures detection (review F1).
 _CONFIG_PROFILE_PARAMS = {
-    "recommended": {"buffer_size": 67108864, "thread_queue": 4096, "cache_max": 100000},
-    "tuned": {"buffer_size": 268435456, "thread_queue": 16384, "cache_max": 500000},
+    "recommended": {
+        "buffer_size": 67108864,
+        "thread_queue": 4096,
+        "cache_max": 100000,
+        "ignore_remain_flow": "false",
+    },
+    "tuned": {
+        "buffer_size": 268435456,
+        "thread_queue": 16384,
+        "cache_max": 500000,
+        "ignore_remain_flow": "false",
+    },
 }
 
 
@@ -631,6 +649,16 @@ class MmtProbeAdapter(Adapter):
     def name(self) -> str:
         return "mmt-probe"
 
+    def _run_image(self) -> str:
+        """The reference ``docker run`` must start.
+
+        A ``name@sha256:`` ref already pins the image. A tag the daemon
+        resolved to an image id runs by that id instead, so a retag
+        between the resolve and the run cannot start a different image
+        than the one the record pins.
+        """
+        return self._image.ref if "@" in self._image.ref else self._image.digest
+
     # -- lifecycle --------------------------------------------------------------
 
     def prepare(self, ruleset: Ruleset, config_profile: str, workdir: Path) -> list[Path]:
@@ -663,6 +691,10 @@ class MmtProbeAdapter(Adapter):
     def _stage_rules(ruleset: Ruleset, rules_dir: Path) -> list[Path]:
         """Copy the ruleset's ``.so`` files into ``rules_dir``; returns the copies."""
         if ruleset.path.is_file():
+            if ruleset.path.suffix != ".so":
+                raise InvalidValue(
+                    f"ruleset {ruleset.id}: {ruleset.path.name} is not a .so rule file"
+                )
             sources = [ruleset.path]
         elif ruleset.path.is_dir():
             sources = sorted(ruleset.path.glob("*.so"))
@@ -717,7 +749,7 @@ class MmtProbeAdapter(Adapter):
             f"{pcap.resolve()}:{PCAP_MOUNT}/{pcap.name}:ro",
             "-v",
             f"{Path(prepared['rules_dir']).resolve()}:{RULES_MOUNT}:ro",
-            self._image.ref,
+            self._run_image(),
             "probe",
             "-c",
             f"{WORKDIR_MOUNT}/mmt-probe.conf",
@@ -728,7 +760,11 @@ class MmtProbeAdapter(Adapter):
         ]
         log_path = workdir / "probe.log"
         log = log_path.open("wb")
-        proc = self.docker.spawn(argv, log)
+        try:
+            proc = self.docker.spawn(argv, log)
+        except Exception:
+            log.close()
+            raise
         self._run = _Run(workdir, reports_dir, log_path, name)
         return _Container(proc, self.docker, name, log)
 
@@ -759,7 +795,7 @@ class MmtProbeAdapter(Adapter):
         """
         report_packets = report_bytes = 0
         status_lost = status_mmt_pkts = None
-        stix = legacy = rows_99 = rows_100 = 0
+        stix = legacy = rows_99 = rows_100 = rows_200 = 0
         for value in self._values():
             if isinstance(value, list) and value:
                 if value[0] == _REPORT_PROTO_NO_SESSION:
@@ -773,10 +809,17 @@ class MmtProbeAdapter(Adapter):
                 elif value[0] == _REPORT_STATUS:
                     status_mmt_pkts = int(value[6])
                     status_lost = int(value[7])
+                    rows_200 += 1
                 elif isinstance(value[0], dict):
                     stix += 1
                 elif value[0] == _REPORT_SECURITY:
                     legacy += 1
+        if rows_99 + rows_100 + rows_200 + stix + legacy == 0:
+            run = self._require_run()
+            raise RuntimeError(
+                f"the probe wrote no report under {run.reports_dir}: the run "
+                f"produced nothing (the probe's own log is {run.log_path})"
+            )
         processed, dropped = self._status_counts()
         packets = processed if processed is not None else report_packets
         drops = dropped if dropped is not None else (status_lost if status_lost is not None else 0)
@@ -842,15 +885,7 @@ class MmtProbeAdapter(Adapter):
 
         with tempfile.TemporaryDirectory(prefix="mbench-rules-") as stage:
             staged = Path(stage)
-            if ruleset.path.is_dir():
-                for so in sorted(ruleset.path.glob("*.so")):
-                    (staged / so.name).write_bytes(so.read_bytes())
-            elif ruleset.path.is_file():
-                (staged / ruleset.path.name).write_bytes(ruleset.path.read_bytes())
-            else:
-                raise FileNotFoundError(
-                    f"ruleset {ruleset.id}: no such file or directory: {ruleset.path}"
-                )
+            self._stage_rules(ruleset, staged)
             argv = [
                 "run",
                 "--rm",
@@ -862,7 +897,7 @@ class MmtProbeAdapter(Adapter):
                 "/",
                 "-v",
                 f"{staged.resolve()}:{RULES_MOUNT}:ro",
-                self._image.ref,
+                self._run_image(),
                 "rule_info",
             ]
             proc = self.docker.run(argv, timeout=300)
@@ -901,7 +936,7 @@ class MmtProbeAdapter(Adapter):
                 _container_name("versions"),
                 "--network",
                 "none",
-                self._image.ref,
+                self._run_image(),
                 "versions",
             ],
             timeout=120,
@@ -915,12 +950,17 @@ class MmtProbeAdapter(Adapter):
         return self._versions
 
     def tools_record(self) -> dict[str, Json]:
+        """The tools-under-test record of the prepared run (plan §B4).
+
+        Take it while the run's workdir still exists: ``config_record``
+        re-reads the generated ``mmt-probe.conf``.
+        """
         prepared = self._require_prepared()
         ruleset = prepared["ruleset"]
         info = self._versions_info()
         strings: dict[str, Json] = dict(info) if isinstance(info, dict) else {}
         modules = {
-            f"module_{m.lower()}": True
+            f"module_{m.strip().lower()}": True
             for m in strings.get("mmt-probe-modules", "").split(",")
             if m.strip()
         }

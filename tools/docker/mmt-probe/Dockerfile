@@ -16,6 +16,13 @@ ARG UBUNTU_IMAGE=ubuntu:24.04@sha256:73b999393d07f2bf65a40373778a44dc9a6d54ad771
 ARG DPI_VERSION=1.10.3
 ARG DPI_BUILD=6a0afb46
 ARG DPI_SHA256SUMS_SHA256=f7f7a80990bdb3c98f48978ff2bf00fa649a5c70633c906bd666543449ea6ed5
+# mmt-security's source repo and commit: upstream Montimage/mmt-security by
+# default. The internal fork is pinned with
+#   --build-arg SECURITY_REPO=https://github.com/montimage-projects/mmt-security.git \
+#               SECURITY_COMMIT=<fork sha> SECURITY_TAG=
+# (SECURITY_TAG empty skips the tag→commit check; the repo lands in
+# /opt/mmt/VERSIONS either way).
+ARG SECURITY_REPO=https://github.com/Montimage/mmt-security.git
 ARG SECURITY_TAG=v1.2.20
 ARG SECURITY_COMMIT=a78a4fd4a33a3c4e218c1c4c11e7e1e23b6c7dff
 ARG PROBE_COMMIT=1e00441a00bba1d064ede2ef95b851428c2b0183   # branch intact-new-features
@@ -35,7 +42,7 @@ ARG APT_PIN_LIBCONFUSE=3.3-3build1
 # fetch: downloads only (DPI .debs for both arches, sources), all verified
 # =============================================================================
 FROM --platform=$BUILDPLATFORM ${UBUNTU_IMAGE} AS fetch
-ARG DPI_VERSION DPI_BUILD DPI_SHA256SUMS_SHA256 SECURITY_TAG SECURITY_COMMIT PROBE_COMMIT
+ARG DPI_VERSION DPI_BUILD DPI_SHA256SUMS_SHA256 SECURITY_REPO SECURITY_TAG SECURITY_COMMIT PROBE_COMMIT
 RUN apt-get update \
  && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
       ca-certificates curl git \
@@ -52,14 +59,17 @@ RUN set -eux; \
       grep "  $f\$" SHA256SUMS | sha256sum -c -; \
     done
 # Sources, fetched by commit id (a force-pushed branch cannot change them),
-# checked; the mmt-security tag must still name the pinned commit.
+# checked; when SECURITY_TAG is set, the mmt-security tag must still name
+# the pinned commit (a fork pinned by sha sets SECURITY_TAG= to skip it).
 RUN set -eux; \
-    fetch() { git init -q "$1"; git -C "$1" fetch -q --depth 1 "https://github.com/Montimage/$1.git" "$2"; \
-              git -C "$1" checkout -q FETCH_HEAD; test "$(git -C "$1" rev-parse HEAD)" = "$2"; }; \
-    fetch mmt-security "${SECURITY_COMMIT}"; \
-    fetch mmt-probe "${PROBE_COMMIT}"; \
-    git ls-remote https://github.com/Montimage/mmt-security.git "refs/tags/${SECURITY_TAG}^{}" "refs/tags/${SECURITY_TAG}" \
-      | grep -q "^${SECURITY_COMMIT}"
+    fetch() { git init -q "$1"; git -C "$1" fetch -q --depth 1 "$2" "$3"; \
+              git -C "$1" checkout -q FETCH_HEAD; test "$(git -C "$1" rev-parse HEAD)" = "$3"; }; \
+    fetch mmt-security "${SECURITY_REPO}" "${SECURITY_COMMIT}"; \
+    fetch mmt-probe https://github.com/Montimage/mmt-probe.git "${PROBE_COMMIT}"; \
+    if [ -n "${SECURITY_TAG}" ]; then \
+      git ls-remote "${SECURITY_REPO}" "refs/tags/${SECURITY_TAG}^{}" "refs/tags/${SECURITY_TAG}" \
+        | grep -q "^${SECURITY_COMMIT}"; \
+    fi
 
 # =============================================================================
 # build: native build for $TARGETARCH
@@ -95,7 +105,7 @@ RUN cp -a /fetch/mmt-probe/. . \
 # runtime: probe + security tools + the shared objects they load
 # =============================================================================
 FROM ${UBUNTU_IMAGE} AS runtime
-ARG DPI_VERSION SECURITY_TAG SECURITY_COMMIT PROBE_COMMIT APT_PIN_LIBPCAP APT_PIN_LIBXML2 APT_PIN_UTIL_LINUX MMT_STRICT_PINS
+ARG DPI_VERSION SECURITY_REPO SECURITY_TAG SECURITY_COMMIT PROBE_COMMIT APT_PIN_LIBPCAP APT_PIN_LIBXML2 APT_PIN_UTIL_LINUX MMT_STRICT_PINS
 COPY apt-install-pinned.sh /usr/local/bin/apt-install-pinned
 RUN apt-get update \
  && apt-install-pinned /opt/mmt/apt-versions \
@@ -110,8 +120,10 @@ COPY --from=build /opt/mmt/probe/ /opt/mmt/probe/
 RUN rm -f /opt/mmt/dpi/lib/*.a /opt/mmt/security/lib/*.a* \
  && rm -rf /opt/mmt/dpi/lib/pkgconfig /opt/mmt/security/include \
  && printf '/opt/mmt/dpi/lib\n/opt/mmt/security/lib\n' > /etc/ld.so.conf.d/mmt.conf && ldconfig \
- && printf 'dpi=%s\nsecurity=%s (%s)\nprobe=%s\nprobe_modules=SECURITY_MODULE STIX_FORMAT\n' \
-        "${DPI_VERSION}" "${SECURITY_TAG}" "${SECURITY_COMMIT}" "${PROBE_COMMIT}" > /opt/mmt/VERSIONS \
+ && security_label="${SECURITY_COMMIT}" \
+ && if [ -n "${SECURITY_TAG}" ]; then security_label="${SECURITY_TAG} (${SECURITY_COMMIT})"; fi \
+ && printf 'dpi=%s\nsecurity=%s\nsecurity_repo=%s\nprobe=%s\nprobe_modules=SECURITY_MODULE STIX_FORMAT\n' \
+        "${DPI_VERSION}" "${security_label}" "${SECURITY_REPO}" "${PROBE_COMMIT}" > /opt/mmt/VERSIONS \
  && cat /opt/mmt/apt-versions >> /opt/mmt/VERSIONS && rm -f /opt/mmt/apt-versions \
  && sed 's/^/build_/' /opt/mmt/probe/apt-build-versions >> /opt/mmt/VERSIONS \
  && /opt/mmt/probe/bin/probe -v
@@ -119,6 +131,7 @@ LABEL org.opencontainers.image.title="mmt-bench probe" \
       io.montimage.mmt-dpi.version="${DPI_VERSION}" \
       io.montimage.mmt-security.version="${SECURITY_TAG}" \
       io.montimage.mmt-security.commit="${SECURITY_COMMIT}" \
+      io.montimage.mmt-security.repo="${SECURITY_REPO}" \
       io.montimage.mmt-probe.commit="${PROBE_COMMIT}"
 # mmt-security's check captures and expected alerts: the integration test
 # runs the probe on them and compares with the expects and mmt_sec_standalone

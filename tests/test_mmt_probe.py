@@ -158,6 +158,26 @@ def test_run_offline_needs_a_pcap(tmp_path: Path) -> None:
         adapter.run_offline(tmp_path / "missing.pcap", 1, [0])
 
 
+def test_a_spawn_failure_closes_the_log(tmp_path: Path) -> None:
+    class SpawnFails(RecordingDocker):
+        def __init__(self) -> None:
+            super().__init__()
+            self.stdout: BinaryIO | None = None
+
+        def spawn(self, argv: Sequence[str], stdout: BinaryIO) -> subprocess.Popen[bytes]:
+            self.stdout = stdout
+            raise RuntimeError("spawn failed")
+
+    docker = SpawnFails()
+    adapter, _, _ = _prepared(tmp_path, docker)
+    pcap = tmp_path / "input.pcap"
+    pcap.write_bytes(b"pcap")
+    with pytest.raises(RuntimeError, match="spawn failed"):
+        adapter.run_offline(pcap, 1, [0])
+    assert docker.stdout is not None
+    assert docker.stdout.closed
+
+
 # --- prepare and the run ----------------------------------------------------------
 
 
@@ -173,6 +193,15 @@ def test_prepare_writes_the_config_and_stages_the_rules(tmp_path: Path) -> None:
     assert staged == ["a.so", "b.so"]
 
 
+def test_ignore_remain_flow_is_false_in_both_profiles() -> None:
+    # The detection-fair default (review F1): the probe reports every
+    # verdict, not only a flow's first; the conf records the value.
+    for profile in ("recommended", "tuned"):
+        conf = mmt_probe.render_config(profile)
+        lines = [s.strip() for s in conf.splitlines() if s.strip().startswith("ignore-remain-flow")]
+        assert lines and lines[0].split("=", 1)[1].strip() == "false", profile
+
+
 def test_an_unknown_profile_is_refused(tmp_path: Path) -> None:
     adapter = MmtProbeAdapter(ImageRef("img", DIGEST), docker=RecordingDocker())
     with pytest.raises(ValueError, match="config profile"):
@@ -185,6 +214,36 @@ def test_prepare_rejects_an_empty_ruleset(tmp_path: Path) -> None:
     adapter = MmtProbeAdapter(ImageRef("img", DIGEST), docker=RecordingDocker())
     with pytest.raises(FileNotFoundError, match=r"no \.so rule"):
         adapter.prepare(Ruleset("empty", empty), "recommended", tmp_path / "work")
+
+
+def test_a_ruleset_file_without_a_so_suffix_is_refused(tmp_path: Path) -> None:
+    # rule_info loads *.so only: staging a non-.so file would silently
+    # yield zero rules — refuse it instead (review §7).
+    not_a_rule = tmp_path / "rules.xml"
+    not_a_rule.write_bytes(b"<rules/>")
+    adapter = MmtProbeAdapter(ImageRef("img", DIGEST), docker=RecordingDocker())
+    with pytest.raises(InvalidValue, match=r"not a \.so rule file"):
+        adapter.prepare(Ruleset("bad", not_a_rule), "recommended", tmp_path / "work")
+    with pytest.raises(InvalidValue, match=r"not a \.so rule file"):
+        adapter.rule_inventory(Ruleset("bad", not_a_rule))
+
+
+def test_a_tag_resolved_image_runs_by_its_image_id(tmp_path: Path) -> None:
+    # The record pins the resolved image id, so the run must target that
+    # id — a retag between resolve and run would otherwise change what
+    # ran (review §7).
+    docker = RecordingDocker()
+    adapter = MmtProbeAdapter("mmt-bench/mmt-probe:local", docker=docker)
+    workdir = tmp_path / "work"
+    adapter.prepare(_ruleset(tmp_path), "recommended", workdir)
+    pcap = tmp_path / "input.pcap"
+    pcap.write_bytes(b"pcap")
+    adapter.run_offline(pcap, 1, [0])
+    adapter.rule_inventory(_ruleset(tmp_path))
+    adapter.version()
+    for argv in docker.spawned + [c for c in docker.calls if c[0] == "run"]:
+        assert DIGEST in argv
+        assert "mmt-bench/mmt-probe:local" not in argv
 
 
 def test_run_offline_runs_an_mbench_container_with_own_mounts_only(tmp_path: Path) -> None:
@@ -219,6 +278,7 @@ def test_no_container_outside_the_mbench_prefix_is_touched(tmp_path: Path) -> No
     # mounted, whatever the adapter is asked to do.
     adapter, docker, workdir = _prepared(tmp_path)
     _run(adapter, workdir, tmp_path)
+    _fill_reports(workdir)
     adapter.counters()
     adapter.alerts()
     adapter.rule_inventory(_ruleset(tmp_path))
@@ -253,6 +313,15 @@ def test_counters_sum_the_reports_and_the_status_line(tmp_path: Path) -> None:
     assert (counters.packets, counters.bytes, counters.drops) == (2, 134, 0)
     assert counters.extra["session_reports"] == 1
     assert counters.extra["stix_alerts"] == 1
+
+
+def test_counters_raise_when_the_probe_wrote_nothing(tmp_path: Path) -> None:
+    # A zero-counter "success" is easier to misread than an error (review
+    # §7): a run that produced no report at all raises.
+    adapter, _, workdir = _prepared(tmp_path)
+    _run(adapter, workdir, tmp_path)
+    with pytest.raises(RuntimeError, match="no report"):
+        adapter.counters()
 
 
 def test_the_stix_alert_is_normalised(tmp_path: Path) -> None:
@@ -300,6 +369,27 @@ def test_version_and_the_version_strings(tmp_path: Path) -> None:
     assert "6a0afb46" in record["version_strings"]["mmt-dpi"]
     assert record["build_flags"]["security_module"] is True
     assert record["build_flags"]["stix_format"] is True
+
+
+def test_build_flags_keys_have_no_leading_space(tmp_path: Path) -> None:
+    # "Modules: DPI, PCAP, REPORT, SECURITY" is comma-separated: without a
+    # strip the keys were "module_ pcap", "module_ report"... (review F3).
+    adapter, _, _ = _prepared(tmp_path)
+    record = adapter.tools_record()
+    flags = record["build_flags"]
+    assert all(key == key.strip() for key in flags), flags
+    for module in ("dpi", "pcap", "report", "security"):
+        assert flags[f"module_{module}"] is True, flags
+
+
+def test_the_security_source_repo_is_recorded(tmp_path: Path) -> None:
+    # /opt/mmt/VERSIONS's security_repo= pin reaches the tools record, so
+    # a fork-built image is visibly different from the upstream one.
+    adapter, _, _ = _prepared(tmp_path)
+    record = adapter.tools_record()
+    assert record["version_strings"]["pin-security_repo"] == (
+        "https://github.com/Montimage/mmt-security.git"
+    )
 
 
 def test_a_version_less_image_gives_a_marker(tmp_path: Path) -> None:
