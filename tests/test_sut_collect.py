@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 import json
 import os
+import re
 from typing import Any
 
 import pytest
@@ -427,17 +428,63 @@ def _netbooted(hostname: str) -> dict[str, Any]:
     return data
 
 
-def test_anonymise_replaces_the_hostname_in_the_cmdline() -> None:
+def test_hostname_parameters_are_redacted_in_the_cmdline() -> None:
+    # *hostname= values are redacted like ip=, anonymised or not, so the
+    # recorded cmdline never carries the hostname (#21).
     record = _collect(_netbooted("bench-host"), alias="sut")
     assert record["os"]["cmdline"] == (
-        "BOOT_IMAGE=/vmlinuz ro ip=<redacted> BOOTIF=<redacted> systemd.hostname=sut quiet"
+        "BOOT_IMAGE=/vmlinuz ro ip=<redacted> BOOTIF=<redacted> systemd.hostname=<redacted> quiet"
     )
     assert "bench-host" not in json.dumps(record)
     plain = _collect(_netbooted("bench-host"), alias=None)
-    assert "systemd.hostname=bench-host" in plain["os"]["cmdline"]
+    assert plain["os"]["cmdline"] == record["os"]["cmdline"]
     # The hostname is not hashed, inside the command line either.
     assert plain["sut_hash"] == record["sut_hash"]
-    assert _collect(_netbooted("other-host"), alias=None)["sut_hash"] == record["sut_hash"]
+
+
+def test_hosts_differing_only_in_hostname_get_the_same_sut_hash() -> None:
+    # Two hosts with identical hardware, OS and cmdline, one named bench-host
+    # and one other-host, report the same record (#21).
+    bench = _collect(_netbooted("bench-host"), alias=None)
+    other = _collect(_netbooted("other-host"), alias=None)
+    assert bench["host"]["hostname"] != other["host"]["hostname"]
+    assert bench["os"]["cmdline"] == other["os"]["cmdline"]
+    assert bench["sut_hash"] == other["sut_hash"]
+
+
+def _lvm_host(hostname: str) -> dict[str, Any]:
+    # An Ubuntu LVM install names its volumes after the host: the hostname is
+    # embedded in the root device path (the example of #21).
+    data = copy.deepcopy(snapshot())
+    data["files"]["/proc/sys/kernel/hostname"] = [f"{hostname}\n"]
+    data["files"]["/proc/cmdline"] = [
+        "BOOT_IMAGE=/vmlinuz-6.8.0-51-generic root=/dev/mapper/ubuntu--vg-ubuntu--lv "
+        f"ro hostname={hostname} systemd.hostname={hostname} console=tty1 quiet splash\n"
+    ]
+    return data
+
+
+def test_anonymise_keeps_a_hostname_shaped_device_path() -> None:
+    # `ubuntu` in ubuntu--vg-ubuntu--lv is a volume name, not the hostname;
+    # only the hostname= parameter values are redacted (#21).
+    record = _collect(_lvm_host("ubuntu"), alias="sut")
+    assert record["os"]["cmdline"] == (
+        "BOOT_IMAGE=/vmlinuz-6.8.0-51-generic root=/dev/mapper/ubuntu--vg-ubuntu--lv "
+        "ro hostname=<redacted> systemd.hostname=<redacted> console=tty1 quiet splash"
+    )
+    assert record["host"]["hostname"] == "sut"
+    plain = _collect(_lvm_host("ubuntu"), alias=None)
+    assert plain["os"]["cmdline"] == record["os"]["cmdline"]
+
+
+def test_a_cloned_lvm_image_does_not_change_the_sut_hash() -> None:
+    # A cloned disk keeps the ubuntu--vg volumes on a host named lab2: the
+    # cmdline is identical, so the hash is too.
+    ubuntu = _collect(_lvm_host("ubuntu"), alias=None)
+    lab2 = _collect(_lvm_host("lab2"), alias=None)
+    assert lab2["os"]["cmdline"].count("ubuntu--vg") == 1
+    assert lab2["os"]["cmdline"] == ubuntu["os"]["cmdline"]
+    assert lab2["sut_hash"] == ubuntu["sut_hash"]
 
 
 # --- Recording and sanitising ---------------------------------------------------
@@ -469,6 +516,71 @@ def test_sanitise_text() -> None:
     )
 
 
+def test_sanitise_keeps_the_hostname_inside_paths_and_versions() -> None:
+    # \bubuntu\b also matched ubuntu--vg and version suffixes; the hostname is
+    # now rewritten as a whole label — a following dotted tail is swallowed
+    # with it — never inside a dash- or word-token (#21).
+    raw = (
+        "root=/dev/mapper/ubuntu--vg-ubuntu--lv ro systemd.hostname=ubuntu "
+        "BOOT_IMAGE=/boot/vmlinuz-6.8.0-ubuntu ip=:::::ubuntu:eth0:off "
+        "opt=ubuntu-iso v=1.2.3-ubuntu1 host=ubuntu\n"
+    )
+    clean = hostsrc.sanitise_text(raw, "ubuntu", "sut")
+    assert clean == (
+        "root=/dev/mapper/ubuntu--vg-ubuntu--lv ro systemd.hostname=sut "
+        "BOOT_IMAGE=/boot/vmlinuz-6.8.0-ubuntu ip=:::::sut:eth0:off "
+        "opt=ubuntu-iso v=1.2.3-ubuntu1 host=sut\n"
+    )
+    # A dotted token loses its whole tail: the FQDN becomes the alias (the
+    # domain is hidden too), and the hostname is rewritten as the last label
+    # of a dotted name — while a dash- or word-joined occurrence is kept.
+    raw = (
+        "systemd.hostname=myhost.example.lan iqn=iqn.2003-01.org.myhost:disk1 "
+        "id=myhost.example.lan.service a=node-myhost.internal b=myhost0\n"
+    )
+    assert hostsrc.sanitise_text(raw, "myhost", "sut") == (
+        "systemd.hostname=sut iqn=iqn.2003-01.org.sut:disk1 "
+        "id=sut a=node-myhost.internal b=myhost0\n"
+    )
+    # When the kernel hostname is an FQDN, its first label is rewritten too:
+    # a bare `myhost` in ip= or a hostname= value does not survive.
+    raw = "ip=::::myhost:eth0:off hostname=myhost fqdn=myhost.example.lan\n"
+    assert hostsrc.sanitise_text(raw, "myhost.example.lan", "sut") == (
+        "ip=::::sut:eth0:off hostname=sut fqdn=sut\n"
+    )
+    # A trailing dot is not part of the name and does not shield it: the
+    # name is rewritten and the dot stays.
+    raw = (
+        "a=myhost. b=myhost.example.lan. c=myhost..lan "
+        "ks=http://myhost.example.lan./ks.cfg route=myhost.example.lan./24\n"
+    )
+    assert hostsrc.sanitise_text(raw, "myhost", "sut") == (
+        "a=sut. b=sut. c=sut..lan ks=http://sut./ks.cfg route=sut./24\n"
+    )
+    # The match is case-insensitive, as hostnames are (RFC 1123), in both
+    # directions: a kernel `MyHost` rewrites every casing below, and a
+    # kernel `myhost` rewrites `MyHost`.
+    raw = "a=myhost b=MYHOST c=myhost.example.lan d=MyHost x=xmyhost y=myhost2\n"
+    assert hostsrc.sanitise_text(raw, "MyHost", "sut") == (
+        "a=sut b=sut c=sut d=sut x=xmyhost y=myhost2\n"
+    )
+    assert (
+        hostsrc.sanitise_text("a=MyHost b=MYHOST.EXAMPLE.LAN\n", "myhost", "sut") == "a=sut b=sut\n"
+    )
+    # An IP-looking or all-digits first label is not derived: a bare `10`
+    # next to `10.0.0.9`, or a `1234` next to `1234.lan`, is a number, not
+    # the host — while the hostname itself is still rewritten.
+    raw = "host=10.0.0.9 n=10 other=10.0.0.10\n"
+    assert hostsrc.sanitise_text(raw, "10.0.0.9", "sut") == (
+        f"host=sut n=10 other={hostsrc.DOC_IPV4}\n"
+    )
+    assert (
+        hostsrc.sanitise_text("id=1234.lan n=1234 bare=1234\n", "1234.lan", "sut")
+        == "id=sut n=1234 bare=1234\n"
+    )
+    assert hostsrc.sanitise_text("n=1234\n", "1234", "sut") == "n=sut\n"
+
+
 @pytest.mark.parametrize(
     "text",
     [
@@ -489,6 +601,128 @@ def test_fixtures_are_already_sanitised() -> None:
         text = path.read_text(encoding="utf-8")
         assert hostsrc.sanitise_text(text, None, ALIAS) == text, path
         assert "/home/" not in text, path  # no home directory, so no username
+
+
+def _hostname_recording() -> dict[str, Any]:
+    """A synthetic recording carrying `myhost` and `myhost.example.lan` —
+    lowercase, mixed-case and trailing-dot forms — in every carrier the
+    collector can record (the review of PR #28, B1-B3)."""
+    return {
+        "snapshot_version": 1,
+        "constants": {"euid": 1000, "page_size": 4096, "clock_ticks": 100},
+        "files": {
+            "/proc/cmdline": [
+                "BOOT_IMAGE=/vmlinuz-6.8.0-myhost "
+                "root=/dev/mapper/myhost--vg-myhost--lv ro "
+                "hostname=myhost systemd.hostname=myhost.example.lan "
+                "ip=::::myhost.example.lan:eth0:off ip=::::myhost:eth1:off "
+                "nfsroot=10.0.0.1:/export/myhost.example.lan "
+                "rd.iscsi.initiator=iqn.1991-05.com.example:myhost.example.lan "
+                "netconsole=4444@10.0.0.1/eth0,9353@myhost.example.lan/02:00:00:00:00:09 "
+                "ks=http://myhost.example.lan./ks.cfg "
+                "route=myhost.example.lan./24 short=myhost. dbl=myhost..lan "
+                "tag=MyHost caps=MYHOST "
+                "iscsi_initiator=iqn.2003-01.org.myhost:disk1 "
+                "rd.hostname=node-myhost.internal opt=myhost-iso\n"
+            ],
+            "/proc/swaps": [
+                "Filename\t\t\t\tType\t\tSize\tUsed\tPriority\n"
+                "/dev/mapper/myhost--vg-swap_1 partition 1024 0 -2\n"
+                "/dev/myhost0 partition 1024 0 -3\n"
+            ],
+            "/proc/self/cgroup": ["0::/machine.slice/machine-myhost.scope\n"],
+            "/proc/sys/kernel/hostname": ["myhost.example.lan\n"],
+            "/proc/sys/kernel/version": [
+                "#1 SMP PREEMPT_DYNAMIC builder@MyHost.Example.Lan Wed Nov 18 10:00:00 UTC 2026\n"
+            ],
+            "/sys/class/dmi/id/product_version": ["myhost.example.lan\n"],
+            "/sys/class/net/wan.myhost.example.lan/mtu": ["1500\n"],
+            "/proc/7/stat": ["7 (MyHost-Agent) S 1 7 7 0 -1 4194304 100\n"],
+        },
+        "dirs": {
+            "/proc": [["7", "cpuinfo", "self"]],
+            "/sys/class/net": [["eth0", "lo", "wan.myhost.example.lan"]],
+        },
+        "links": {},
+        "commands": {
+            hostsrc.command_key(
+                [
+                    "systemctl",
+                    "show",
+                    "myhost.example.lan.service",
+                    "--property=Id,LoadState,ActiveState",
+                    "--no-pager",
+                ]
+            ): [
+                {
+                    "returncode": 0,
+                    "stdout": "Id=myhost.example.lan.service\n",
+                    "stderr": "",
+                }
+            ],
+        },
+    }
+
+
+def test_sanitise_rewrites_the_hostname_in_every_carrier() -> None:
+    # The recording is written to be committed to a public repo, so no
+    # `myhost` may survive in a standalone or dotted position (B1), in any
+    # casing (B3), and a trailing dot does not shield it (B2). A kernel
+    # hostname that is itself the FQDN gives the same result: its first
+    # label is rewritten too.
+    for hostname in ("myhost", "MyHost", "myhost.example.lan", "MyHost.Example.Lan"):
+        clean = hostsrc.sanitise_snapshot(
+            _hostname_recording(),
+            hostname,
+            "sut",
+            {7},
+            {"eth0", "wan.myhost.example.lan"},
+        )
+        text = json.dumps(clean)
+        assert "myhost.example.lan" not in text.lower()
+        assert (
+            re.search(r"(?<![\w-])myhost(?:\.[\w-]+)*(?![\w-])(?!\.[\w-])", text, re.IGNORECASE)
+            is None
+        )
+        cmdline = clean["files"]["/proc/cmdline"][0]
+        for rewritten in (
+            "hostname=sut",
+            "systemd.hostname=sut",
+            "ip=::::sut:eth0:off",
+            "ip=::::sut:eth1:off",
+            f"nfsroot={hostsrc.DOC_IPV4}:/export/sut",
+            "rd.iscsi.initiator=iqn.1991-05.com.example:sut",
+            "9353@sut/",
+            "ks=http://sut./ks.cfg",
+            "route=sut./24",
+            "short=sut.",
+            "dbl=sut..lan",
+            "tag=sut",
+            "caps=sut",
+            "iscsi_initiator=iqn.2003-01.org.sut:disk1",
+        ):
+            assert rewritten in cmdline, (hostname, rewritten)
+        assert clean["files"]["/proc/sys/kernel/version"] == [
+            "#1 SMP PREEMPT_DYNAMIC builder@sut Wed Nov 18 10:00:00 UTC 2026\n"
+        ]
+        assert clean["files"]["/sys/class/dmi/id/product_version"] == ["sut\n"]
+        assert clean["files"]["/sys/class/net/wan.sut/mtu"] == ["1500\n"]
+        assert clean["dirs"]["/sys/class/net"] == [["eth0", "wan.sut"]]
+        (key,) = clean["commands"]
+        assert '"sut"' in key
+        assert clean["commands"][key][0]["stdout"] == "Id=sut\n"
+        # The only survivors are `-`- or word-joined tokens, which cannot be
+        # told from a device-mapper name or a version suffix.
+        assert set(re.findall(r"[\w.-]*myhost[\w.-]*", text, re.IGNORECASE)) == {
+            "myhost--vg-myhost--lv",
+            "myhost--vg-swap_1",
+            "vmlinuz-6.8.0-myhost",
+            "myhost-iso",
+            "myhost0",
+            "machine-myhost.scope",
+            "MyHost-Agent",
+            "node-myhost.internal",
+        }
 
 
 def test_sanitise_snapshot_prunes_processes_and_interfaces() -> None:

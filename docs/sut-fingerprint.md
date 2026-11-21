@@ -151,8 +151,9 @@ spaces) of:
 - `host`, without `hostname`, `hostname_anonymised` and
   `cpu.core_types[].scaling_max_mhz` (a thermal or power limit lowers it; the
   hardware maximum `cpuinfo_max_mhz` is hashed);
-- `os`, with the hostname (or its alias) inside `cmdline` replaced by
-  `<hostname>`;
+- `os` as recorded: its `cmdline` never holds the hostname — every
+  `*hostname=` value is `<redacted>`, and a hostname embedded in another
+  value (a device path, a version string) is kept verbatim;
 - the physical NICs in `nics` (or the `nics` marker), without `under_test`,
   `irqs[].affinity` (irqbalance rewrites it) and `irqs[].effective_affinity`
   (where the kernel last placed the interrupt), and without the link state
@@ -189,7 +190,12 @@ sut.json: INVALID (2 problems)
 
 Exit status: 0 when every record is complete, 1 when one is incomplete or not
 JSON, 2 when a file cannot be read (missing, not readable, not UTF-8) or is not
-a kind of record it checks yet.
+a kind of record it checks yet. A `sut_hash` mismatch is not always
+corruption: a record collected before #21 whose kernel command line named the
+host — a `*hostname=` value, or the hostname inside another parameter —
+legitimately fails the check, because `*hostname=` is now recorded as
+`<redacted>` and the line is hashed as recorded; stored-hash comparisons
+across that change differ the same way.
 The corpus manifest (`corpus/manifest.yaml`) is checked too (#7), and a
 pcap's ground-truth file (`<pcap>.truth.json`) since #26; campaign files are
 added by #8.
@@ -204,10 +210,13 @@ of the mbench checkout.
 
 In the kernel command line (`os.cmdline`), filesystem UUIDs become `<uuid>`;
 the values of `ip=`, `nfsroot=`, `nfsaddrs=`, `BOOTIF=`, `netconsole=`,
-`rd.iscsi.initiator=`, `iscsi_initiator=` and any `*serialno=` become
-`<redacted>`; any other MAC address (colon- or dash-separated) becomes `<mac>`
-and any IPv4 address `<ip>`. `--anonymise` replaces the hostname, in
-`host.hostname` and inside `os.cmdline`.
+`rd.iscsi.initiator=`, `iscsi_initiator=`, any `*serialno=` and any
+`*hostname=` (`hostname=`, `systemd.hostname=` ...) become `<redacted>`; any
+other MAC address (colon- or dash-separated) becomes `<mac>` and any IPv4
+address `<ip>`. `--anonymise` replaces `host.hostname`. A hostname embedded in
+another value, such as the volume names of an Ubuntu LVM root
+(`root=/dev/mapper/ubuntu--vg-ubuntu--lv`), is kept verbatim: it names the
+volume, not the host.
 
 ## Test fixtures
 
@@ -218,7 +227,24 @@ on dgx-spark, captured with:
 uv run mbench sut --anonymise dgx-spark --record-sources tests/fixtures/dgx-spark/sources.json -o /dev/null
 ```
 
-`--record-sources` sanitises before writing: the hostname becomes the alias,
+`--record-sources` sanitises before writing: the hostname becomes the alias
+wherever it stands as a whole label — a `hostname=`/`ip=` value, a bare
+token, or one label of a dotted name — matched case-insensitively (RFC 1123
+hostnames are case-insensitive), and a following dotted tail goes with it
+(`myhost.example.lan` becomes `sut`, `iqn.…org.myhost:` becomes
+`iqn.…org.sut:`). A trailing dot is not part of the name and does not
+shield it: `myhost.` and `myhost.example.lan.` become `sut.`. When the
+kernel hostname is an FQDN its first label is rewritten too, so a bare
+`myhost` in `ip=::::myhost:eth0` does not survive — unless the hostname is
+an IPv4 address or the first label is all digits, which are not derived:
+`10.0.0.9` does not earn a `10` that would eat every standalone `10`. A
+dash- or word-joined occurrence is kept as captured — it cannot be told
+from a volume name or a version string — so the only residuals a recording
+can still carry are `-`- or word-joined tokens like
+`ubuntu--vg-ubuntu--lv`, `vmlinuz-6.8.0-ubuntu`, `opt=ubuntu-iso`,
+`1.2.3-ubuntu1`, `myhost-agent`, `myhost0`, `node-myhost.internal` and
+`myhost--vg-myhost--lv`, and, under an IP-shaped or all-digits first
+label, that bare label itself (a standalone `10` next to `10.0.0.9`).
 MAC addresses (colon- or dash-separated) become `02:00:00:00:00:01`, IPv4
 addresses `192.0.2.1`, IPv6 addresses `2001:db8::1`, UUIDs the nil UUID, long
 colon- or dash-hex strings (RSS keys, `BOOTIF=01-...`) become zeros,
