@@ -239,6 +239,12 @@ def test_load_rejects_invalid_json(tmp_path: Path) -> None:
         (_truth(_attack(end=T0 - 1)), "attacks[0].end: "),
         (_truth(_attack(src="not-an-ip")), "attacks[0].src: not an IP address or network"),
         (_truth(_attack(), _attack()), "attacks[1].id: duplicate attack id"),
+        # json.loads accepts NaN and Infinity; the schema's "number" lets them
+        # through, and a non-finite span or tolerance would silently mis-score.
+        (_truth(_attack(start=float("nan"))), "attacks[0].start: not a finite number"),
+        (_truth(_attack(end=float("inf"))), "attacks[0].end: not a finite number"),
+        (_truth(_attack(), tolerance_s=float("nan")), "tolerance_s: not a finite number"),
+        (_truth(_attack(), tolerance_s=float("inf")), "tolerance_s: not a finite number"),
     ],
 )
 def test_an_invalid_ground_truth_is_rejected_naming_the_field(
@@ -247,6 +253,29 @@ def test_an_invalid_ground_truth_is_rejected_naming_the_field(
     with pytest.raises(TruthError) as info:
         truth.parse(data)
     assert any(expected in p for p in info.value.problems), info.value.problems
+
+
+def test_a_ground_truth_built_by_hand_keeps_the_same_guards() -> None:
+    attack = _gt(_attack()).attacks[0]
+    twin = truth.Attack(
+        id=attack.id,
+        start=attack.start,
+        end=attack.end,
+        src=attack.src,
+        dst=attack.dst,
+    )
+    with pytest.raises(TruthError, match="duplicate attack id"):
+        GroundTruth("ab" * 32, (attack, twin))
+    for bad in (float("nan"), float("inf"), -1.0):
+        with pytest.raises(TruthError, match="tolerance_s"):
+            GroundTruth("ab" * 32, (attack,), tolerance_s=bad)
+
+
+def test_load_rejects_a_non_utf8_file(tmp_path: Path) -> None:
+    path = tmp_path / "t.truth.json"
+    path.write_bytes(b"\xff\xfe{}")
+    with pytest.raises(TruthError, match="not UTF-8"):
+        truth.load(path)
 
 
 def test_load_prefixes_problems_with_the_file(tmp_path: Path) -> None:

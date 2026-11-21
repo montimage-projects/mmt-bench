@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import ipaddress
 import json
+import math
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -36,7 +37,6 @@ Json = Any
 Network = ipaddress.IPv4Network | ipaddress.IPv6Network
 
 TRUTH_SCHEMA = "truth.schema.json"
-SCHEMA_VERSION = 1
 
 #: Seconds an alert may fall outside an attack's span and still match it.
 DEFAULT_TOLERANCE_S = 1.0
@@ -71,20 +71,33 @@ class Attack:
 
 @dataclass(frozen=True)
 class GroundTruth:
-    """The attacks of one pcap, identified by its sha256."""
+    """The attacks of one pcap, identified by its sha256.
+
+    Two attacks may not carry one id (the score is kept per id), and the
+    tolerance is a finite number of seconds >= 0.
+    """
 
     pcap_sha256: str
     attacks: tuple[Attack, ...]
     tolerance_s: float = DEFAULT_TOLERANCE_S
     source: str | None = None
 
+    def __post_init__(self) -> None:
+        if not math.isfinite(self.tolerance_s) or self.tolerance_s < 0:
+            raise TruthError([f"tolerance_s: not a finite number >= 0: {self.tolerance_s!r}"])
+        ids = [attack.id for attack in self.attacks]
+        if len(set(ids)) != len(ids):
+            raise TruthError(["attacks: duplicate attack ids"])
+
 
 def parse(data: Json) -> GroundTruth:
     """A :class:`GroundTruth` from the JSON of a ground-truth file.
 
-    Raises :class:`TruthError` naming every problem: a schema violation, an
-    attack that ends before it starts, an endpoint that is not an address or
-    a network, two attacks with one id.
+    Raises :class:`TruthError` naming every problem: a schema violation, a
+    non-finite number (``json.loads`` accepts NaN and Infinity, which the
+    schema's ``number`` type lets through), an attack that ends before it
+    starts, an endpoint that is not an address or a network, two attacks
+    with one id.
     """
     from mbench import validate
 
@@ -100,6 +113,9 @@ def parse(data: Json) -> GroundTruth:
         if raw["id"] in seen:
             problems.append(f"{where}.id: duplicate attack id {raw['id']!r}")
         seen.add(raw["id"])
+        for key in ("start", "end"):
+            if not math.isfinite(raw[key]):
+                problems.append(f"{where}.{key}: not a finite number: {raw[key]!r}")
         if raw["end"] < raw["start"]:
             problems.append(f"{where}.end: {raw['end']} is before start {raw['start']}")
         endpoints: dict[str, Network] = {}
@@ -123,12 +139,15 @@ def parse(data: Json) -> GroundTruth:
                 rule_ids={tool: frozenset(ids) for tool, ids in raw.get("rule_ids", {}).items()},
             )
         )
+    tolerance_s = float(data.get("tolerance_s", DEFAULT_TOLERANCE_S))
+    if not math.isfinite(tolerance_s):
+        problems.append(f"tolerance_s: not a finite number: {data['tolerance_s']!r}")
     if problems:
         raise TruthError(problems)
     return GroundTruth(
         pcap_sha256=data["pcap_sha256"],
         attacks=tuple(attacks),
-        tolerance_s=float(data.get("tolerance_s", DEFAULT_TOLERANCE_S)),
+        tolerance_s=tolerance_s,
         source=data.get("source"),
     )
 
@@ -137,7 +156,13 @@ def load(path: str | Path) -> GroundTruth:
     """Read and check a ground-truth file (JSON)."""
     p = Path(path)
     try:
-        data = json.loads(p.read_text(encoding="utf-8"))
+        text = p.read_text(encoding="utf-8")
+    except UnicodeDecodeError as exc:
+        raise TruthError(
+            [f"{p}: unreadable: not UTF-8 text ({exc.reason} at byte {exc.start})"]
+        ) from None
+    try:
+        data = json.loads(text)
     except ValueError as exc:
         raise TruthError([f"{p}: not valid JSON: {exc}"]) from None
     try:
