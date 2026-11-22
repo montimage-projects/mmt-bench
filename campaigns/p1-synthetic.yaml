@@ -36,7 +36,7 @@ cpusets:
   - {cpuset: "core:a725@1", threads: [0, 1]}
   - {cpuset: "core:a725@4", threads: [2]}
 repeats: 2
-timeout_s: 900
+timeout_s: 2400  # 94-rule verify is ~12 min on a loaded host; the cap catches hangs, not real passes
 verdict_cell:
   ruleset: r-all
   corpus: c-small
