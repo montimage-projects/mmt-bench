@@ -27,8 +27,10 @@ def fake_tool(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setitem(adapters.ADAPTERS, "fake", FakeAdapter)
 
 
-def _load(parts: dict[str, Any]) -> matrix.Campaign:
-    return matrix.load(parts["campaign_path"], manifest_path=parts["manifest"])
+def _load(
+    parts: dict[str, Any], topology: dict[str, tuple[int, ...]] | None = None
+) -> matrix.Campaign:
+    return matrix.load(parts["campaign_path"], manifest_path=parts["manifest"], topology=topology)
 
 
 def test_a_valid_campaign_loads(tmp_path: Path, fake_tool: None) -> None:
@@ -261,7 +263,7 @@ def test_a_verdict_cell_loads_and_resolves_its_cpuset(tmp_path: Path, fake_tool:
         verdict_cell={"ruleset": "rs", "corpus": "x", "threads": 1, "cpuset": "core:x925"},
     )
     parts = layout(tmp_path, doc)
-    campaign = _load(parts)
+    campaign = _load(parts, topology={"Cortex-X925": (5, 6, 7, 8, 9, 15, 16, 17, 18, 19)})
     assert campaign.verdict_cell == {
         "ruleset": "rs",
         "corpus": "x",
@@ -286,3 +288,21 @@ def test_no_verdict_cell_means_the_fastest_default(tmp_path: Path, fake_tool: No
     doc = campaign_doc([{"label": "x"}])
     parts = layout(tmp_path, doc)
     assert _load(parts).verdict_cell is None
+
+
+def test_the_committed_p1_synthetic_loads_on_a_two_type_host() -> None:
+    # M9: the dry-run campaign loads through matrix.load. Its core:<type>@n
+    # selectors resolve against the host at run time — here a stub two-type
+    # topology stands in for the SUT.
+    topology = {
+        "Cortex-A725": tuple(range(0, 10)),
+        "Cortex-X925": tuple(range(10, 20)),
+    }
+    campaign = matrix.load(
+        Path(__file__).parent.parent / "campaigns" / "p1-synthetic.yaml",
+        topology=topology,
+    )
+    # r0/r0b at t0 + r-all at t1/t2 on each of 2 corpora and 2 series = 16
+    assert len(campaign.cells) == 16
+    assert [cell.index for cell in campaign.cells] == list(range(16))
+    assert {cell.cpuset for cell in campaign.cells if cell.threads == 1} == {(0,), (10,)}
