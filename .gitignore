@@ -26,6 +26,8 @@ corpus/data/
 # Local-only output: tool-comparison reports stay here until they pass a
 # licence and fairness review (AGENTS.md, design decision 1).
 local/
+# Run results: append-only host records, never committed (AGENTS.md).
+results/
 
 # Editors and OS
 .idea/

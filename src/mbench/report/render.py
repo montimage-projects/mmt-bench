@@ -17,6 +17,7 @@ from __future__ import annotations
 import json
 import statistics
 from dataclasses import dataclass, field
+from math import comb
 from pathlib import Path
 
 from mbench import sut
@@ -25,6 +26,10 @@ from mbench.adapters.base import Json
 #: The rerun flag of docs/methodology.md: a cell whose coefficient of
 #: variation over its measured passes exceeds this is flagged.
 CV_FLAG = 0.05
+
+#: The smallest pass count the order-statistic confidence interval for the
+#: median is used from; below it the report prints the range, labelled.
+CI_MIN_N = 5
 
 #: The hashed fields whose value depends on whether the collector ran as
 #: root (dmidecode, bpf_jit sysctls): a mismatch confined to these means the
@@ -57,7 +62,10 @@ class CellStats:
     gbps_median: float | None = None
     gbps_iqr: float | None = None
     gbps_cv: float | None = None
+    gbps_ci: tuple[float, float, str] | None = None
     mpps_median: float | None = None
+    cpp_median: float | None = None
+    cpp_iqr: float | None = None
     detection_rate: float | None = None
     precision: float | None = None
 
@@ -98,6 +106,40 @@ def _cv(values: list[float]) -> float | None:
     return statistics.stdev(values) / mean
 
 
+def _order_stat_level(n: int, k: int) -> float:
+    """The coverage of ``[x_(k), x_(n-k+1)]`` as an interval for the median.
+
+    Under the sign test, ``P(X_(k) <= median <= X_(n-k+1))`` equals
+    ``1 - 2 * P(Bin(n, 1/2) < k)`` — the distribution-free confidence the
+    order statistics carry (the review's M5: the exact level, never a
+    rounded "95 %").
+    """
+    return float(1 - 2 * sum(comb(n, j) for j in range(k)) / 2**n)
+
+
+def median_ci(values: list[float]) -> tuple[float, float, str] | None:
+    """``(lo, hi, label)``: the interval of the median over the pass values.
+
+    Below ``CI_MIN_N`` values it is the range, labelled ``range`` — no
+    confidence claim on so few passes. From ``CI_MIN_N`` it is the
+    order-statistic confidence interval for the median: the widest
+    ``[x_(k), x_(n-k+1)]`` whose exact level reaches 95 %, and, when no k
+    does (n = 5), the full ``[x_(1), x_(n)]`` at its exact level (93.75 %).
+    The label carries that level, so a re-render of the same runs prints
+    the same, honestly named, interval (methodology, Statistics).
+    """
+    if not values:
+        return None
+    xs = sorted(values)
+    n = len(xs)
+    if n < CI_MIN_N:
+        return (xs[0], xs[-1], "range")
+    max_k = (n + 1) // 2
+    reaching = [k for k in range(1, max_k + 1) if _order_stat_level(n, k) >= 0.95]
+    k = max(reaching) if reaching else 1
+    return (xs[k - 1], xs[n - k], f"{_order_stat_level(n, k):.2%} CI")
+
+
 def cell_stats(run: RunFile) -> CellStats:
     """The statistics of one run file: measured ok passes only."""
     passes = run.record.get("passes") or []
@@ -117,6 +159,12 @@ def cell_stats(run: RunFile) -> CellStats:
         if isinstance(p.get("detection"), dict)
         and isinstance(p["detection"].get("precision"), int | float)
     ]
+    cpps = [
+        p["perf"]["cycles_per_packet"]
+        for p in ok
+        if isinstance(p.get("perf"), dict)
+        and isinstance(p["perf"].get("cycles_per_packet"), int | float)
+    ]
     return CellStats(
         run=run,
         measured=measured,
@@ -124,7 +172,10 @@ def cell_stats(run: RunFile) -> CellStats:
         gbps_median=_median(gbps),
         gbps_iqr=_iqr(gbps),
         gbps_cv=_cv(gbps),
+        gbps_ci=median_ci(gbps),
         mpps_median=_median(mpps),
+        cpp_median=_median(cpps),
+        cpp_iqr=_iqr(cpps),
         detection_rate=_median(rates),
         precision=_median(precisions),
     )
@@ -240,26 +291,64 @@ def _detected(stats: CellStats) -> str:
     return f"{stats.detection_rate:.0%} (p {stats.precision:.0%})"
 
 
-def _verdict(cells: list[CellStats], question: str) -> str:
-    """One sentence answering the campaign's question from the measured cells."""
+def _verdict_cell_match(stats: CellStats, verdict_cell: dict[str, Json]) -> bool:
+    """Whether a run's cell answers all of the campaign's verdict selectors."""
+    cell = stats.run.record.get("cell", {})
+    if "ruleset" in verdict_cell and cell.get("ruleset", {}).get("id") != verdict_cell["ruleset"]:
+        return False
+    if "corpus" in verdict_cell and cell.get("corpus", {}).get("label") != verdict_cell["corpus"]:
+        return False
+    if "threads" in verdict_cell and cell.get("threads") != verdict_cell["threads"]:
+        return False
+    return not ("cpuset" in verdict_cell and cell.get("cpuset") != verdict_cell["cpuset"])
+
+
+def _verdict_line(stats: CellStats, tail: str) -> str:
+    """The verdict sentence of one measured cell, with its interval and detection."""
+    cell = stats.run.record.get("cell", {})
+    det = ""
+    if stats.detection_rate is not None:
+        det = f", detecting {_fmt(stats.detection_rate, '{:.0%}')} of the expected attacks"
+    ci = ""
+    if stats.gbps_ci is not None:
+        lo, hi, label = stats.gbps_ci
+        ci = f", {label} {_fmt(lo, '{:.4g}')}-{_fmt(hi, '{:.4g}')}"
+    return (
+        f"On this SUT, **{cell.get('tool', '?')}** ({cell.get('config_profile', '?')}, "
+        f"{cell.get('threads', '?')} thread(s), {cell.get('core_type', '?')}) reached a median "
+        f"**{_fmt(stats.gbps_median, '{:.4g}')} Gbit/s**{ci} ({_fmt(stats.mpps_median)} Mpps) on "
+        f"`{cell.get('corpus', {}).get('label', '?')}`{det} — {tail}."
+    )
+
+
+def _verdict(
+    cells: list[CellStats], question: str, verdict_cell: dict[str, Json] | None = None
+) -> str:
+    """One sentence answering the campaign's question from the measured cells.
+
+    A campaign's ``verdict_cell`` names the cell the question asks about
+    (the P1 headline: all rules, benign mix, 1 thread, one X925 core); the
+    verdict reports that cell, or the fastest measured cell when the
+    campaign names none. A named cell with no measured pass is said so,
+    never silently swapped for another.
+    """
     measured_cells = [c for c in cells if c.gbps_median is not None]
+    named = None
+    if verdict_cell:
+        named = [c for c in measured_cells if _verdict_cell_match(c, verdict_cell)]
+        if named:
+            best = max(named, key=lambda c: c.gbps_median or 0)
+            return _verdict_line(best, "the cell the campaign's verdict names")
     if not measured_cells:
         return (
             "**No valid measurement**: no run has an ok measured pass — "
             "see *Invalid and failed runs* below."
         )
     best = max(measured_cells, key=lambda c: c.gbps_median or 0)
-    cell = best.run.record.get("cell", {})
-    det = ""
-    if best.detection_rate is not None:
-        det = f", detecting {_fmt(best.detection_rate, '{:.0%}')} of the expected attacks"
-    return (
-        f"On this SUT, **{cell.get('tool', '?')}** ({cell.get('config_profile', '?')}, "
-        f"{cell.get('threads', '?')} thread(s), {cell.get('core_type', '?')}) reached a median "
-        f"**{_fmt(best.gbps_median, '{:.4g}')} Gbit/s** ({_fmt(best.mpps_median)} Mpps) on "
-        f"`{cell.get('corpus', {}).get('label', '?')}`{det} — "
-        f"the fastest of {len(measured_cells)} measured cell(s)."
-    )
+    tail = f"the fastest of {len(measured_cells)} measured cell(s)"
+    if verdict_cell is not None and not named:
+        tail = "no run measured the cell the campaign's verdict names; " + tail
+    return _verdict_line(best, tail)
 
 
 def _differing_paths(a: Json, b: Json, prefix: str = "") -> set[str]:
@@ -312,6 +401,48 @@ def _hash_notes(runs: list[RunFile]) -> list[str]:
     return notes
 
 
+def _results_table(cells: list[CellStats]) -> list[str]:
+    """The results table of one core-type series (or of the whole report)."""
+    lines = [
+        "| corpus | tool | ruleset | profile | threads | cpuset | core type | passes ok "
+        "| Gbit/s median (IQR) | Mpps median | cycles/pkt | CV % | detection | run |",
+        "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
+    ]
+    for stats in cells:
+        cell = stats.run.record.get("cell", {})
+        corpus = cell.get("corpus", {})
+        cv = stats.gbps_cv
+        cv_flag = f"{cv:.1%} ⚠ rerun" if cv is not None and cv > CV_FLAG else _fmt(cv, "{:.1%}")
+        cpp = (
+            f"{_fmt(stats.cpp_median, '{:.4g}')} ({_fmt(stats.cpp_iqr, '{:.4g}')})"
+            if stats.cpp_median is not None
+            else "—"
+        )
+        lines.append(
+            "| {corpus} | {tool} | {ruleset} | {profile} | {threads} | {cpuset} | {core} | "
+            "{ok}/{n} | {gbps} ({iqr}) | {mpps} | {cpp} | {cv} | {det} | `{run}` |".format(
+                corpus=corpus.get("label", "?"),
+                tool=cell.get("tool", "?"),
+                ruleset=cell.get("ruleset", {}).get("id", "?"),
+                profile=cell.get("config_profile", "?"),
+                threads=cell.get("threads", "?"),
+                cpuset=cell.get("cpuset") or "all",
+                core=cell.get("core_type", "?") if isinstance(cell.get("core_type"), str) else "?",
+                ok=len(stats.ok),
+                n=len(stats.measured),
+                gbps=_fmt(stats.gbps_median, "{:.4g}"),
+                iqr=_fmt(stats.gbps_iqr, "{:.4g}"),
+                mpps=_fmt(stats.mpps_median),
+                cpp=cpp,
+                cv=cv_flag,
+                det=_detected(stats),
+                run=stats.run.name,
+            )
+        )
+    lines.append("")
+    return lines
+
+
 def _cell_key(run: RunFile) -> tuple[str, ...]:
     cell = run.record.get("cell", {})
     corpus = cell.get("corpus", {})
@@ -347,11 +478,13 @@ def render(
     failed = [c for c in cells if c.run.record.get("status") in ("timeout", "error", "interrupted")]
     compared = len(tools) > 1
 
+    named = meta.get("verdict_cell")
+    verdict_cell = named if isinstance(named, dict) else None
     out: list[str] = [
         f"# {name}: {question}",
         "",
         f"> **Question:** {question}",
-        f"> **Verdict:** {_verdict(cells, question)}",
+        f"> **Verdict:** {_verdict(cells, question, verdict_cell)}",
         "",
     ]
     if compared:
@@ -373,46 +506,75 @@ def render(
 
     out += ["## Setup", ""]
     out += _setup_table(host)
-    out += ["## Results", ""]
-    out += [
-        "| corpus | tool | ruleset | profile | threads | cpuset | core type | passes ok "
-        "| Gbit/s median (IQR) | Mpps median | CV % | detection | run |",
-        "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
-    ]
+    # One table per core-type series when the campaign pinned to several
+    # (P1: the X925 and A725 series); a single-type campaign keeps one table.
+    series: dict[str, list[CellStats]] = {}
     for stats in cells:
         if stats.run.record.get("status") == "invalid":
             continue
-        cell = stats.run.record.get("cell", {})
-        corpus = cell.get("corpus", {})
-        cv = stats.gbps_cv
-        cv_flag = f"{cv:.1%} ⚠ rerun" if cv is not None and cv > CV_FLAG else _fmt(cv, "{:.1%}")
-        out.append(
-            "| {corpus} | {tool} | {ruleset} | {profile} | {threads} | {cpuset} | {core} | "
-            "{ok}/{n} | {gbps} ({iqr}) | {mpps} | {cv} | {det} | `{run}` |".format(
-                corpus=corpus.get("label", "?"),
-                tool=cell.get("tool", "?"),
-                ruleset=cell.get("ruleset", {}).get("id", "?"),
-                profile=cell.get("config_profile", "?"),
-                threads=cell.get("threads", "?"),
-                cpuset=cell.get("cpuset") or "all",
-                core=cell.get("core_type", "?") if isinstance(cell.get("core_type"), str) else "?",
-                ok=len(stats.ok),
-                n=len(stats.measured),
-                gbps=_fmt(stats.gbps_median, "{:.4g}"),
-                iqr=_fmt(stats.gbps_iqr, "{:.4g}"),
-                mpps=_fmt(stats.mpps_median),
-                cv=cv_flag,
-                det=_detected(stats),
-                run=stats.run.name,
-            )
-        )
-    out.append("")
+        core = stats.run.record.get("cell", {}).get("core_type")
+        key = core if isinstance(core, str) else "—"
+        series.setdefault(key, []).append(stats)
+    multi = len([k for k in series if k not in {"—", "unpinned"}]) > 1
+    for name in sorted(series):
+        out += [f"## Results — {name}" if multi else "## Results", ""]
+        out += _results_table(series[name])
     out += [
         "Median over the measured passes of each run; the warm-up pass is never "
         "counted. A cell flagged ⚠ rerun has a coefficient of variation over "
-        f"{CV_FLAG:.0%} (methodology: rerun before comparing).",
+        f"{CV_FLAG:.0%} (methodology: rerun before comparing). The verdict's "
+        "Gbit/s interval is the order-statistic confidence interval for the "
+        "median with its exact level at n ≥ 5 measured passes, else the "
+        "range, labelled (methodology). Bytes are captured bytes — the "
+        "pcap's incl_len, Ethernet header included, no wire overhead — and "
+        "Gbit/s and Mpps divide them by the tool's own processing interval "
+        "where it reports one (each pass's timing.basis says which).",
         "",
     ]
+    wall_based = [
+        p
+        for stats in cells
+        for p in stats.ok
+        if isinstance(p.get("timing"), dict) and p["timing"].get("basis") == "wall"
+    ]
+    if wall_based:
+        out += [
+            f"- {len(wall_based)} ok measured pass(es) measured on wall-clock time: "
+            "the tool reported no processing interval (`timing.basis: wall`)",
+            "",
+        ]
+    reasons = sorted(
+        {
+            f"{p['perf']['unavailable']}: {p['perf'].get('reason', '')}"
+            for stats in cells
+            for p in stats.measured
+            if isinstance(p.get("perf"), dict) and "unavailable" in p["perf"]
+        }
+    )
+    if reasons:
+        out += ["- cycles/pkt unavailable — " + "; ".join(reasons), ""]
+    scopes = sorted(
+        {
+            str(p["perf"]["scope"])
+            for stats in cells
+            for p in stats.ok
+            if isinstance(p.get("perf"), dict) and "scope" in p["perf"]
+        }
+    )
+    if scopes == ["cpuset"]:
+        out += [
+            "- cycles/pkt counts the whole pinned cpuset (`perf stat -a -C`): "
+            "cycles burned on the cell's cores by the tool and anything else "
+            "scheduled there",
+            "",
+        ]
+    elif scopes:
+        out += [
+            "- cycles/pkt counts the run's own container cgroup "
+            "(`perf stat -G`) where the record's perf.scope says so, else the "
+            "whole pinned cpuset",
+            "",
+        ]
     if invalid or failed:
         out += ["## Invalid and failed runs", ""]
         out += ["| run | status | detail |", "| --- | --- | --- |"]

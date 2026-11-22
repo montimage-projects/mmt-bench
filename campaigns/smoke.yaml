@@ -9,9 +9,16 @@
 # pipeline, not performance: a CI runner is a noisy host, so its numbers
 # are not results (docs/methodology.md).
 #
+# `smoke-large` is the 1500-B-frame twin — a few hundred large frames —
+# that keeps the snap-len = 65535 regression (review B1: snap-len 0
+# crashed the probe in libpcap on 1500-B frames) inside the same 10-s
+# pipeline check. Each label's own truth file gates its cell, so both
+# still want 4 alerts and detection 1.0.
+#
 # Before `mbench run campaigns/smoke.yaml`, on each host:
 #   docker build -t mmt-bench/mmt-probe:local tools/docker/mmt-probe
 #   uv run mbench corpus gen c-small --seed 0 --packets 20000 --flows 64 --label smoke --data-in-syn 4
+#   uv run mbench corpus gen c-large --seed 0 --packets 500 --flows 8 --label smoke-large --data-in-syn 4
 #   tools/docker/mmt-probe/extract-rules.sh   # the image's rules -> local/rulesets/
 schema_version: 1
 question: does mmt-probe run end to end offline on the generated smoke pcap, alerts included?
@@ -32,7 +39,7 @@ tools: [mmt-probe]
 rulesets:
   - {id: mmt-security-image, path: local/rulesets/mmt-security/13.datainSYN.so}
 config_profiles: [recommended]
-corpus: [{label: smoke}]
+corpus: [{label: smoke}, {label: smoke-large}]
 threads: [0]
 cpusets: [""]
 repeats: 2

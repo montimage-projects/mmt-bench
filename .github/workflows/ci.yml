@@ -113,8 +113,12 @@ jobs:
       # capture lands in the git-ignored corpus/data/ and is never committed.
       # Its first 4 packets are TCP SYNs with payload — the rule-13 trigger —
       # and gen writes their ground truth next to it (#9 review).
-      - name: Generate the smoke pcap
-        run: uv run --locked mbench corpus gen c-small --seed 0 --packets 20000 --flows 64 --label smoke --data-in-syn 4
+      - name: Generate the smoke pcaps
+        run: |
+          uv run --locked mbench corpus gen c-small --seed 0 --packets 20000 --flows 64 --label smoke --data-in-syn 4
+          # the 1500-B-frame twin: keeps the snap-len = 65535 regression
+          # (review B1) inside the pipeline check
+          uv run --locked mbench corpus gen c-large --seed 0 --packets 500 --flows 8 --label smoke-large --data-in-syn 4
         timeout-minutes: 2
 
       # A CI runner is a noisy host: this checks the pipeline end to end, not

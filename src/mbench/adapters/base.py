@@ -153,22 +153,30 @@ class Counters:
 
     ``drops`` are the packets the tool itself dropped; the kernel's drops
     (``rx_dropped``, ``rx_missed``) are read by the online mode (#13), not here.
-    ``extra`` holds any other counter the tool reports, by its own name.
+    ``drops`` is ``None`` when no counter source reported drops — a pass
+    never records a ``0`` the tool did not say. ``extra`` holds any other
+    counter or provenance note the tool reports, by its own name; values
+    are JSON scalars (numbers, strings, booleans or ``None``).
     """
 
     packets: int
     bytes: int
-    drops: int
-    extra: Mapping[str, int | float] = field(default_factory=dict)
+    drops: int | None
+    extra: Mapping[str, Json] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        for name in ("packets", "bytes", "drops"):
-            _count(name, getattr(self, name))
+        _count("packets", self.packets)
+        _count("bytes", self.bytes)
+        if self.drops is not None:
+            _count("drops", self.drops)
         for key, value in self.extra.items():
             _text("extra key", key)
             if key in {"packets", "bytes", "drops"}:
                 raise InvalidValue(f"extra.{key}: shadows a main counter")
-            _number(f"extra.{key}", value)
+            if value is not None and not isinstance(value, int | float | str | bool):
+                raise InvalidValue(
+                    f"extra.{key}: must be a JSON scalar, not {type(value).__name__}"
+                )
         object.__setattr__(self, "extra", dict(self.extra))
 
     def to_dict(self) -> dict[str, Json]:
@@ -213,10 +221,20 @@ class RuleInfo:
 
 @dataclass(frozen=True)
 class Ruleset:
-    """A rule set under ``rulesets/``: its id and the file or directory holding it."""
+    """A rule set under ``rulesets/``: its id and the file or directory holding it.
+
+    ``security`` is the tool's own meaning of "the engine is on" — for
+    mmt-probe it is the ``security.enable`` the generated config writes (R0
+    is a run with the engine off, R0b a run with the engine on and no rules
+    to match). ``allow_empty`` marks a rule set that legitimately holds zero
+    ``.so`` files, so the adapter's "no rule staged" guard still catches a
+    silently missing extraction everywhere else.
+    """
 
     id: str
     path: Path
+    security: bool = True
+    allow_empty: bool = False
 
     def __post_init__(self) -> None:
         _text("id", self.id)

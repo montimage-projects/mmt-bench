@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import itertools
 from pathlib import Path
 
 import pytest
@@ -39,7 +40,14 @@ def test_staging_names_the_file_by_its_sha256(tmp_path: Path) -> None:
     assert offline.stage_pcap(capture, "ab" * 32, tmp_path / "staged") == staged
 
 
-def _pass(adapter: FakeAdapter, tmp_path: Path, timeout: float = 5.0) -> offline.Outcome:
+def _pass(
+    adapter: FakeAdapter,
+    tmp_path: Path,
+    timeout: float = 5.0,
+    expected_packets: int | None = None,
+    step: float = 1.0,
+) -> offline.Outcome:
+    calls = itertools.count()
     return offline.run_pass(
         adapter,
         Ruleset("rs", tmp_path / "rs.so"),
@@ -49,6 +57,8 @@ def _pass(adapter: FakeAdapter, tmp_path: Path, timeout: float = 5.0) -> offline
         1,
         (),
         timeout,
+        expected_packets=expected_packets,
+        clock=lambda: next(calls) * step,
     )
 
 
@@ -158,3 +168,133 @@ def test_prepare_must_have_run_first(tmp_path: Path) -> None:
     adapter = FakeAdapter()
     with pytest.raises(RuntimeError, match="prepare"):
         adapter.run_offline(tmp_path / "x.pcap", 1, ())
+
+
+# --- the pass's integrity and timing (review B2/B3) ----------------------------
+
+
+def test_a_clean_pass_on_the_tool_interval_is_the_tool_basis(tmp_path: Path) -> None:
+    # B3: the rates prefer the tool's own processing interval when it sits
+    # inside the wall window; overhead is init + teardown.
+    (tmp_path / "rs.so").write_bytes(b"rules")
+    make_pcap(tmp_path, "x.pcap")
+    adapter = FakeAdapter(
+        run_counters=Counters(10, 640, 0, {"processing_s": 0.5, "abnormal_exit": False})
+    )
+    outcome = _pass(adapter, tmp_path)
+    assert outcome.status == "ok"
+    assert outcome.timing == {
+        "wall_s": 1.0,
+        "processing_s": 0.5,
+        "basis": "tool",
+        "overhead_s": 0.5,
+    }
+
+
+def test_no_tool_interval_falls_back_to_wall_labelled(tmp_path: Path) -> None:
+    # B3: a tool that reports no processing interval is measured on wall
+    # time — the record says so, never silently.
+    (tmp_path / "rs.so").write_bytes(b"rules")
+    make_pcap(tmp_path, "x.pcap")
+    adapter = FakeAdapter(run_counters=Counters(10, 640, 0))
+    outcome = _pass(adapter, tmp_path)
+    assert outcome.status == "ok"
+    assert outcome.timing == {"wall_s": 1.0, "processing_s": None, "basis": "wall"}
+
+
+def test_a_tool_interval_outside_the_wall_window_is_invalid(tmp_path: Path) -> None:
+    # B3's cross-check: a processing interval that cannot fit in the window
+    # that produced it is not a measurement.
+    (tmp_path / "rs.so").write_bytes(b"rules")
+    make_pcap(tmp_path, "x.pcap")
+    adapter = FakeAdapter(run_counters=Counters(10, 640, 0, {"processing_s": 9.0}))
+    outcome = _pass(adapter, tmp_path)
+    assert outcome.status == "invalid"
+    assert "processing interval" in outcome.detail
+
+
+def test_an_abnormal_exit_is_never_an_ok_pass(tmp_path: Path) -> None:
+    # B2: the tool's signal handler can mask an abort as return code 0 —
+    # its own output decides, and an abort is never a measurement.
+    (tmp_path / "rs.so").write_bytes(b"rules")
+    make_pcap(tmp_path, "x.pcap")
+    adapter = FakeAdapter(
+        run_counters=Counters(
+            10,
+            640,
+            None,
+            {"abnormal_exit": True, "exit_detail": "malloc(): unaligned tcache chunk"},
+        )
+    )
+    outcome = _pass(adapter, tmp_path)
+    assert outcome.status == "invalid"
+    assert "abnormally" in outcome.detail
+
+
+def test_a_packet_count_mismatch_is_invalid(tmp_path: Path) -> None:
+    # B2: the corpus manifest's packet count is the ground truth the
+    # tool-counted packets answer to.
+    (tmp_path / "rs.so").write_bytes(b"rules")
+    make_pcap(tmp_path, "x.pcap")
+    adapter = FakeAdapter(run_counters=Counters(199, 640, 0))
+    outcome = _pass(adapter, tmp_path, expected_packets=200)
+    assert outcome.status == "invalid"
+    assert "199" in outcome.detail and "200" in outcome.detail
+    assert outcome.expected_packets == 200
+
+
+def test_the_matching_packet_count_stays_ok(tmp_path: Path) -> None:
+    (tmp_path / "rs.so").write_bytes(b"rules")
+    make_pcap(tmp_path, "x.pcap")
+    adapter = FakeAdapter(run_counters=Counters(200, 640, 0))
+    outcome = _pass(adapter, tmp_path, expected_packets=200)
+    assert outcome.status == "ok"
+
+
+def test_a_report_shorter_than_the_pass_is_invalid(tmp_path: Path) -> None:
+    # B2's residual gap (re-review): the status lines keep the pass's
+    # packet count whole while the reports were cut mid-record — the
+    # report's own sums answer to the pass total.
+    (tmp_path / "rs.so").write_bytes(b"rules")
+    make_pcap(tmp_path, "x.pcap")
+    adapter = FakeAdapter(
+        run_counters=Counters(
+            1_000_000,
+            64_000_000,
+            0,
+            {"report_packets": 901_281, "report_bytes": 57_681_984, "status_lines": 2},
+        )
+    )
+    outcome = _pass(adapter, tmp_path, expected_packets=1_000_000)
+    assert outcome.status == "invalid"
+    assert "901281" in outcome.detail and "1000000" in outcome.detail
+
+
+def test_a_zero_byte_report_for_packets_is_invalid(tmp_path: Path) -> None:
+    # A report truncated before any volume row: 0 bytes for a pass that
+    # counted packets is a broken report, never an ok measurement.
+    (tmp_path / "rs.so").write_bytes(b"rules")
+    make_pcap(tmp_path, "x.pcap")
+    adapter = FakeAdapter(
+        run_counters=Counters(
+            1_000_000, 0, 0, {"report_packets": 0, "report_bytes": 0, "status_lines": 2}
+        )
+    )
+    outcome = _pass(adapter, tmp_path, expected_packets=1_000_000)
+    assert outcome.status == "invalid"
+    assert "0 bytes for 1000000 packets" in outcome.detail
+
+
+def test_consistent_report_sums_stay_ok(tmp_path: Path) -> None:
+    (tmp_path / "rs.so").write_bytes(b"rules")
+    make_pcap(tmp_path, "x.pcap")
+    adapter = FakeAdapter(
+        run_counters=Counters(
+            1_000_000,
+            64_000_000,
+            0,
+            {"report_packets": 1_000_000, "report_bytes": 64_000_000, "status_lines": 2},
+        )
+    )
+    outcome = _pass(adapter, tmp_path, expected_packets=1_000_000)
+    assert outcome.status == "ok"

@@ -1,0 +1,14 @@
+# R0: security disabled — the mmt-probe baseline without the engine (#10).
+# The generated mmt-probe.conf writes `security.enable = false`; the rules
+# path is the deliberately empty committed dir (no .so is ever staged).
+# BLOCKED: the pinned mmt-probe v1.6.5 segfaults with security off — an
+# upstream bug (rulesets/README.md); the cell records `error` until a
+# fixed image ships.
+schema_version: 1
+kind: ruleset
+tool: mmt-probe
+description: no security engine — the mmt-probe-only baseline of P1
+rules: rulesets/empty
+allow_empty: true
+security:
+  enable: false

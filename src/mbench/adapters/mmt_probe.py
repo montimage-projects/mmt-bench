@@ -24,9 +24,12 @@ its own workdir; it never touches other containers or data dirs.
 from __future__ import annotations
 
 import json
+import re
 import secrets
 import subprocess
-from collections.abc import Iterator, Mapping, Sequence
+import threading
+import time
+from collections.abc import Callable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -80,10 +83,46 @@ _SESSION_PACKET_COUNT = 11
 _PROTO_DATA_VOLUME = 8
 _PROTO_PACKET_COUNT = 10
 
-#: The probe's end-of-run status line: "MMT processed N packets, dropped D
-#: packets (x%), generated A alerts". In offline mode the periodic status
-#: report (200) rarely fires, so this line is the drop counter's source.
-_STATUS_LINE = "MMT processed "
+#: The probe's end-of-run status lines, both forms (worker.c's
+#: ``worker_print_common_statistics``): the single-thread ``MMT processed
+#: N packets, dropped D packets (x%), generated A alerts`` and, at
+#: ``thread-nb >= 1``, one ``Worker i processed N packets (x%), dropped D
+#: packets (y%), generated A alerts`` per worker. In offline mode the
+#: periodic status report (200) rarely fires, so these lines are the
+#: processed and drop counters' authoritative source — and their arrival
+#: time is the processing interval's end bound (the last worker prints it
+#: after its queue is drained).
+_STATUS_COUNTS = re.compile(
+    r"(?:MMT|Worker\s+\d+)\s+processed\s+(\d+)\s+packets.*?dropped\s+(\d+)\s+packets"
+)
+
+#: Log markers the pump timestamps as they arrive (the probe's own clock
+#: and the host's are the same CLOCK_REALTIME inside a container):
+#: ``status`` — a worker/aggregate status line (last arrival = every
+#: packet processed and counted); ``eof`` — the reader reached the end of
+#: the pcap; ``clean_exit`` — the probe's normal shutdown; ``fatal`` —
+#: a signal or allocator fault (the probe catches SIGSEGV/SIGABRT and
+#: calls ``_exit(0)``, so an abort can surface as return code 0: the log
+#: marker, not the return code, is what says the exit was clean — review
+#: B2).
+_LOG_MARKERS: tuple[tuple[str, re.Pattern[bytes]], ...] = (
+    ("status", re.compile(rb"MMT processed |Worker\s+\d+\s+processed\s")),
+    ("eof", re.compile(rb"reached to the end of pcap file")),
+    ("clean_exit", re.compile(rb"Exit normally MMT-Probe|^Bye\s*$")),
+    (
+        "fatal",
+        re.compile(
+            rb"signal received|Aborted|core dumped|malloc\(\)|free\(\)|"
+            rb"corrupt|Segmentation"
+        ),
+    ),
+)
+
+#: The ``[1]`` version-info report row and its timestamp field: written
+#: at the end of each worker's init, just before it reads packets — the
+#: processing interval's start bound on the probe's own clock.
+_REPORT_VERSION = 1
+_VERSION_TS_INDEX = 3
 
 #: The protocols a rule's variables may use, most specific first. A STIX
 #: bundle does not carry the trace attribute names, so an alert's ``proto``
@@ -168,7 +207,60 @@ class CliDocker:
         )
 
     def spawn(self, argv: Sequence[str], stdout: BinaryIO) -> subprocess.Popen[bytes]:
-        return subprocess.Popen([self.exe, *argv], stdout=stdout, stderr=subprocess.STDOUT)
+        # stdout is piped, not redirected into the log file: the adapter's
+        # :class:`_LogTap` copies the stream while timestamping each
+        # marker's arrival — the status-line arrival is the processing
+        # interval's end bound (review B3), impossible to recover from a
+        # file with no timestamps.
+        del stdout
+        return subprocess.Popen([self.exe, *argv], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+
+
+class _LogTap:
+    """Copies the docker client's stdout to the probe log, timestamping markers.
+
+    The probe's log has no timestamps, and the container's CLOCK_REALTIME
+    is the host's: the moment each marker line arrives is a wall-clock
+    bound on what the probe was doing — ``status`` arriving means the last
+    worker counted its last packet. ``clock`` is injectable for tests.
+    """
+
+    def __init__(
+        self, stream: BinaryIO, out: BinaryIO, clock: Callable[[], float] = time.time
+    ) -> None:
+        self.events: dict[str, float] = {}
+        self._stream = stream
+        self._out = out
+        self._clock = clock
+        self._done = threading.Event()
+        self._thread = threading.Thread(target=self._pump, daemon=True)
+
+    @classmethod
+    def start(
+        cls, stream: BinaryIO, out: BinaryIO, clock: Callable[[], float] = time.time
+    ) -> _LogTap:
+        tap = cls(stream, out, clock)
+        tap._thread.start()
+        return tap
+
+    def _pump(self) -> None:
+        try:
+            for line in self._stream:
+                at = self._clock()
+                try:
+                    self._out.write(line)
+                    self._out.flush()
+                except (ValueError, OSError):
+                    pass  # the log closed under us: markers still land
+                for kind, marker in _LOG_MARKERS:
+                    if marker.search(line):
+                        self.events[kind] = at
+        finally:
+            self._done.set()
+
+    def join(self, timeout: float = 10) -> None:
+        """Wait for the stream to drain; the events dict is then final."""
+        self._done.wait(timeout)
 
 
 def parse_image_ref(ref: str, docker: Docker | None = None) -> ImageRef:
@@ -206,13 +298,19 @@ class _Container:
 
     ``kill`` kills the *container* by name (``docker kill`` — always an
     ``mbench-`` name, never another container), since killing the client
-    leaves the container running.
+    leaves the container running. The client's stdout is drained by a
+    :class:`_LogTap`; on exit the tap's marker timestamps land on the
+    run's ``events``.
     """
 
     proc: subprocess.Popen[bytes]
     docker: Docker
     name: str
     _log: BinaryIO | None = field(default=None, repr=False)
+    _tap: _LogTap | None = field(default=None, repr=False)
+    _run: _Run | None = field(default=None, repr=False)
+    _cgroup: str | None = field(default=None, repr=False)
+    _cgroup_looked: bool = field(default=False, repr=False)
 
     def poll(self) -> int | None:
         return self.proc.poll()
@@ -221,9 +319,26 @@ class _Container:
         try:
             return self.proc.wait(timeout)
         finally:
-            if self.proc.poll() is not None and self._log is not None:
-                self._log.close()
-                self._log = None
+            if self.proc.poll() is not None:
+                self._drain()
+                self._gone()
+
+    def _gone(self) -> None:
+        """Wait out the daemon's ``--rm`` teardown.
+
+        ``docker run`` returns when the container exits; the removal it
+        asked for is daemon-side and asynchronous — a caller checking
+        ``docker ps`` right after can still see the name. Poll briefly so
+        a returned pass means no ``mbench-`` container is left.
+        """
+        deadline = time.monotonic() + 10
+        while time.monotonic() < deadline:
+            try:
+                if self.docker.run(["inspect", self.name], timeout=10).returncode != 0:
+                    return
+            except Exception:
+                return
+            time.sleep(0.2)
 
     def kill(self) -> None:
         self.docker.run(["kill", self.name], timeout=30)
@@ -231,9 +346,45 @@ class _Container:
             self.proc.wait(5)
         except subprocess.TimeoutExpired:
             self.proc.kill()
+        self._drain()
+        self._gone()
+
+    def _drain(self) -> None:
+        """Collect the tap's marker events and close the log."""
+        if self._tap is not None:
+            self._tap.join()
+            if self._run is not None:
+                self._run.events.update(self._tap.events)
+            self._tap = None
         if self._log is not None:
             self._log.close()
             self._log = None
+
+    @property
+    def cgroup(self) -> str | None:
+        """The container's cgroup, named as ``perf stat -G`` wants it.
+
+        ``system.slice/docker-<id>.scope`` under cgroup v2 (systemd),
+        resolved lazily by ``docker inspect`` — ``None`` when the daemon
+        cannot say (the perf session then falls back to the cpuset).
+        """
+        if not self._cgroup_looked:
+            self._cgroup_looked = True
+            found = self.docker.run(["inspect", "-f", "{{.Id}}", self.name], timeout=30)
+            cid = found.stdout.decode("utf-8", "replace").strip()
+            if found.returncode == 0 and re.fullmatch(r"[0-9a-f]{64}", cid):
+                for candidate in (
+                    f"system.slice/docker-{cid}.scope",
+                    f"docker/{cid}",
+                ):
+                    if Path("/sys/fs/cgroup", candidate).exists():
+                        self._cgroup = candidate
+                        break
+                # systemd's scope name exists only while the container is
+                # up; accept it unseen on cgroup v2 hosts.
+                if self._cgroup is None and Path("/sys/fs/cgroup/system.slice").is_dir():
+                    self._cgroup = f"system.slice/docker-{cid}.scope"
+        return self._cgroup
 
 
 def _container_name(purpose: str) -> str:
@@ -495,7 +646,9 @@ thread-queue = {thread_queue}
 input {{
     mode        = ONLINE
     source      = "offline"    # overridden by `-t <pcap>`
-    snap-len    = 0
+    # 65535, not 0: a zero snap-len crashes pcap_capture_start inside
+    # libpcap on 1500-B frames (upstream bug, review B1).
+    snap-len    = 65535
     buffer-size = {buffer_size}   # bytes (pcap_set_buffer_size)
     timeout     = 1000
     pcap-filter = ""
@@ -516,7 +669,7 @@ file-output {{
 }}
 
 security {{
-    enable                  = true
+    enable                  = {security_enable}
     # 0 = rules are verified in the probe thread
     thread-nb               = 0
     exclude-rules           = ""
@@ -583,26 +736,38 @@ _CONFIG_PROFILE_PARAMS = {
 }
 
 
-def render_config(profile: str, probe_id: int = 1) -> str:
-    """The ``mmt-probe.conf`` text of a config profile."""
+def render_config(profile: str, probe_id: int = 1, *, security: bool = True) -> str:
+    """The ``mmt-probe.conf`` text of a config profile.
+
+    ``security`` is the ruleset's switch (``Ruleset.security``): ``false``
+    writes ``security.enable = false`` — the R0 cell, engine off; ``true``
+    with an empty ruleset is R0b, the engine on with no rules to match.
+    """
     if profile not in _CONFIG_PROFILE_PARAMS:
         raise ValueError(f"unknown config profile: {profile!r} (expected one of {CONFIG_PROFILES})")
     return _CONF_TEMPLATE.format(
         profile=profile,
         probe_id=probe_id,
         workdir_mount=WORKDIR_MOUNT,
+        security_enable="true" if security else "false",
         **_CONFIG_PROFILE_PARAMS[profile],
     )
 
 
 @dataclass
 class _Run:
-    """The last ``run_offline``: where its outputs land."""
+    """The last ``run_offline``: where its outputs land.
+
+    ``events`` maps each log marker kind (:data:`_LOG_MARKERS`) to the
+    wall-clock second the line last arrived at the docker client — the
+    run's own timing evidence (review B3).
+    """
 
     workdir: Path
     reports_dir: Path
     log_path: Path
     container_name: str
+    events: dict[str, float] = field(default_factory=dict)
 
 
 class MmtProbeAdapter(Adapter):
@@ -670,11 +835,11 @@ class MmtProbeAdapter(Adapter):
         """
         workdir.mkdir(parents=True, exist_ok=True)
         conf = workdir / "mmt-probe.conf"
-        conf.write_text(render_config(config_profile), encoding="utf-8")
+        conf.write_text(render_config(config_profile, security=ruleset.security), encoding="utf-8")
         rules_dir = workdir / "mmt-rules"
         rules_dir.mkdir(exist_ok=True)
         staged = self._stage_rules(ruleset, rules_dir)
-        if not staged:
+        if not staged and not ruleset.allow_empty:
             raise FileNotFoundError(f"ruleset {ruleset.id}: no .so rule found under {ruleset.path}")
         self._prepared = {
             "ruleset": ruleset,
@@ -766,7 +931,15 @@ class MmtProbeAdapter(Adapter):
             log.close()
             raise
         self._run = _Run(workdir, reports_dir, log_path, name)
-        return _Container(proc, self.docker, name, log)
+        # The client streams the probe's stdout: the tap copies it into the
+        # log while timestamping each marker's arrival (the processing
+        # interval's evidence). A fake spawn that has no stdout simply runs
+        # without one.
+        tap = None
+        stream = getattr(proc, "stdout", None)
+        if stream is not None:
+            tap = _LogTap.start(stream, log)
+        return _Container(proc, self.docker, name, log, tap, self._run)
 
     def run_online(self, iface: str, threads: int, cpuset: Sequence[int]) -> ProcessHandle:
         raise NotImplementedError("mmt-probe online mode is not implemented yet (P4)")
@@ -831,15 +1004,23 @@ class MmtProbeAdapter(Adapter):
         """Packets, bytes and drops from the tool's own stats.
 
         ``bytes`` is the sum of the session (100) and protocol (99) reports'
-        data volumes — wire bytes including L2 headers, equal to the pcap's
-        total packet length. ``packets`` is the probe's own "MMT processed N
-        packets" count (the status line), or the reports' packet sum when the
-        status line is absent. ``drops`` is the same line's dropped count, or
-        the last status report's ``mmt-lost``.
+        data volumes — captured bytes (pcap ``incl_len``: the Ethernet
+        header included, no wire overhead). ``packets`` is the probe's own
+        processed count (the status lines, aggregated over workers at
+        ``thread-nb >= 1``), or the reports' packet sum when the status
+        lines are absent. ``drops`` is ``None`` unless a counter source
+        actually reported drops: the status lines' dropped count, or the
+        last status report's ``mmt-lost`` — a pass never records a ``0``
+        the tool did not say (review B2). ``extra`` carries the provenance
+        and the run's own timing: whether the probe exited clean (its
+        SIGABRT handler masks an abort as return code 0), and the
+        ``processing_s`` interval derived from the version report and the
+        status lines' arrival (review B3).
         """
         report_packets = report_bytes = 0
         status_lost = status_mmt_pkts = None
         stix = legacy = rows_99 = rows_100 = rows_200 = 0
+        version_ts: float | None = None
         for value in self._values():
             if isinstance(value, list) and value:
                 if value[0] == _REPORT_PROTO_NO_SESSION:
@@ -854,6 +1035,13 @@ class MmtProbeAdapter(Adapter):
                     status_mmt_pkts = int(value[6])
                     status_lost = int(value[7])
                     rows_200 += 1
+                elif value[0] == _REPORT_VERSION and len(value) > _VERSION_TS_INDEX:
+                    try:
+                        ts = float(value[_VERSION_TS_INDEX])
+                    except (TypeError, ValueError):
+                        pass
+                    else:
+                        version_ts = ts if version_ts is None else max(version_ts, ts)
                 elif isinstance(value[0], dict):
                     stix += 1
                 elif value[0] == _REPORT_SECURITY:
@@ -864,39 +1052,109 @@ class MmtProbeAdapter(Adapter):
                 f"the probe wrote no report under {run.reports_dir}: the run "
                 f"produced nothing (the probe's own log is {run.log_path})"
             )
-        processed, dropped = self._status_counts()
+        processed, dropped, status_lines = self._status_counts()
         packets = processed if processed is not None else report_packets
-        drops = dropped if dropped is not None else (status_lost if status_lost is not None else 0)
-        return Counters(
-            packets=packets,
-            bytes=report_bytes,
-            drops=drops,
-            extra={
-                "report_packets": report_packets,
-                "report_bytes": report_bytes,
-                "status_packets": status_mmt_pkts if status_mmt_pkts is not None else 0,
-                "status_lost": status_lost if status_lost is not None else 0,
-                "processed_packets": processed if processed is not None else 0,
-                "stix_alerts": stix,
-                "legacy_alerts": legacy,
-                "proto_reports": rows_99,
-                "session_reports": rows_100,
-            },
-        )
+        exit_state, exit_detail = self._exit_state()
+        processing_s = self._processing_s(version_ts)
+        extra: dict[str, Json] = {
+            "report_packets": report_packets,
+            "report_bytes": report_bytes,
+            "status_lines": status_lines,
+            "processed_packets": processed if processed is not None else 0,
+            "stix_alerts": stix,
+            "legacy_alerts": legacy,
+            "proto_reports": rows_99,
+            "session_reports": rows_100,
+            "exit_state": exit_state,
+            "abnormal_exit": exit_state != "clean",
+            "processing_s": processing_s,
+        }
+        if exit_detail:
+            extra["exit_detail"] = exit_detail
+        if status_mmt_pkts is not None:
+            extra["status_packets"] = status_mmt_pkts
+        if status_lost is not None:
+            extra["status_lost"] = status_lost
+        drops: int | None
+        if dropped is not None:
+            drops = dropped
+        elif status_lost is not None:
+            drops = status_lost
+        else:
+            drops = None
+            extra["drops_reason"] = (
+                "no drop counter in the probe's output: the run aborted before its status lines"
+                if status_lines == 0
+                else "no drop counter reported"
+            )
+        return Counters(packets=packets, bytes=report_bytes, drops=drops, extra=extra)
 
-    def _status_counts(self) -> tuple[int | None, int | None]:
-        """``(processed, dropped)`` from the probe's end-of-run status line."""
+    def _status_counts(self) -> tuple[int | None, int | None, int]:
+        """``(processed, dropped, lines)`` aggregated over the status lines.
+
+        Both end-of-run forms are summed — the single-thread ``MMT
+        processed`` line and the per-worker ``Worker i processed`` lines —
+        so a threaded run's count is every worker's total, not the first
+        line's (review B2). ``(None, None, 0)`` when the log holds none.
+        """
         run = self._require_run()
+        processed = dropped = None
+        lines = 0
         try:
             for line in run.log_path.read_text(encoding="utf-8", errors="replace").splitlines():
-                if _STATUS_LINE in line:
-                    after = line.split(_STATUS_LINE, 1)[1]
-                    processed = int(after.split(" ", 1)[0])
-                    dropped = int(after.split("dropped ", 1)[1].split(" ", 1)[0])
-                    return processed, dropped
+                match = _STATUS_COUNTS.search(line)
+                if match is None:
+                    continue
+                lines += 1
+                processed = (processed or 0) + int(match.group(1))
+                dropped = (dropped or 0) + int(match.group(2))
         except OSError:
             pass
-        return None, None
+        return processed, dropped, lines
+
+    def _exit_state(self) -> tuple[str, str]:
+        """``(state, detail)``: how the probe's run ended, from its own log.
+
+        The probe installs handlers that turn SIGSEGV/SIGABRT into
+        ``_exit(0)``, so return code 0 cannot tell a clean exit from an
+        abort (review B2): ``clean`` needs the probe's shutdown marker
+        (``Exit normally MMT-Probe``/``Bye``), ``abnormal`` a signal or
+        allocator fault, ``incomplete`` neither (a truncated log — e.g.
+        the tap died with a killed client).
+        """
+        run = self._require_run()
+        fatal_line = ""
+        clean = False
+        try:
+            for raw in run.log_path.read_bytes().splitlines():
+                for kind, marker in _LOG_MARKERS:
+                    if not marker.search(raw):
+                        continue
+                    if kind == "fatal":
+                        fatal_line = raw.decode("utf-8", "replace").strip()
+                    elif kind == "clean_exit":
+                        clean = True
+        except OSError:
+            return "incomplete", "probe log unreadable"
+        if fatal_line:
+            return "abnormal", fatal_line
+        return ("clean", "") if clean else ("incomplete", "no clean-exit marker in the probe log")
+
+    def _processing_s(self, version_ts: float | None) -> float | None:
+        """The run's processing interval, on the probe's own evidence (B3).
+
+        From the last worker's init timestamp (the ``[1]`` version report
+        rows, written just before the packet loop starts) to the last
+        status line's arrival (every packet then counted). ``None`` when
+        either bound is missing — the harness then falls back to wall time
+        and labels the pass so.
+        """
+        if version_ts is None:
+            return None
+        end = self._require_run().events.get("status")
+        if end is None:
+            return None
+        return end - version_ts
 
     def alerts(self) -> list[Alert]:
         """The run's STIX (and legacy ``[10]``) alerts, normalised."""

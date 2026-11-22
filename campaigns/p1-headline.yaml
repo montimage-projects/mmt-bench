@@ -1,0 +1,93 @@
+# P1 — the benchmark's headline number (issue #10, plan §B8).
+#
+#     How many Gbit/s can mmt-probe with all 95 rules process on one X925
+#     core on a benign mix?
+#
+# ("all 95 rules" is the 94 rules the pinned image ships — rules 206 and
+# 212 are disabled in the mmt-security fork, see rulesets/r-all.yaml.)
+#
+# The verdict names the cell the question asks about (r-all, c-benign,
+# 1 thread, one X925 core — `verdict_cell`); the scaling cells give it its
+# context.
+#
+# Matrix: r0/r0b at thread-nb 0 (the main-thread pipeline — the reader
+# thread does the work, no worker pool) and r-all at 1, 2, 4, 8, over
+# C-benign/C-small/C-large × the two core series. The t≥1 r0/r0b cells
+# are out by scope, not because they cannot run: the worker-init SEGV
+# the review reproduced at t≥1 was snap-len = 0's other symptom — it
+# crashes pcap_capture_start in libpcap on the worker path on frames of
+# every size, while the t0 main-thread path survives it. snap-len = 65535
+# fixes both, and r0/r0b verified clean at t0, t1 and t2. They stay t0-
+# only anyway: the baselines measure the engine's fixed cost once, and
+# r-all owns the scaling sweep.
+#
+# cpusets are `core:<type>@<n>` — the first n CPUs of the core type,
+# resolved from lscpu at run time, so no CPU numbers are committed and the
+# 1-thread X925 cell runs on exactly one CPU. `@N+2` for tN leaves the
+# probe's reader and output threads room beside the N workers — needed
+# because this mmt-probe build cannot pin them: worker pinning is
+# hardcoded (`worker_index % (online_cpus - 1) + 1`, host-numbered
+# ordinals), the sched_setaffinity calls fail inside the cpuset, and the
+# workers float within it. At @1 the whole probe — reader, worker and
+# output — shares the verdict core (~25% contention vs the 10-CPU
+# cpuset, measured on re-review). The harness pins itself to the cores
+# the cell does not use. `security.thread-nb` is 0 in the generated
+# config: rules are verified in the probe threads, so thread-nb sweeps
+# the processing capacity, not a separate security pool.
+#
+# This campaign needs Luong's root-only steps first — the runner prints
+# them (quiet_host: vLLM stop/start; perf access for cycles/pkt; the
+# C-benign capture runbook, tools/capture/c-benign.sh). `mbench validate`
+# reports `c-benign` as an unresolved label until the runbook's
+# `mbench corpus add` has registered it — that is the pending state.
+schema_version: 1
+name: p1-headline
+question: >-
+  How many Gbit/s can mmt-probe with all 95 rules process on one X925 core
+  on a benign mix?
+description: >-
+  The P1 headline (#10). mmt-probe over R0 (security off), R0b (engine on,
+  zero rules) and R-all (the pinned image's 94 rules); C-benign is the
+  anonymised 1-h local-only capture of the SUT's own traffic, C-small and
+  C-large the synthetic corpora. R0/R0b run only at thread-nb 0 — the
+  main-thread pipeline baselines (they run cleanly at t>=1 too since the
+  snap-len fix; kept t0-only by scope, see rulesets/README.md). Thread
+  counts pin the first 1/4/6/10 CPUs of each core type (@1 for t0 and t1 —
+  the headline's one core; N+2 for tN, leaving the reader and output
+  threads room). `security.thread-nb` is 0 in the generated config; the
+  harness runs on the cores the cell does not pin.
+mode: offline
+quiet_host: true
+perf: true
+tools: [mmt-probe]
+rulesets:
+  # r0/r0b at thread-nb 0 only — the main-thread pipeline baselines
+  # (scope: they run cleanly at t>=1 since the snap-len fix; the review's
+  # worker-init SEGV was the same snap-len = 0 upstream bug).
+  - {id: r0, threads: [0]}
+  - {id: r0b, threads: [0]}
+  - {id: r-all, threads: [1, 2, 4, 8]}
+corpus:
+  - {label: c-benign}
+  - {label: c-small}
+  - {label: c-large}
+threads: [0, 1, 2, 4, 8]
+cpusets:
+  # t0's main-thread pipeline and the t1 headline cell run on exactly one
+  # CPU of the type; tN pins N+2 so the reader and output threads are not
+  # time-sliced onto a worker's core.
+  - {cpuset: "core:x925@1", threads: [0, 1]}
+  - {cpuset: "core:x925@4", threads: [2]}
+  - {cpuset: "core:x925@6", threads: [4]}
+  - {cpuset: "core:x925@10", threads: [8]}
+  - {cpuset: "core:a725@1", threads: [0, 1]}
+  - {cpuset: "core:a725@4", threads: [2]}
+  - {cpuset: "core:a725@6", threads: [4]}
+  - {cpuset: "core:a725@10", threads: [8]}
+repeats: 5
+timeout_s: 2400  # 94-rule verify is ~12 min on a loaded host; the cap catches hangs, not real passes
+verdict_cell:
+  ruleset: r-all
+  corpus: c-benign
+  threads: 1
+  cpuset: "core:x925@1"

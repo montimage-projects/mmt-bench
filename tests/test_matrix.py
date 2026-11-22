@@ -18,7 +18,7 @@ import yaml
 from campaignfiles import campaign_doc, layout, make_pcap, manifest_entry, write_manifest
 from fakeadapter import FakeAdapter
 
-from mbench import adapters, matrix, pcap, sut
+from mbench import adapters, corpus, matrix, pcap, sut
 
 
 @pytest.fixture
@@ -27,8 +27,10 @@ def fake_tool(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setitem(adapters.ADAPTERS, "fake", FakeAdapter)
 
 
-def _load(parts: dict[str, Any]) -> matrix.Campaign:
-    return matrix.load(parts["campaign_path"], manifest_path=parts["manifest"])
+def _load(
+    parts: dict[str, Any], topology: dict[str, tuple[int, ...]] | None = None
+) -> matrix.Campaign:
+    return matrix.load(parts["campaign_path"], manifest_path=parts["manifest"], topology=topology)
 
 
 def test_a_valid_campaign_loads(tmp_path: Path, fake_tool: None) -> None:
@@ -248,3 +250,91 @@ def test_an_edge_cpuset_still_loads(tmp_path: Path, fake_tool: None) -> None:
 
 def test_parse_cpulist_roundtrip() -> None:
     assert sut.parse_cpulist("0-3,8") == [0, 1, 2, 3, 8]
+
+
+# --- the verdict cell (review M2) ------------------------------------------------
+
+
+def test_a_verdict_cell_loads_and_resolves_its_cpuset(tmp_path: Path, fake_tool: None) -> None:
+    doc = campaign_doc(
+        [{"label": "x"}],
+        threads=[1, 8],
+        cpusets=["core:x925"],
+        verdict_cell={"ruleset": "rs", "corpus": "x", "threads": 1, "cpuset": "core:x925"},
+    )
+    parts = layout(tmp_path, doc)
+    campaign = _load(parts, topology={"Cortex-X925": (5, 6, 7, 8, 9, 15, 16, 17, 18, 19)})
+    assert campaign.verdict_cell == {
+        "ruleset": "rs",
+        "corpus": "x",
+        "threads": 1,
+        "cpuset": "5-9,15-19",
+    }
+    assert campaign.meta()["verdict_cell"]["threads"] == 1
+
+
+def test_a_verdict_cell_naming_no_cell_is_an_error(tmp_path: Path, fake_tool: None) -> None:
+    doc = campaign_doc(
+        [{"label": "x"}],
+        threads=[1],
+        verdict_cell={"threads": 4},
+    )
+    parts = layout(tmp_path, doc)
+    with pytest.raises(matrix.CampaignError, match="no matrix cell matches"):
+        _load(parts)
+
+
+def test_no_verdict_cell_means_the_fastest_default(tmp_path: Path, fake_tool: None) -> None:
+    doc = campaign_doc([{"label": "x"}])
+    parts = layout(tmp_path, doc)
+    assert _load(parts).verdict_cell is None
+
+
+def test_the_committed_p1_synthetic_loads_on_a_two_type_host(tmp_path: Path) -> None:
+    # M9: the dry-run campaign loads through matrix.load. Its core:<type>@n
+    # selectors resolve against the host at run time — here a stub two-type
+    # topology stands in for the SUT.
+    topology = {
+        "Cortex-A725": tuple(range(0, 10)),
+        "Cortex-X925": tuple(range(10, 20)),
+    }
+    # r-all resolves to the extracted-rules dir (git-ignored): a CI runner
+    # has none, so stub the 94 files matrix.load counts; a dev box that ran
+    # extract-rules.sh keeps its real rules untouched.
+    rules_dir = Path(__file__).parent.parent / "local" / "rulesets" / "mmt-security"
+    stubs: list[Path] = []
+    if not rules_dir.is_dir():
+        rules_dir.mkdir(parents=True)
+        stubs = [rules_dir / f"rule-{i}.so" for i in range(94)]
+        for stub in stubs:
+            stub.touch()
+    # c-small/c-large are labels resolved through the manifest: generated
+    # stand-ins under a tmp manifest (the real captures are never committed).
+    data = tmp_path / "corpus" / "data"
+    small = data / "c-small.pcap"
+    large = data / "c-large.pcap"
+    data.mkdir(parents=True)
+    corpus.generate(corpus.SETS["c-small"], 0, 200, 8, small)
+    corpus.generate(corpus.SETS["c-large"], 0, 50, 8, large)
+    manifest = write_manifest(
+        tmp_path / "corpus",
+        [
+            manifest_entry("c-small", small, tmp_path / "corpus"),
+            manifest_entry("c-large", large, tmp_path / "corpus"),
+        ],
+    )
+    try:
+        campaign = matrix.load(
+            Path(__file__).parent.parent / "campaigns" / "p1-synthetic.yaml",
+            manifest_path=manifest,
+            topology=topology,
+        )
+    finally:
+        for stub in stubs:
+            stub.unlink(missing_ok=True)
+        if stubs:
+            rules_dir.rmdir()
+    # r0/r0b at t0 + r-all at t1/t2 on each of 2 corpora and 2 series = 16
+    assert len(campaign.cells) == 16
+    assert [cell.index for cell in campaign.cells] == list(range(16))
+    assert {cell.cpuset for cell in campaign.cells if cell.threads == 1} == {(0,), (10,)}

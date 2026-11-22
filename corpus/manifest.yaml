@@ -71,3 +71,24 @@ entries:
     flows: 64
     frame_bytes: 64
     data_in_syn: 4
+- label: smoke-large
+  path: data/smoke-large.pcap
+  sha256: 38cdfdf01a85b01edb8159202934742319eb496ec679862e405c305119a2fce0
+  size_bytes: 758024
+  packets: 500
+  avg_packet_bytes: 1500.0
+  source: 'synthetic: mbench corpus gen c-large --seed 0 --packets 500 --flows 8 --data-in-syn
+    4'
+  licence: CC0-1.0
+  ground_truth: data/smoke-large.truth.json
+  local_only: false
+  description: synthetic 1500 B Ethernet/IPv4/UDP frames (byte-rate bound); its first
+    4 packets are TCP SYNs with payload
+  generator:
+    set: c-large
+    version: 1
+    seed: 0
+    packets: 500
+    flows: 8
+    frame_bytes: 1500
+    data_in_syn: 4
