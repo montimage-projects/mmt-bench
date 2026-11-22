@@ -257,6 +257,14 @@ def _configure_corpus(p: argparse.ArgumentParser) -> None:
         help="distinct 5-tuples, round-robin (default: the set's own)",
     )
     gen.add_argument(
+        "--data-in-syn",
+        type=int,
+        default=0,
+        metavar="N",
+        help="the first N packets are TCP SYNs carrying payload (the mmt-security "
+        "rule-13 trigger); writes data/<label>.truth.json (default: 0)",
+    )
+    gen.add_argument(
         "--label", default=None, metavar="NAME", help="manifest label (default: the set name)"
     )
     gen.add_argument(
@@ -346,7 +354,14 @@ def _corpus_gen(ns: argparse.Namespace) -> int:
         return status
     try:
         entry, outcome = corpus.gen_entry(
-            ns.manifest, spec, ns.seed, packets, flows, label, manifest
+            ns.manifest,
+            spec,
+            ns.seed,
+            packets,
+            flows,
+            label,
+            manifest,
+            data_in_syn=ns.data_in_syn,
         )
     except corpus.ManifestError as exc:
         print(f"mbench corpus gen: {exc}", file=sys.stderr)

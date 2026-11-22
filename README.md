@@ -27,6 +27,7 @@ uv run mbench corpus gen c-small           # synthetic 64 B frames, deterministi
 uv run mbench corpus check                 # every capture present vs its sha256
 uv run mbench run campaigns/x.yaml         # a campaign -> results/<date>-x/
 uv run mbench report results/<date>-x/     # re-render REPORT.md (append-only)
+uv run mbench validate results/<date>-x/REPORT.md   # the report too (#9)
 ```
 
 See [docs/sut-fingerprint.md](docs/sut-fingerprint.md),

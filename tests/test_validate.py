@@ -9,10 +9,11 @@ from typing import Any
 
 import pytest
 from jsonschema import Draft202012Validator
-from sutfixtures import GOLDEN
+from sutfixtures import GOLDEN, replay
 
 from mbench import sut, validate
 from mbench.cli import EXIT_INVALID, EXIT_OK, EXIT_USAGE, main
+from mbench.report import render
 
 ROOT = Path(__file__).resolve().parent.parent
 COMMITTED_SCHEMA = ROOT / "src/mbench/schemas/sut.schema.json"
@@ -493,3 +494,149 @@ def test_nics_is_a_non_empty_list_or_a_marker() -> None:
     assert validate.sut_errors(rehash(record)) == ["nics: [] should be non-empty"]
     record["nics"] = sut.unavailable("not_supported", "no physical network interface")
     assert validate.sut_errors(rehash(record)) == []
+
+
+# --- A results directory's REPORT*.md (#9) ------------------------------------
+
+BATCH1 = "20261122T120000Z"
+BATCH2 = "20261122T120100Z"
+
+
+def _results_dir(tmp_path: Path) -> Path:
+    directory = tmp_path / "results" / "2026-11-22-smoke"
+    (directory / "runs").mkdir(parents=True)
+    return directory
+
+
+def _run_file(directory: Path, batch: str, *, gbps: float = 1.0) -> Path:
+    record: dict[str, Any] = {
+        "schema_version": 1,
+        "batch": batch,
+        "campaign": {"name": "smoke", "question": "does it run?"},
+        "cell": {
+            "index": 0,
+            "tool": "mmt-probe",
+            "ruleset": {"id": "rs"},
+            "config_profile": "recommended",
+            "corpus": {"label": "smoke"},
+            "threads": 0,
+            "cpuset": "",
+            "core_type": "test",
+        },
+        "status": "ok",
+        "problems": [],
+        "passes": [
+            {
+                "kind": "warmup",
+                "n": 0,
+                "status": "ok",
+                "wall_s": 0.5,
+                "packets": 10,
+                "bytes": 100,
+                "drops": 0,
+                "gbps": 2.0,
+                "mpps": 1.0,
+                "alerts": 0,
+            },
+            {
+                "kind": "measured",
+                "n": 1,
+                "status": "ok",
+                "wall_s": 0.4,
+                "packets": 10,
+                "bytes": 100,
+                "drops": 0,
+                "gbps": gbps,
+                "mpps": 1.0,
+                "alerts": 0,
+            },
+        ],
+    }
+    path = directory / "runs" / f"{batch}-000-cell.json"
+    path.write_text(json.dumps(record), encoding="utf-8")
+    return path
+
+
+def _sut_file(directory: Path, batch: str | None = None) -> Path:
+    host = replay()
+    path = directory / ("sut.json" if batch is None else f"sut-{batch}.json")
+    path.write_text(json.dumps(host), encoding="utf-8")
+    return path
+
+
+def test_a_faithful_report_validates(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    directory = _results_dir(tmp_path)
+    _sut_file(directory)
+    _run_file(directory, BATCH1)
+    report = directory / "REPORT.md"
+    report.write_text(render.render_dir(directory), encoding="utf-8")
+    assert main(["validate", str(report)]) == EXIT_OK
+    out = capsys.readouterr().out
+    assert f"valid report (batch {BATCH1}, a faithful render over 1 run file)" in out
+
+
+def test_a_second_batch_report_covers_everything_before_it(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    directory = _results_dir(tmp_path)
+    _sut_file(directory)
+    _run_file(directory, BATCH1)
+    (directory / "REPORT.md").write_text(render.render_dir(directory), encoding="utf-8")
+    # The second batch appends: its own sut-<batch>.json, its run file and a
+    # report rendered over both batches' run files.
+    _sut_file(directory, BATCH2)
+    _run_file(directory, BATCH2, gbps=2.0)
+    report = directory / f"REPORT-{BATCH2}.md"
+    report.write_text(render.render_dir(directory), encoding="utf-8")
+    assert main(["validate", str(report)]) == EXIT_OK
+    out = capsys.readouterr().out
+    assert f"batch {BATCH2}, a faithful render over 2 run files" in out
+    # And the first batch's REPORT.md still validates against its own batch.
+    assert main(["validate", str(directory / "REPORT.md")]) == EXIT_OK
+
+
+def test_a_stale_report_is_invalid(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    directory = _results_dir(tmp_path)
+    _sut_file(directory)
+    _run_file(directory, BATCH1)
+    _sut_file(directory, BATCH2)
+    _run_file(directory, BATCH2)
+    # REPORT.md is the first batch's report; a render over both batches is
+    # stale there, whatever a `mbench report` re-render would produce today.
+    stale = directory / "REPORT.md"
+    stale.write_text(render.render_dir(directory), encoding="utf-8")
+    assert main(["validate", str(stale)]) == EXIT_INVALID
+    assert "differs from a fresh render" in capsys.readouterr().out
+
+
+def test_a_report_over_missing_runs_is_invalid(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    directory = _results_dir(tmp_path)
+    _sut_file(directory)
+    report = directory / "REPORT.md"
+    report.write_text("# no runs here\n", encoding="utf-8")
+    assert main(["validate", str(report)]) == EXIT_INVALID
+    assert "no runs/*.json records" in capsys.readouterr().out
+
+
+def test_a_report_name_outside_the_scheme_is_invalid(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    directory = _results_dir(tmp_path)
+    _run_file(directory, BATCH1)
+    report = directory / "REPORT-draft.md"
+    report.write_text("# draft\n", encoding="utf-8")
+    assert main(["validate", str(report)]) == EXIT_INVALID
+    assert "REPORT.md or REPORT-<batch>.md" in capsys.readouterr().out
+
+
+def test_an_other_markdown_file_is_not_a_report(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # Only REPORT*.md is a report; another markdown file falls through to the
+    # JSON reader, exactly as before #9.
+    path = tmp_path / "README.md"
+    path.write_text("# notes\n", encoding="utf-8")
+    assert main(["validate", str(path)]) == EXIT_INVALID
+    assert "not valid JSON" in capsys.readouterr().out

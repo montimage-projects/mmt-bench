@@ -29,6 +29,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+        timeout-minutes: 2
 
       - name: Check action pins
         run: python3 tools/ci/check_action_pins.py
@@ -42,10 +43,12 @@ jobs:
         uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.12"
+        timeout-minutes: 2
 
       # astral-sh/setup-uv is not GitHub-owned, so uv comes from PyPI, hash-checked.
       - name: Install uv
         run: python -m pip install --require-hashes --no-deps -r .github/uv-requirements.txt
+        timeout-minutes: 2
 
       - name: Install dependencies from the lockfile
         run: uv sync --locked --python "$(command -v python)"
@@ -63,3 +66,82 @@ jobs:
 
       - name: CLI entry point
         run: uv run --locked mbench --help
+
+  smoke:
+    name: smoke campaign (pipeline check)
+    runs-on: ubuntu-latest
+    # The image build dominates: it compiles mmt-security and mmt-probe.
+    timeout-minutes: 30
+    env:
+      UV_PYTHON_DOWNLOADS: never
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+        timeout-minutes: 2
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+        timeout-minutes: 2
+
+      - name: Install uv
+        run: python -m pip install --require-hashes --no-deps -r .github/uv-requirements.txt
+        timeout-minutes: 2
+
+      - name: Install dependencies from the lockfile
+        run: uv sync --locked --python "$(command -v python)"
+        timeout-minutes: 3
+
+      # The image carries the pinned mmt-dpi, mmt-security and mmt-probe; it
+      # rebuilds every run — the build is short enough that a tarred-up image
+      # cache is not worth a second failure mode (#9).
+      - name: Build the pinned mmt-probe image
+        run: docker build -t mmt-bench/mmt-probe:local tools/docker/mmt-probe
+        timeout-minutes: 25
+
+      # The campaign's ruleset is one rule of the image's mmt-security set.
+      # The compiled .so rules are architecture-specific build artefacts, so
+      # they are never committed: each host copies them out of its own build.
+      - name: Stage the image's mmt-security ruleset
+        run: tools/docker/mmt-probe/extract-rules.sh
+        timeout-minutes: 2
+
+      # Deterministic: the same bytes on every host (seed fixed, #7); the
+      # capture lands in the git-ignored corpus/data/ and is never committed.
+      # Its first 4 packets are TCP SYNs with payload — the rule-13 trigger —
+      # and gen writes their ground truth next to it (#9 review).
+      - name: Generate the smoke pcap
+        run: uv run --locked mbench corpus gen c-small --seed 0 --packets 20000 --flows 64 --label smoke --data-in-syn 4
+        timeout-minutes: 2
+
+      # A CI runner is a noisy host: this checks the pipeline end to end, not
+      # performance — its numbers are not results (docs/methodology.md).
+      - name: Run the smoke campaign
+        run: uv run --locked mbench run campaigns/smoke.yaml
+        timeout-minutes: 5
+
+      # The gate proves the alert path end to end: every measured pass must
+      # be ok, report the 4 alerts the generated ground truth holds, and
+      # score a detection rate of 1.0 against it.
+      - name: Validate the run, the SUT record and the report
+        run: |
+          set -euo pipefail
+          dir=$(ls -dt results/*-smoke | head -1)
+          uv run --locked mbench validate "$dir"/sut*.json "$dir"/runs/*.json "$dir"/REPORT*.md
+          python3 tools/ci/check_smoke_result.py "$dir" 4
+        timeout-minutes: 2
+
+      # The result is a CI artefact, never committed: a runner's numbers are
+      # a pipeline check, not a host record.
+      - name: Upload the smoke result
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: smoke-result
+          path: results/
+          if-no-files-found: error
+          retention-days: 14
+        timeout-minutes: 3

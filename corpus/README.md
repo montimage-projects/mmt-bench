@@ -23,6 +23,12 @@ counts, which the entry records under `generator`. `gen` refuses a label it
 does not own, and checks the manifest it would write before the first capture
 byte: a refused run leaves `data/` and the manifest untouched.
 
+`gen … --data-in-syn N` makes the first N packets TCP SYNs carrying payload —
+the mmt-security rule-13 trigger — each on its own 5-tuple, and writes
+`data/<label>.truth.json` (one attack per packet) alongside; the entry's
+`ground_truth` names it, so a campaign run scores `detection`. `mbench
+validate data/<label>.truth.json` checks the file.
+
 `check` exits non-zero when a file's sha256 differs from its entry. A missing
 file is reported but not an error: captures are not committed, so any of them
 can be absent and regenerated or fetched again.

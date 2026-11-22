@@ -82,7 +82,12 @@
             "seed": {"type": "integer", "minimum": 0},
             "packets": {"type": "integer", "minimum": 1},
             "flows": {"type": "integer", "minimum": 1},
-            "frame_bytes": {"type": "integer", "minimum": 50}
+            "frame_bytes": {"type": "integer", "minimum": 50},
+            "data_in_syn": {
+              "description": "How many leading packets are TCP SYN carrying payload (the mmt-security rule-13 trigger); present only when non-zero.",
+              "type": "integer",
+              "minimum": 1
+            }
           }
         }
       }
