@@ -327,9 +327,9 @@ def sanitise_text(text: str, hostname: str | None, alias: str) -> str:
     ``ubuntu--vg-ubuntu--lv`` or a version string like ``6.8.0-ubuntu``
     cannot be told from the hostname (#21). When the recorded hostname is
     an FQDN, its first label is rewritten too, so a bare ``myhost`` in
-    ``ip=::::myhost:eth0`` does not survive — except when the hostname is
-    an IPv4 address or the first label is all digits, which are not
-    derived: ``10.0.0.9`` must not also eat every standalone ``10``. MAC
+    ``ip=::::myhost:eth0`` does not survive — except when the first
+    label is all digits (an IPv4 hostname included): ``10.0.0.9`` must
+    not also eat every standalone ``10``. MAC
     addresses (colon- or dash-separated) become a documentation MAC,
     longer colon- or dash-hex strings (RSS hash keys, ``BOOTIF=01-...``)
     become zeros, UUIDs (filesystem, daemon and cgroup scope ids) become
@@ -339,17 +339,12 @@ def sanitise_text(text: str, hostname: str | None, alias: str) -> str:
     if hostname:
         short = hostname.partition(".")[0]
         names = {hostname}
-        if (
-            short
-            and short != hostname
-            and not short.isdigit()
-            and _IPV4.fullmatch(hostname) is None
-        ):
+        if short and short != hostname and not short.isdigit():
             names.add(short)
         pattern = "|".join(re.escape(n) for n in sorted(names, key=len, reverse=True))
         text = re.sub(
             rf"(?<![\w-])(?:{pattern})(?:\.[\w-]+)*(?![\w-])(?!\.[\w-])",
-            alias,
+            lambda m: alias,
             text,
             flags=re.IGNORECASE,
         )

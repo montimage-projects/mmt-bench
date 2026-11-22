@@ -581,6 +581,15 @@ def test_sanitise_keeps_the_hostname_inside_paths_and_versions() -> None:
     assert hostsrc.sanitise_text("n=1234\n", "1234", "sut") == "n=sut\n"
 
 
+def test_an_alias_with_a_backslash_is_inserted_literally() -> None:
+    # The alias was re.sub's replacement string, where "\1" is a group
+    # reference and a trailing "\" a bad escape — both crash. It now goes
+    # through a lambda, so any alias is inserted as written (#30).
+    raw = "a=myhost b=myhost.example.lan\n"
+    assert hostsrc.sanitise_text(raw, "myhost", "lab\\1") == "a=lab\\1 b=lab\\1\n"
+    assert hostsrc.sanitise_text(raw, "myhost", "lab\\") == "a=lab\\ b=lab\\\n"
+
+
 @pytest.mark.parametrize(
     "text",
     [
