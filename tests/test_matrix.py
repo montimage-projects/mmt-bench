@@ -298,10 +298,26 @@ def test_the_committed_p1_synthetic_loads_on_a_two_type_host() -> None:
         "Cortex-A725": tuple(range(0, 10)),
         "Cortex-X925": tuple(range(10, 20)),
     }
-    campaign = matrix.load(
-        Path(__file__).parent.parent / "campaigns" / "p1-synthetic.yaml",
-        topology=topology,
-    )
+    # r-all resolves to the extracted-rules dir (git-ignored): a CI runner
+    # has none, so stub the 94 files matrix.load counts; a dev box that ran
+    # extract-rules.sh keeps its real rules untouched.
+    rules_dir = Path(__file__).parent.parent / "local" / "rulesets" / "mmt-security"
+    stubs: list[Path] = []
+    if not rules_dir.is_dir():
+        rules_dir.mkdir(parents=True)
+        stubs = [rules_dir / f"rule-{i}.so" for i in range(94)]
+        for stub in stubs:
+            stub.touch()
+    try:
+        campaign = matrix.load(
+            Path(__file__).parent.parent / "campaigns" / "p1-synthetic.yaml",
+            topology=topology,
+        )
+    finally:
+        for stub in stubs:
+            stub.unlink(missing_ok=True)
+        if stubs:
+            rules_dir.rmdir()
     # r0/r0b at t0 + r-all at t1/t2 on each of 2 corpora and 2 series = 16
     assert len(campaign.cells) == 16
     assert [cell.index for cell in campaign.cells] == list(range(16))
