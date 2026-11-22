@@ -41,6 +41,18 @@ docker build -t mmt-bench/mmt-probe:local tools/docker/mmt-probe
 when an apt pin has left the Ubuntu archive instead of falling back to the
 current candidate.
 
+## The image's rules
+
+The compiled mmt-security `.so` rules live in the image at
+`/opt/mmt/security/rules`. They are architecture-specific build artefacts,
+so they are never committed: a campaign that needs the image's rule set
+copies it out of the local build, into the git-ignored `local/`:
+
+```sh
+tools/docker/mmt-probe/extract-rules.sh [DEST] [IMAGE]
+# default: local/rulesets/mmt-security — the path campaigns/smoke.yaml uses
+```
+
 ## Entrypoint
 
 `mmt-bench-tool` dispatches on its first argument:

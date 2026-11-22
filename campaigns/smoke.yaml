@@ -1,0 +1,32 @@
+# The 10-s smoke campaign (#9): one cell, mmt-probe offline on the `smoke`
+# corpus entry — a deterministic `mbench corpus gen` capture (seed fixed),
+# never the private capture and never a capture committed to git.
+#
+# It checks the pipeline end to end, not performance: a CI runner is a noisy
+# host, so its numbers are not results (docs/methodology.md).
+#
+# Before `mbench run campaigns/smoke.yaml`, on each host:
+#   docker build -t mmt-bench/mmt-probe:local tools/docker/mmt-probe
+#   uv run mbench corpus gen c-small --seed 0 --packets 20000 --flows 64 --label smoke
+#   tools/docker/mmt-probe/extract-rules.sh   # the image's rules -> local/rulesets/
+schema_version: 1
+question: does mmt-probe run end to end offline on the generated smoke pcap?
+description: >-
+  The smoke campaign checks the pipeline, not performance: a CI runner is a
+  noisy host, so its numbers are not results. The corpus entry `smoke` is a
+  deterministic `mbench corpus gen` capture (seed 0, 20000 64-B packets).
+  The ruleset is one rule of the image's mmt-security set, staged under the
+  git-ignored local/ by tools/docker/mmt-probe/extract-rules.sh — the .so
+  files are architecture-specific build artefacts, so they are never
+  committed. One rule keeps each pass under a second; all 94 rules cost
+  more than 10 s of init per pass on this class of host.
+mode: offline
+tools: [mmt-probe]
+rulesets:
+  - {id: mmt-security-image, path: local/rulesets/mmt-security/13.datainSYN.so}
+config_profiles: [recommended]
+corpus: [{label: smoke}]
+threads: [0]
+cpusets: [""]
+repeats: 2
+timeout_s: 10

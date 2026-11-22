@@ -87,6 +87,8 @@ pinned and recorded.
   a rerun. CV uses the *sample* standard deviation (n−1 denominator).
 - Frequency is recorded during the run, so thermal throttling and core-type
   noise show up in the record.
+- The CI smoke campaign (`campaigns/smoke.yaml`) runs on a shared, noisy
+  runner: it checks the pipeline end to end, so its numbers are not results.
 
 ## Correctness gate
 

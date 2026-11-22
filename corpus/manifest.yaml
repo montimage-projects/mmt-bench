@@ -50,3 +50,21 @@ entries:
     packets: 100000
     flows: 1024
     frame_bytes: 1500
+- label: smoke
+  path: data/smoke.pcap
+  sha256: b6539c87d238aed17f7d0833bf73f71e58e0b93c8f66aa5ad5e93f5ec22b0f3c
+  size_bytes: 1600024
+  packets: 20000
+  avg_packet_bytes: 64.0
+  source: 'synthetic: mbench corpus gen c-small --seed 0 --packets 20000 --flows 64'
+  licence: CC0-1.0
+  ground_truth: null
+  local_only: false
+  description: synthetic 64 B Ethernet/IPv4/UDP frames (packet-rate bound)
+  generator:
+    set: c-small
+    version: 1
+    seed: 0
+    packets: 20000
+    flows: 64
+    frame_bytes: 64

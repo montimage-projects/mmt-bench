@@ -27,12 +27,23 @@ python3 tools/ci/check_action_pins.py  # workflows: actions/* only, SHA-pinned
 python3 tools/ci/check_no_captures.py  # no packet capture is tracked by git
 uv run pytest                          # tests
 uv run mbench --help                   # smoke: the CLI lists its subcommands
+
+# The smoke job (#9): the same steps CI runs on every PR and push to main.
+docker build -t mmt-bench/mmt-probe:local tools/docker/mmt-probe  # pinned image
+tools/docker/mmt-probe/extract-rules.sh  # the image's rules -> local/ (never committed)
+uv run mbench corpus gen c-small --seed 0 --packets 20000 --flows 64 --label smoke
+uv run mbench run campaigns/smoke.yaml   # the 10-s campaign, a pipeline check
+uv run mbench validate                   # the run, its SUT record and REPORT*.md
+python3 tools/ci/check_smoke_result.py   # gate: the newest batch's runs all ok
 ```
 
 `mbench sut`, `mbench validate`, `mbench corpus`, `mbench run` and
 `mbench report` are implemented; `mbench sweep` is a stub until its issue
-lands: it exits with status 3 and `not implemented yet (#17)`. The 10-s smoke
-campaign comes with #9, which adds its command here.
+lands: it exits with status 3 and `not implemented yet (#17)`. The 10-s
+smoke campaign (#9) — `mbench run campaigns/smoke.yaml` after
+`tools/docker/mmt-probe/extract-rules.sh` and `mbench corpus gen … --label
+smoke`, see `campaigns/README.md` — runs in CI on every PR and push to
+`main` (`smoke` job), as a pipeline check, not a benchmark.
 
 ## Operating rules
 

@@ -6,9 +6,11 @@ the corpus manifest (#7, ``corpus/manifest.yaml``) against
 ``src/mbench/schemas/corpus-manifest.schema.json``, a pcap's ground-truth
 file (#26, ``<pcap>.truth.json``) against
 ``src/mbench/schemas/truth.schema.json`` plus the checks of
-:func:`mbench.truth.parse`, and a campaign file (#8,
+:func:`mbench.truth.parse`, a campaign file (#8,
 ``campaigns/<name>.yaml``) against ``src/mbench/schemas/campaign.schema.json``
-plus checks a schema cannot express (known tools, resolved corpus labels).
+plus checks a schema cannot express (known tools, resolved corpus labels),
+and a results directory's ``REPORT.md`` or ``REPORT-<batch>.md`` (#9) against
+a fresh render over its own batch's run files.
 
 Every problem is reported by the dotted path of the field, for example
 ``missing field: host.cpu.core_types[0].governor``.
@@ -193,6 +195,8 @@ def validate_file(path: str | Path) -> Report:
         ) from None
     if p.suffix.lower() in {".yaml", ".yml"}:
         return _validate_yaml(p, text)
+    if is_report(p):
+        return _validate_report(p, text)
     try:
         record = json.loads(text)
     except ValueError as exc:
@@ -306,6 +310,91 @@ def is_run(data: Any) -> bool:
         and isinstance(data.get("cell"), dict)
         and isinstance(data.get("passes"), list)
     )
+
+
+#: ``REPORT.md`` (the first batch's report) and ``REPORT-<batch>.md``.
+REPORT_NAME = re.compile(r"^REPORT(?:-(?P<batch>\d{8}T\d{6}Z(?:-\d+)?))?\.md$")
+#: The batch a ``runs/`` file belongs to: ``<batch>-NN-<slug>.json``.
+RUN_BATCH = re.compile(r"^(?P<batch>\d{8}T\d{6}Z(?:-\d+)?)-\d+-")
+
+
+def is_report(path: Path) -> bool:
+    """A results report file: ``REPORT.md`` or ``REPORT-<batch>.md``."""
+    return path.suffix.lower() == ".md" and path.name.startswith("REPORT")
+
+
+def _batch_key(batch: str) -> tuple[str, int]:
+    """The write order of a batch id: ``TS`` then ``TS-2``, ``TS-3``, ..."""
+    base, _, n = batch.rpartition("-")
+    return (base, int(n)) if n.isdigit() else (batch, 1)
+
+
+def _validate_report(p: Path, text: str) -> Report:
+    """Check a REPORT file: it must be a fresh render of what it recorded.
+
+    The runner renders over every run file in the results directory at the
+    end of a batch, so ``REPORT.md`` covers the first batch and each
+    ``REPORT-<batch>.md`` covers every batch up to its own; a ``mbench
+    report`` re-render carries a fresh batch id and covers them all. The
+    host table comes from the newest ``sut*.json`` present at that point.
+    """
+    from mbench.report import render
+
+    report = Report(str(p), "report")
+    match = REPORT_NAME.fullmatch(p.name)
+    if match is None:
+        report.errors = [
+            f"{p.name}: report files are REPORT.md or REPORT-<batch>.md "
+            "(a batch like 20260101T000000Z)"
+        ]
+        return report
+    directory = p.parent
+    _, runs = render.load_dir(directory)
+    run_batches = {m.group("batch") for r in runs if (m := RUN_BATCH.match(r.name))}
+    batch = match.group("batch")
+    if batch is None:
+        if not run_batches:
+            report.errors = [f"{directory}: no runs/*.json records to render REPORT.md against"]
+            return report
+        batch = min(run_batches, key=_batch_key)
+    key = _batch_key(batch)
+    covered = [
+        r for r in runs if (m := RUN_BATCH.match(r.name)) and _batch_key(m.group("batch")) <= key
+    ]
+    if not covered:
+        report.errors = [f"{p.name}: no runs/*.json records at or before batch {batch}"]
+        return report
+    host: dict[str, Any] | None = None
+    host_batch = ""
+    for name in directory.glob("sut*.json"):
+        stem = name.stem
+        b = "" if stem == "sut" else stem.removeprefix("sut-")
+        if _batch_key(b) <= _batch_key(batch) and _batch_key(b) >= _batch_key(host_batch):
+            try:
+                data = json.loads(name.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                continue
+            if isinstance(data, dict):
+                host, host_batch = data, b
+    campaign = next(
+        (meta for run in covered if isinstance((meta := run.record.get("campaign")), dict)),
+        None,
+    )
+    expected = render.render(campaign, host, covered)
+    if expected == text:
+        n = len(covered)
+        report.summary = f"batch {batch}, a faithful render over {n} run file{'s' * (n != 1)}"
+        return report
+    have_lines, want_lines = text.splitlines(), expected.splitlines()
+    for i, (have, want) in enumerate(zip(have_lines, want_lines, strict=False), 1):
+        if have != want:
+            report.errors = [f"line {i}: {have!r} differs from a fresh render's {want!r}"]
+            break
+    else:
+        report.errors = [
+            f"stale report: {len(have_lines)} lines where a fresh render has {len(want_lines)}"
+        ]
+    return report
 
 
 def _validate_run(p: Path, data: Any) -> Report:

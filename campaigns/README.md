@@ -36,4 +36,30 @@ systemctl --user start vllm-qwen.service vllm-health-watchdog.timer
 ```
 
 `mbench report <results-dir>` re-renders `REPORT.md` (append-only, or `-o -`
-to stdout). The 10-s smoke campaign comes with #9.
+to stdout).
+
+## smoke.yaml (#9)
+
+The 10-s smoke campaign: one offline cell, mmt-probe on the generated
+`smoke` corpus entry, one question. It checks the pipeline end to end —
+SUT record, ruleset, capture, passes, `REPORT.md` — on any host, including
+a CI runner; its numbers are a pipeline check, not results. On each host:
+
+```sh
+docker build -t mmt-bench/mmt-probe:local tools/docker/mmt-probe
+tools/docker/mmt-probe/extract-rules.sh   # the image's rules -> local/rulesets/
+uv run mbench corpus gen c-small --seed 0 --packets 20000 --flows 64 --label smoke
+uv run mbench run campaigns/smoke.yaml
+uv run mbench validate results/<date>-smoke/REPORT*.md   # the report files
+python3 tools/ci/check_smoke_result.py results/<date>-smoke/   # every run ok
+```
+
+The ruleset is a single `.so` of the image's mmt-security set: the compiled
+rules are architecture-specific build artefacts, staged under the
+git-ignored `local/` by `extract-rules.sh`, never committed. One rule keeps
+a pass under a second; the image's full set costs more than the 10-s budget
+of init per pass. The `smoke` corpus entry is deterministic
+(`mbench corpus gen`, seed 0): the same bytes on every host, generated into
+`corpus/data/` and never committed. The smoke CI job (`.github/workflows/ci.yml`)
+runs the same steps on every pull request and push to `main` and uploads the
+results directory as an artefact — never a commit.
