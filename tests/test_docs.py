@@ -15,7 +15,7 @@ METHODOLOGY = ROOT / "docs/methodology.md"
 CI = ROOT / ".github/workflows/ci.yml"
 
 #: How a shell command in ci.yml starts (not a YAML key such as ``python-version:``).
-COMMAND_PREFIXES = ("uv ", "python ", "python3 ")
+COMMAND_PREFIXES = ("uv ", "python ", "python3 ", "dir=")
 
 
 def _read(path: Path) -> str:
@@ -80,6 +80,23 @@ def test_every_ci_check_is_listed_in_agents() -> None:
         if not line.startswith(COMMAND_PREFIXES) or line.startswith(CI_SETUP_ONLY):
             continue
         assert any(line.startswith(c) for c in commands), line
+
+
+def test_the_results_dir_command_is_a_command_not_a_comment() -> None:
+    # #35: this line used to be commented out, so ``$dir`` stayed empty and
+    # both checks below it validated nothing.
+    assert "dir=$(ls -dt results/*-smoke | head -1)" in _agents_commands()
+
+
+def test_the_smoke_gate_invocation_is_exact() -> None:
+    # The expected alert count is stated once — the corpus gen's
+    # ``--data-in-syn`` flag — and the gate derives it from the run record's
+    # own truth file, so the invocation takes no count argument (#35). The
+    # startswith mirror above cannot see a re-added argument: pin the whole
+    # command, in the workflow and in AGENTS.md alike.
+    expected = 'python3 tools/ci/check_smoke_result.py "$dir"'
+    assert expected in _agents_commands()
+    assert expected in _ci_run_lines()
 
 
 #: A phrase from each operating rule that issue #3 requires.
