@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import itertools
 import json
+import os
+import signal
 from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
@@ -17,7 +19,7 @@ from typing import Any
 import pytest
 import yaml
 from campaignfiles import campaign_doc, layout, make_pcap, manifest_entry, write_manifest
-from fakeadapter import FakeAdapter
+from fakeadapter import FakeAdapter, FakeProcess
 from sutfixtures import replay
 
 from mbench import adapters, matrix, pcap, runner, validate
@@ -56,6 +58,7 @@ def _run(
     factory: Callable[[], FakeAdapter] | None = None,
     host: dict[str, Any] | None = None,
     monotonic: Callable[[], float] | None = None,
+    collect: Callable[[], dict[str, Any]] | None = None,
     **kwargs: Any,
 ) -> runner.CampaignOutcome:
     logs: list[str] = []
@@ -64,7 +67,7 @@ def _run(
         campaign,
         results_dir=tmp_path / "results",
         adapters={"fake": factory or (lambda: adapter or FakeAdapter())},
-        collect=lambda: host if host is not None else replay(),
+        collect=collect or (lambda: host if host is not None else replay()),
         clock=lambda: CLOCK,
         monotonic=monotonic or _ticks(),
         out=logs.append,
@@ -405,4 +408,71 @@ def test_the_stage_dir_is_removed_after_a_normal_campaign(tmp_path: Path, fake_t
     stage_root = tmp_path / "tmpfs"
     outcome = _run(campaign, tmp_path, tmpfs=stage_root)
     assert outcome.report_file is not None
+    assert not (stage_root / "mbench-20260105T120000Z").exists()
+
+
+# --- A caught signal during the campaign (review N1) ---------------------------
+
+
+@pytest.mark.parametrize("signum", [signal.SIGTERM, signal.SIGHUP])
+def test_a_sigterm_or_sighup_mid_pass_records_interrupted_and_kills_the_tool(
+    tmp_path: Path, fake_tool: None, monkeypatch: pytest.MonkeyPatch, signum: int
+) -> None:
+    # The default kill signals — SIGTERM is `kill`, `timeout`, CI
+    # cancellation and `systemctl stop`; SIGHUP a hung-up terminal — raise
+    # SignalExit inside ``mbench run``, so they take the interrupted path
+    # a Ctrl-C takes: the pass kills its tool, the cell records
+    # ``interrupted`` with the signal named, REPORT.md is rendered, the
+    # stage dir removed, and the process exits 128 + signum.
+    doc = campaign_doc([{"label": "x"}, {"label": "y"}], repeats=1)
+    campaign = _campaign(tmp_path, doc)
+    stage_root = tmp_path / "tmpfs"
+    handle = FakeProcess(duration_s=999.0)  # the pass is still running
+    adapter = FakeAdapter()
+    monkeypatch.setattr(adapter, "run_offline", lambda *a, **k: handle)
+
+    def kill_self(timeout: float | None = None) -> int:
+        os.kill(os.getpid(), signum)
+        return handle.returncode  # unreachable: the handler raises first
+
+    monkeypatch.setattr(handle, "wait", kill_self)
+
+    with pytest.raises(SystemExit) as excinfo:
+        _run(campaign, tmp_path, adapter=adapter, tmpfs=stage_root)
+    assert excinfo.value.code == 128 + signum
+
+    signame = signal.Signals(signum).name
+    directory = tmp_path / "results" / "2026-01-05-test"
+    run_files = sorted((directory / "runs").glob("*.json"))
+    assert len(run_files) == 1  # the second cell never ran
+    record = json.loads(run_files[0].read_text(encoding="utf-8"))
+    assert record["status"] == "interrupted"
+    assert any(signame in p for p in record["problems"])
+    assert handle.killed  # the tool is dead before the interrupt propagates
+    assert (directory / "REPORT.md").exists()
+    assert not (stage_root / "mbench-20260105T120000Z").exists()
+    # and the previous handlers are restored on the way out
+    assert signal.getsignal(signum) is signal.SIG_DFL
+
+
+def test_a_sigterm_before_the_first_cell_still_writes_the_report(
+    tmp_path: Path, fake_tool: None
+) -> None:
+    # A SIGTERM during SUT collection — before any cell — takes the same
+    # path: no run is recorded (none was interrupted) but REPORT.md is
+    # still rendered and the stage dir removed.
+    campaign = _campaign(tmp_path, campaign_doc([{"label": "x"}]))
+    stage_root = tmp_path / "tmpfs"
+
+    def kill() -> dict[str, Any]:
+        os.kill(os.getpid(), signal.SIGTERM)
+        return replay()
+
+    with pytest.raises(SystemExit) as excinfo:
+        _run(campaign, tmp_path, collect=kill, tmpfs=stage_root)
+    assert excinfo.value.code == 128 + signal.SIGTERM
+
+    directory = tmp_path / "results" / "2026-01-05-test"
+    assert list((directory / "runs").glob("*.json")) == []
+    assert (directory / "REPORT.md").exists()
     assert not (stage_root / "mbench-20260105T120000Z").exists()

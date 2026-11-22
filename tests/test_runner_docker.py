@@ -29,6 +29,7 @@ from test_mmt_probe_docker import _docker_usable, _extract
 from mbench import corpus, matrix, pcap, runner, validate
 from mbench.adapters.base import Ruleset
 from mbench.adapters.mmt_probe import CliDocker, MmtProbeAdapter
+from mbench.modes import offline
 
 pytestmark = pytest.mark.docker
 needs_docker = pytest.mark.skipif(not _docker_usable(), reason="docker is not usable")
@@ -153,30 +154,19 @@ def _mbench_containers(name: str = "mbench-") -> str:
     ).stdout.strip()
 
 
-@needs_docker
-def test_sigint_during_a_pass_leaves_no_container(adapter: MmtProbeAdapter, tmp_path: Path) -> None:
-    """Ctrl-C mid-pass kills the run container (review B2).
-
-    ``mbench run`` is spawned for real over a generated capture big enough
-    that the measured pass lives tens of seconds; once the pass's
-    ``mbench-mmt-probe-run-*`` container is up it gets SIGINT. The
-    interrupted cell must still be recorded and no ``mbench-`` container
-    may remain.
-    """
-    rules_dir = _extract(adapter, "mmt-rules", "/opt/mmt/security/rules", tmp_path)
-
-    # A minimal campaign, resolved by its own anchor.
-    root = tmp_path / "proj"
+def _long_campaign(root: Path, rules_dir: Path) -> Path:
+    """The signal tests' campaign: a generated capture big enough that a
+    measured pass lasts tens of seconds, so a signal can land mid-pass."""
     (root / "campaigns").mkdir(parents=True)
     shutil.copytree(rules_dir, root / "rules")
     big = root / "big.pcap"
     corpus.generate(corpus.SETS["c-small"], 0, 750_000, 256, big)
-    campaign = root / "campaigns" / "sigint.yaml"
+    campaign = root / "campaigns" / "signal.yaml"
     campaign.write_text(
         yaml.safe_dump(
             {
                 "schema_version": 1,
-                "question": "does a Ctrl-C kill the run container?",
+                "question": "does a signal kill the run container?",
                 "tools": ["mmt-probe"],
                 "rulesets": [{"id": "mmt-security", "path": "rules"}],
                 "corpus": [{"path": "big.pcap", "sha256": pcap.sha256_file(big)}],
@@ -188,27 +178,66 @@ def test_sigint_during_a_pass_leaves_no_container(adapter: MmtProbeAdapter, tmp_
         ),
         encoding="utf-8",
     )
+    return campaign
+
+
+def _interrupt_the_pass(proc: subprocess.Popen[bytes], signum: int) -> bool:
+    """Send ``signum`` once the pass's container is up; True when it was.
+
+    Waits for the ``mbench-mmt-probe-run-*`` container, signals the
+    process and waits it out — then makes sure the process is dead even
+    when the container never came up, so the test cannot hang and no
+    container can be orphaned by a hard kill.
+    """
+    deadline = time.monotonic() + 180
+    try:
+        while time.monotonic() < deadline and proc.poll() is None:
+            if _mbench_containers("mbench-mmt-probe-run-"):
+                proc.send_signal(signum)
+                proc.wait(timeout=120)
+                return True
+            time.sleep(0.2)
+    finally:
+        if proc.poll() is None:
+            proc.send_signal(signal.SIGINT)  # graceful first: the run cleans up
+            try:
+                proc.wait(timeout=30)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                proc.wait(timeout=30)
+    return False
+
+
+def _no_mbench_container() -> None:
+    """Assert no ``mbench-`` container is left, giving the daemon's --rm a grace."""
+    left = _mbench_containers()
+    for _ in range(50):
+        if not left:
+            break
+        time.sleep(0.2)
+        left = _mbench_containers()
+    assert left == "", f"mbench containers left running: {left}"
+
+
+@needs_docker
+def test_sigint_during_a_pass_leaves_no_container(adapter: MmtProbeAdapter, tmp_path: Path) -> None:
+    """Ctrl-C mid-pass kills the run container (review B2).
+
+    ``mbench run`` is spawned for real over a generated capture big enough
+    that the measured pass lives tens of seconds; once the pass's
+    ``mbench-mmt-probe-run-*`` container is up it gets SIGINT. The
+    interrupted cell must still be recorded and no ``mbench-`` container
+    may remain.
+    """
+    rules_dir = _extract(adapter, "mmt-rules", "/opt/mmt/security/rules", tmp_path)
+    campaign = _long_campaign(tmp_path / "proj", rules_dir)
     results = tmp_path / "results"
     proc = subprocess.Popen(
         [sys.executable, "-m", "mbench", "run", str(campaign), "--results", str(results)],
         stdout=subprocess.DEVNULL,
         stderr=subprocess.PIPE,
     )
-    seen_container = False
-    try:
-        # Wait for the pass's run container to come up, then Ctrl-C.
-        deadline = time.monotonic() + 180
-        while time.monotonic() < deadline and proc.poll() is None:
-            if _mbench_containers("mbench-mmt-probe-run-"):
-                seen_container = True
-                break
-            time.sleep(0.2)
-        proc.send_signal(signal.SIGINT)
-        proc.wait(timeout=120)
-    finally:
-        if proc.poll() is None:
-            proc.kill()
-            proc.wait(timeout=30)
+    seen_container = _interrupt_the_pass(proc, signal.SIGINT)
     assert proc.stderr is not None
     stderr = proc.stderr.read().decode()
     assert seen_container, f"the run container never came up; mbench stderr: {stderr}"
@@ -221,10 +250,52 @@ def test_sigint_during_a_pass_leaves_no_container(adapter: MmtProbeAdapter, tmp_
     assert "interrupted" in statuses
     assert list(results.rglob("REPORT*.md")), "no REPORT.md after a Ctrl-C"
     # docker kill is synchronous; a short grace covers the daemon's --rm sweep.
-    left = _mbench_containers()
-    for _ in range(50):
-        if not left:
-            break
-        time.sleep(0.2)
-        left = _mbench_containers()
-    assert left == "", f"mbench containers left running: {left}"
+    _no_mbench_container()
+
+
+@needs_docker
+@pytest.mark.parametrize("signum", [signal.SIGTERM, signal.SIGHUP])
+def test_sigterm_and_sighup_during_a_pass_take_the_interrupted_path(
+    adapter: MmtProbeAdapter, tmp_path: Path, signum: int
+) -> None:
+    """SIGTERM and SIGHUP mid-pass take the interrupted path (review N1).
+
+    The default kill signals — ``kill``, ``timeout``, CI cancellation,
+    ``systemctl stop``, a hung-up terminal — must end like a Ctrl-C: the
+    ``mbench-`` container dead, the cell recorded ``interrupted`` with the
+    signal named, REPORT.md rendered, the tmpfs stage dir removed, and the
+    process exiting ``128 + signum`` as an uncaught signal would.
+    """
+    rules_dir = _extract(adapter, "mmt-rules", "/opt/mmt/security/rules", tmp_path)
+    campaign = _long_campaign(tmp_path / "proj", rules_dir)
+    results = tmp_path / "results"
+    stage_root = offline.tmpfs_dir()
+    staged_before = set(stage_root.glob("mbench-*")) if stage_root else set()
+    proc = subprocess.Popen(
+        [sys.executable, "-m", "mbench", "run", str(campaign), "--results", str(results)],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.PIPE,
+    )
+    seen_container = _interrupt_the_pass(proc, signum)
+    assert proc.stderr is not None
+    stderr = proc.stderr.read().decode()
+    assert seen_container, f"the run container never came up; mbench stderr: {stderr}"
+    signame = signal.Signals(signum).name
+
+    # The cell is interrupted and names the signal; REPORT.md is rendered.
+    run_files = sorted(results.rglob("runs/*.json"))
+    assert run_files, f"no run file; mbench stderr: {stderr}"
+    records = [json.loads(p.read_text(encoding="utf-8")) for p in run_files]
+    interrupted = [r for r in records if r["status"] == "interrupted"]
+    assert interrupted, f"no interrupted run; mbench stderr: {stderr}"
+    problems = [p for r in interrupted for p in r["problems"]]
+    assert any(signame in p for p in problems), f"{signame} not in problems: {problems}"
+    assert list(results.rglob("REPORT*.md")), f"no REPORT.md after {signame}"
+    # 128 + signum, the status of an uncaught signal — not -signum (killed).
+    assert proc.returncode == 128 + signum
+
+    _no_mbench_container()
+    # And the tmpfs stage dir is gone: nothing new under the staging root.
+    if stage_root:
+        left_dirs = set(stage_root.glob("mbench-*")) - staged_before
+        assert not left_dirs, f"stage dirs left on {stage_root}: {left_dirs}"

@@ -6,12 +6,14 @@ mismatches flagged.
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 import pytest
 from sutfixtures import replay
 
+from mbench import runner
 from mbench.cli import EXIT_OK, EXIT_USAGE, main
 from mbench.report import render
 
@@ -295,3 +297,23 @@ def test_report_dir_writes_report_batch_md_instead_of_overwriting(
     reports = [p.name for p in directory.glob("REPORT-*.md")]
     assert len(reports) == 1
     assert "Verdict" in (directory / reports[0]).read_text(encoding="utf-8")
+
+
+def test_report_dir_twice_in_the_same_second_counts_up(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Two re-renders inside the same second: REPORT-<batch>.md is taken, so
+    # the fallback counts up like the run files — -2, -3 — instead of
+    # failing "exists" (review N2).
+    directory = _results_dir(tmp_path, ("mmt-probe",))
+    (directory / "REPORT.md").write_text("the first report\n", encoding="utf-8")
+    monkeypatch.setattr(runner, "utcnow", lambda: datetime(2026, 1, 5, 12, 0, 0, tzinfo=UTC))
+    for _ in range(3):
+        assert main(["report", str(directory)]) == EXIT_OK
+    assert (directory / "REPORT.md").read_text(encoding="utf-8") == "the first report\n"
+    reports = sorted(p.name for p in directory.glob("REPORT-*.md"))
+    assert reports == [
+        "REPORT-20260105T120000Z-2.md",
+        "REPORT-20260105T120000Z-3.md",
+        "REPORT-20260105T120000Z.md",
+    ]

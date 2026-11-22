@@ -28,7 +28,9 @@ A cell that raises is a run record too — ``error``, or ``interrupted`` on
 ``KeyboardInterrupt``/``SystemExit`` — with the exception in ``problems``;
 the campaign continues after an error and stops after an interrupt.
 ``REPORT.md`` is always rendered over whatever run files exist, and the
-tmpfs staging dir is removed on every exit path.
+tmpfs staging dir is removed on every exit path. ``mbench run`` also
+catches SIGTERM and SIGHUP, raising :class:`SignalExit` so the default
+kill signal takes the same interrupted path; SIGKILL cannot be caught.
 
 For a ``quiet_host`` campaign the runner only **prints** the commands that
 stop and restart ``vllm-qwen.service`` and ``vllm-health-watchdog.timer``
@@ -44,13 +46,17 @@ import json
 import os
 import re
 import shutil
+import signal
 import sys
 import tempfile
+import threading
 import time
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
+from types import FrameType
+from typing import NoReturn
 
 from mbench import hostsrc, sut, truth, validate
 from mbench.adapters import ADAPTERS
@@ -96,10 +102,21 @@ def write(path: Path, text: str) -> None:
 
 
 def _unique(path: Path, batch: str, ext: str) -> Path:
-    """``name.ext``, or ``name-<batch>.ext`` when the plain name is taken."""
+    """``name.ext``, else ``name-<batch>.ext``, then ``name-<batch>-N.ext``.
+
+    A taken name gets the batch suffix — the same scheme ``_free_batch``
+    gives a repeated batch — and a name taken inside the same second keeps
+    counting up (``-2``, ``-3`` …), like the ``batch-N`` run files, so
+    ``mbench report`` re-renders never fail with "exists".
+    """
     if not path.exists():
         return path
-    return path.with_name(f"{path.stem}-{batch}{ext}")
+    candidate = path.with_name(f"{path.stem}-{batch}{ext}")
+    n = 1
+    while candidate.exists():
+        n += 1
+        candidate = path.with_name(f"{path.stem}-{batch}-{n}{ext}")
+    return candidate
 
 
 def _free_batch(directory: Path, batch: str) -> str:
@@ -404,6 +421,63 @@ def _collect_sut() -> dict[str, Json]:
     return sut.collect(hostsrc.LiveSource(), sut.Options(alias="sut"))
 
 
+#: The signals ``mbench run`` turns into :class:`SignalExit`. The
+#: interpreter's default for both kills it outright — no ``finally``, no
+#: run record, a live container left behind — so SIGTERM (the default
+#: ``kill``, ``timeout``, CI cancellation, ``systemctl stop``) and SIGHUP
+#: (a hung-up terminal) are routed through the interrupted path. SIGINT
+#: needs no handler — it is already ``KeyboardInterrupt`` — and SIGKILL
+#: cannot be caught.
+SIGNALS_CAUGHT = (signal.SIGTERM, signal.SIGHUP)
+
+
+class SignalExit(SystemExit):
+    """``SystemExit`` raised by the ``mbench run`` signal handlers.
+
+    The exit code is ``128 + signum``, the shell convention for a death by
+    that signal, so an interrupted ``mbench run`` exits with the same
+    status as an uncaught one; ``str`` names the signal, so the
+    ``interrupted`` run record can say ``received SIGTERM`` instead of
+    only ``143``.
+    """
+
+    def __init__(self, signum: int) -> None:
+        self.signum = signum
+        super().__init__(128 + signum)
+
+    def __str__(self) -> str:
+        return f"received {signal.Signals(self.signum).name}"
+
+
+@contextlib.contextmanager
+def _signal_handlers() -> Iterator[None]:
+    """Catch :data:`SIGNALS_CAUGHT` and raise :class:`SignalExit` instead.
+
+    Raising routes the default kill signals through the same
+    ``BaseException`` paths as a Ctrl-C: the pass kills its container, the
+    cell records ``interrupted`` with the signal named, ``REPORT.md`` is
+    rendered and the stage dir removed. Signal handlers are
+    process-global, so they are installed only in the main thread
+    (``signal`` requires it) and only for the campaign's duration; the
+    previous handlers are restored on the way out.
+    """
+    if threading.current_thread() is not threading.main_thread():
+        yield
+        return
+    previous = {sig: signal.getsignal(sig) for sig in SIGNALS_CAUGHT}
+
+    def raise_exit(signum: int, _frame: FrameType | None) -> NoReturn:
+        raise SignalExit(signum)
+
+    for sig in SIGNALS_CAUGHT:
+        signal.signal(sig, raise_exit)
+    try:
+        yield
+    finally:
+        for sig, handler in previous.items():
+            signal.signal(sig, handler)
+
+
 def run_campaign(
     campaign: Campaign,
     *,
@@ -444,11 +518,6 @@ def run_campaign(
         out(f"    {QUIET_START}")
         err("mbench run: the harness does not run these itself (no sudo).")
 
-    host_record = collect_sut()
-    sut_file = _unique(directory / "sut.json", batch_id, ".json")
-    write(sut_file, json.dumps(host_record, indent=2, ensure_ascii=False) + "\n")
-    outcome.sut_file = sut_file
-
     if tmpfs is None or tmpfs is True:
         stage_dir_root = offline.tmpfs_dir()
     elif tmpfs is False:
@@ -458,80 +527,89 @@ def run_campaign(
     if stage_dir_root is None:
         err("mbench run: no tmpfs mount found: captures are staged on the regular filesystem")
 
-    try:
-        with tempfile.TemporaryDirectory(prefix="mbench-run-", dir=work_root) as work_root_dir:
-            work = Path(work_root_dir)
-            on_tmpfs = stage_dir_root is not None
-            stage_dir = work / "staged"
-            if stage_dir_root is not None:
-                stage_dir = stage_dir_root / f"mbench-{batch_id}"
-            for cell in campaign.cells:
-                interrupt: BaseException | None = None
-                try:
-                    adapter = factories[cell.tool]()
-                except Exception as exc:
-                    err(f"cell {cell.index} ({cell.tool}): adapter failed: {exc}")
-                    record = _failed_cell_record(
-                        campaign,
-                        cell,
-                        exc,
-                        batch=batch_id,
-                        tmpfs=on_tmpfs,
-                        at=now,
-                        what=f"adapter {cell.tool}",
-                    )
-                else:
+    # From here on SIGTERM and SIGHUP raise SignalExit, so the default
+    # kill signal takes the same interrupted path as a Ctrl-C (review N1):
+    # the pass's own handling kills its container, the cell records
+    # ``interrupted``, and the finally still runs on every exit.
+    with _signal_handlers():
+        try:
+            host_record = collect_sut()
+            sut_file = _unique(directory / "sut.json", batch_id, ".json")
+            write(sut_file, json.dumps(host_record, indent=2, ensure_ascii=False) + "\n")
+            outcome.sut_file = sut_file
+            with tempfile.TemporaryDirectory(prefix="mbench-run-", dir=work_root) as work_root_dir:
+                work = Path(work_root_dir)
+                on_tmpfs = stage_dir_root is not None
+                stage_dir = work / "staged"
+                if stage_dir_root is not None:
+                    stage_dir = stage_dir_root / f"mbench-{batch_id}"
+                for cell in campaign.cells:
+                    interrupt: BaseException | None = None
                     try:
-                        record = run_cell(
-                            adapter,
-                            campaign,
-                            cell,
-                            workdir=work / f"cell-{cell.index:03d}",
-                            stage_dir=stage_dir,
-                            tmpfs=on_tmpfs,
-                            host_record=host_record,
-                            batch=batch_id,
-                            clock=clock,
-                            monotonic=monotonic,
-                        )
-                    except BaseException as exc:
-                        # A crashed cell is a run record, not a lost campaign:
-                        # ``error`` — the campaign continues; ``interrupted``
-                        # (Ctrl-C, SystemExit) — it is recorded, then re-raised.
+                        adapter = factories[cell.tool]()
+                    except Exception as exc:
+                        err(f"cell {cell.index} ({cell.tool}): adapter failed: {exc}")
                         record = _failed_cell_record(
                             campaign,
                             cell,
                             exc,
                             batch=batch_id,
                             tmpfs=on_tmpfs,
-                            at=clock(),
-                            what="the run",
+                            at=now,
+                            what=f"adapter {cell.tool}",
                         )
-                        if isinstance(exc, (KeyboardInterrupt, SystemExit)):
-                            interrupt = exc
-                        else:
-                            err(f"cell {cell.index} ({cell.tool}): run failed: {exc}")
-                outcome.runs.append(record)
-                path = runs_dir / f"{batch_id}-{cell.index:03d}-{_slug(cell)}.json"
-                write(path, json.dumps(record, indent=2, ensure_ascii=False) + "\n")
-                outcome.run_files.append(path)
-                err(
-                    f"cell {cell.index + 1}/{len(campaign.cells)} "
-                    f"({_slug(cell)}): {record['status']}"
-                )
-                if interrupt is not None:
-                    raise interrupt
-    finally:
-        # The tmpfs staging dir never outlives the campaign — clean exit,
-        # failed cell or Ctrl-C alike (B1).
-        if stage_dir_root is not None:
-            shutil.rmtree(stage_dir_root / f"mbench-{batch_id}", ignore_errors=True)
-        # And a partial campaign still leaves its report: it renders over
-        # whatever run files exist, failed cells listed.
-        from mbench.report import render
+                    else:
+                        try:
+                            record = run_cell(
+                                adapter,
+                                campaign,
+                                cell,
+                                workdir=work / f"cell-{cell.index:03d}",
+                                stage_dir=stage_dir,
+                                tmpfs=on_tmpfs,
+                                host_record=host_record,
+                                batch=batch_id,
+                                clock=clock,
+                                monotonic=monotonic,
+                            )
+                        except BaseException as exc:
+                            # A crashed cell is a run record, not a lost campaign:
+                            # ``error`` — the campaign continues; ``interrupted``
+                            # (Ctrl-C, SystemExit) — it is recorded, then re-raised.
+                            record = _failed_cell_record(
+                                campaign,
+                                cell,
+                                exc,
+                                batch=batch_id,
+                                tmpfs=on_tmpfs,
+                                at=clock(),
+                                what="the run",
+                            )
+                            if isinstance(exc, (KeyboardInterrupt, SystemExit)):
+                                interrupt = exc
+                            else:
+                                err(f"cell {cell.index} ({cell.tool}): run failed: {exc}")
+                    outcome.runs.append(record)
+                    path = runs_dir / f"{batch_id}-{cell.index:03d}-{_slug(cell)}.json"
+                    write(path, json.dumps(record, indent=2, ensure_ascii=False) + "\n")
+                    outcome.run_files.append(path)
+                    err(
+                        f"cell {cell.index + 1}/{len(campaign.cells)} "
+                        f"({_slug(cell)}): {record['status']}"
+                    )
+                    if interrupt is not None:
+                        raise interrupt
+        finally:
+            # The tmpfs staging dir never outlives the campaign — clean exit,
+            # failed cell or Ctrl-C alike (B1).
+            if stage_dir_root is not None:
+                shutil.rmtree(stage_dir_root / f"mbench-{batch_id}", ignore_errors=True)
+            # And a partial campaign still leaves its report: it renders over
+            # whatever run files exist, failed cells listed.
+            from mbench.report import render
 
-        report = render.render_dir(directory)
-        report_file = _unique(directory / "REPORT.md", batch_id, ".md")
-        write(report_file, report)
-        outcome.report_file = report_file
+            report = render.render_dir(directory)
+            report_file = _unique(directory / "REPORT.md", batch_id, ".md")
+            write(report_file, report)
+            outcome.report_file = report_file
     return outcome
