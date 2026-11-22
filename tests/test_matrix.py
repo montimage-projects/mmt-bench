@@ -18,7 +18,7 @@ import yaml
 from campaignfiles import campaign_doc, layout, make_pcap, manifest_entry, write_manifest
 from fakeadapter import FakeAdapter
 
-from mbench import adapters, matrix, pcap, sut
+from mbench import adapters, corpus, matrix, pcap, sut
 
 
 @pytest.fixture
@@ -290,7 +290,7 @@ def test_no_verdict_cell_means_the_fastest_default(tmp_path: Path, fake_tool: No
     assert _load(parts).verdict_cell is None
 
 
-def test_the_committed_p1_synthetic_loads_on_a_two_type_host() -> None:
+def test_the_committed_p1_synthetic_loads_on_a_two_type_host(tmp_path: Path) -> None:
     # M9: the dry-run campaign loads through matrix.load. Its core:<type>@n
     # selectors resolve against the host at run time — here a stub two-type
     # topology stands in for the SUT.
@@ -308,9 +308,25 @@ def test_the_committed_p1_synthetic_loads_on_a_two_type_host() -> None:
         stubs = [rules_dir / f"rule-{i}.so" for i in range(94)]
         for stub in stubs:
             stub.touch()
+    # c-small/c-large are labels resolved through the manifest: generated
+    # stand-ins under a tmp manifest (the real captures are never committed).
+    data = tmp_path / "corpus" / "data"
+    small = data / "c-small.pcap"
+    large = data / "c-large.pcap"
+    data.mkdir(parents=True)
+    corpus.generate(corpus.SETS["c-small"], 0, 200, 8, small)
+    corpus.generate(corpus.SETS["c-large"], 0, 50, 8, large)
+    manifest = write_manifest(
+        tmp_path / "corpus",
+        [
+            manifest_entry("c-small", small, tmp_path / "corpus"),
+            manifest_entry("c-large", large, tmp_path / "corpus"),
+        ],
+    )
     try:
         campaign = matrix.load(
             Path(__file__).parent.parent / "campaigns" / "p1-synthetic.yaml",
+            manifest_path=manifest,
             topology=topology,
         )
     finally:
