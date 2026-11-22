@@ -20,6 +20,7 @@ import copy
 import errno
 import hashlib
 import json
+import os
 import platform
 import re
 from collections.abc import Callable, Iterable, Iterator, Sequence
@@ -540,6 +541,10 @@ class Options:
     top_n: int = DEFAULT_TOP_N
     harness: HarnessInfo | None = None
     clock: Callable[[], datetime] = field(default=_now)
+    #: The invoking user when the collector runs as root (SUDO_USER): the user
+    #: bus is then read through ``systemctl --user -M <user>@``, never plain
+    #: ``--user`` (which looks at root's own, usually absent, bus).
+    sudo_user: str | None = field(default_factory=lambda: os.environ.get("SUDO_USER") or None)
 
 
 class Collector:
@@ -1309,13 +1314,18 @@ class Collector:
 
     def services(self) -> list[dict[str, Json]]:
         props = "--property=Id,LoadState,ActiveState,SubState,UnitFileState"
+        user_bus = ["systemctl", "--user"]
+        if self.consts.get("euid") == 0 and self.opts.sudo_user:
+            # Under sudo there is no root user bus: the units live on the
+            # invoking user's bus, reached through `systemctl -M <user>@`.
+            user_bus = ["systemctl", "--user", "-M", f"{self.opts.sudo_user}@"]
         records = []
         for unit in self.opts.watch_units:
             found: dict[str, Json] | None = None
             errors = []
             for scope, argv in (
                 ("system", ["systemctl", "show", unit, props, "--no-pager"]),
-                ("user", ["systemctl", "--user", "show", unit, props, "--no-pager"]),
+                ("user", [*user_bus, "show", unit, props, "--no-pager"]),
             ):
                 result = self.parsed(argv, parse_systemctl_show)
                 if is_unavailable(result):

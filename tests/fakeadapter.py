@@ -66,13 +66,19 @@ class FakeAdapter(Adapter):
     """A configurable fake tool.
 
     ``run_alerts`` and ``run_counters`` are what every run reports;
-    ``duration_s`` makes its handle exceed a short timeout.
+    ``duration_s`` makes its handle exceed a short timeout. ``counters_list``
+    and ``durations``, when not empty, answer the run calls in order (the
+    last entry repeats), so a test can give every pass different counters
+    or a different simulated duration.
     """
 
     run_alerts: list[Alert] = field(default_factory=list)
     run_counters: Counters = field(default_factory=lambda: Counters(0, 0, 0))
+    counters_list: list[Counters] = field(default_factory=list)
+    durations: list[float] = field(default_factory=list)
     duration_s: float = 0.0
     rules: list[RuleInfo] = field(default_factory=list)
+    limits: dict[str, Json] = field(default_factory=dict)
     calls: list[Call] = field(default_factory=list)
     _config_files: list[Path] = field(default_factory=list)
     _workdir: Path | None = None
@@ -106,7 +112,10 @@ class FakeAdapter(Adapter):
         if self._workdir is None:
             raise RuntimeError("prepare() first")
         self.calls.append(Call(mode, target, threads, tuple(cpuset)))
-        return FakeProcess(duration_s=self.duration_s)
+        duration = self.duration_s
+        if self.durations:
+            duration = self.durations[min(len(self.calls) - 1, len(self.durations) - 1)]
+        return FakeProcess(duration_s=duration)
 
     def run_offline(self, pcap: Path, threads: int, cpuset: Sequence[int]) -> ProcessHandle:
         return self._start("offline", pcap.name, threads, cpuset)
@@ -114,7 +123,19 @@ class FakeAdapter(Adapter):
     def run_online(self, iface: str, threads: int, cpuset: Sequence[int]) -> ProcessHandle:
         return self._start("online", iface, threads, cpuset)
 
+    def container_limits(self, cpuset: Sequence[int]) -> dict[str, Json]:
+        if self.limits:
+            return dict(self.limits)
+        return {
+            "cpu_max": "max 100000",
+            "memory_max": "max",
+            "cpuset_cpus": sut.format_cpulist(cpuset) if cpuset else "",
+        }
+
     def counters(self) -> Counters:
+        if self.counters_list:
+            index = min(len(self.calls) - 1, len(self.counters_list) - 1)
+            return self.counters_list[index]
         return self.run_counters
 
     def alerts(self) -> list[Alert]:

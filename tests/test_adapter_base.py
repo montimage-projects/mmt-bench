@@ -39,6 +39,7 @@ B3_MEMBERS = {
     "prepare",
     "run_offline",
     "run_online",
+    "container_limits",
     "counters",
     "alerts",
     "rule_inventory",

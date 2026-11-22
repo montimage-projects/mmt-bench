@@ -3,10 +3,12 @@
 It checks sut.json records (#4) against the committed JSON Schema
 (``src/mbench/schemas/sut.schema.json``) and re-computes their ``sut_hash``,
 the corpus manifest (#7, ``corpus/manifest.yaml``) against
-``src/mbench/schemas/corpus-manifest.schema.json``, and a pcap's
-ground-truth file (#26, ``<pcap>.truth.json``) against
+``src/mbench/schemas/corpus-manifest.schema.json``, a pcap's ground-truth
+file (#26, ``<pcap>.truth.json``) against
 ``src/mbench/schemas/truth.schema.json`` plus the checks of
-:func:`mbench.truth.parse`. Campaign files are added by #8.
+:func:`mbench.truth.parse`, and a campaign file (#8,
+``campaigns/<name>.yaml``) against ``src/mbench/schemas/campaign.schema.json``
+plus checks a schema cannot express (known tools, resolved corpus labels).
 
 Every problem is reported by the dotted path of the field, for example
 ``missing field: host.cpu.core_types[0].governor``.
@@ -15,6 +17,7 @@ Every problem is reported by the dotted path of the field, for example
 from __future__ import annotations
 
 import json
+import math
 import re
 from collections.abc import Iterator
 from dataclasses import dataclass, field
@@ -31,6 +34,7 @@ from mbench import sut
 
 SUT_SCHEMA = "sut.schema.json"
 MANIFEST_SCHEMA = "corpus-manifest.schema.json"
+CAMPAIGN_SCHEMA = "campaign.schema.json"
 
 
 @cache
@@ -195,11 +199,13 @@ def validate_file(path: str | Path) -> Report:
         return Report(str(p), "json", [f"not valid JSON: {exc}"])
     if is_truth(p, record):
         return _validate_truth(p, record)
+    if is_run(record):
+        return _validate_run(p, record)
     if not (isinstance(record, dict) and ("sut_hash" in record or "schema_version" in record)):
         raise UnsupportedRecord(
             f"{p}: not a record mbench validate checks (no schema_version or "
-            "sut_hash, and not a truth file); it checks sut.json, "
-            "corpus/manifest.yaml and <pcap>.truth.json (campaigns: #8)"
+            "sut_hash, and not a truth file); it checks sut.json, runs/*.json, "
+            "corpus/manifest.yaml, <pcap>.truth.json and campaigns/<x>.yaml"
         )
     report = Report(str(p), "sut", sut_errors(record), scope=str(record.get("scope", "")))
     report.fields = sut.field_count(record)
@@ -235,18 +241,120 @@ def is_manifest(path: Path, data: Any) -> bool:
     return path.stem == "manifest" or (isinstance(data, dict) and "entries" in data)
 
 
+def is_campaign(path: Path, data: Any) -> bool:
+    """A file under ``campaigns/``, or a YAML mapping with a ``question``."""
+    return path.parent.name == "campaigns" or (isinstance(data, dict) and "question" in data)
+
+
+def campaign_errors(campaign: Any, manifest_path: Path | None = None) -> list[str]:
+    """Every reason ``campaign`` is not a valid campaign file; empty if it is.
+
+    Beyond the schema: the listed tools must resolve to an adapter
+    (:data:`mbench.adapters.ADAPTERS`), and ``corpus[].label`` must name an
+    entry of the corpus manifest (``manifest_path``, default
+    :data:`mbench.corpus.DEFAULT_MANIFEST`) when it is readable.
+    """
+    validator = Draft202012Validator(schema(CAMPAIGN_SCHEMA))
+    errors = sorted(
+        {
+            describe(leaf)
+            for error in validator.iter_errors(campaign)
+            for leaf in _leaf_errors(error)
+        }
+    )
+    if errors or not isinstance(campaign, dict):
+        return errors
+    from mbench import adapters, corpus
+
+    known = sorted(adapters.ADAPTERS)
+    for i, tool in enumerate(campaign["tools"]):
+        if tool not in adapters.ADAPTERS:
+            errors.append(f"tools[{i}]: {tool!r} has no adapter (known: {', '.join(known)})")
+    for i, cpuset in enumerate(campaign["cpusets"]):
+        if not cpuset:
+            continue  # "" pins nothing
+        # A descending range (5-2) parses to nothing: the run would record a
+        # cpuset that pins no cpu — mislabelled, so it is rejected.
+        descending = any(
+            int(hi) < int(lo)
+            for part in cpuset.split(",")
+            if "-" in part
+            for lo, hi in [part.split("-", 1)]
+        )
+        if descending or not sut.parse_cpulist(cpuset):
+            errors.append(f"cpusets[{i}]: {cpuset!r} is empty or has a descending range")
+    if manifest_path is None:
+        manifest_path = corpus.DEFAULT_MANIFEST
+    for i, item in enumerate(campaign["corpus"]):
+        if "label" not in item:
+            continue
+        try:
+            manifest = corpus.load(manifest_path)
+        except (OSError, corpus.ManifestError):
+            continue  # no manifest to check the label against: the runner reports it
+        if corpus.find_entry(manifest, item["label"]) is None:
+            errors.append(
+                f"corpus[{i}].label: no manifest entry for {item['label']!r} in {manifest_path}"
+            )
+    return errors
+
+
+def is_run(data: Any) -> bool:
+    """A run record under ``results/*/runs/``: it carries cell and passes."""
+    return (
+        isinstance(data, dict)
+        and isinstance(data.get("cell"), dict)
+        and isinstance(data.get("passes"), list)
+    )
+
+
+def _validate_run(p: Path, data: Any) -> Report:
+    """Check a run record: its embedded sut.json must validate in run scope.
+
+    A run without an embedded SUT (an adapter-failure record) is checked as
+    the empty record: the schema names everything that is missing.
+    """
+    embedded = data["sut"] if isinstance(data.get("sut"), dict) else {}
+    report = Report(str(p), "run", sut_errors(embedded))
+    if report.ok:
+        measured = [x for x in data["passes"] if x.get("kind") == "measured"]
+        ok = sum(1 for x in measured if x.get("status") == "ok")
+        report.summary = (
+            f"status {data.get('status', '?')}, {ok}/{len(measured)} measured passes ok"
+        )
+    return report
+
+
 def _validate_yaml(p: Path, text: str) -> Report:
     try:
         data = yaml.safe_load(text)
     except yaml.YAMLError as exc:
         return Report(str(p), "yaml", [f"not valid YAML: {exc}"])
-    if not is_manifest(p, data):
-        raise UnsupportedRecord(
-            f"{p}: not a corpus manifest (no entries); campaign files are not checked yet (#8)"
-        )
-    report = Report(str(p), "corpus manifest", manifest_errors(data))
-    if report.ok:
-        entries = data["entries"]
-        local = sum(1 for e in entries if e["local_only"])
-        report.summary = f"{len(entries)} entries, {local} local-only"
-    return report
+    if is_manifest(p, data):
+        report = Report(str(p), "corpus manifest", manifest_errors(data))
+        if report.ok:
+            entries = data["entries"]
+            local = sum(1 for e in entries if e["local_only"])
+            report.summary = f"{len(entries)} entries, {local} local-only"
+        return report
+    if is_campaign(p, data):
+        report = Report(str(p), "campaign", campaign_errors(data))
+        if report.ok:
+            dims = [
+                data["tools"],
+                data["rulesets"],
+                data.get("config_profiles") or ["recommended"],
+                data["corpus"],
+                data["threads"],
+                data["cpusets"],
+            ]
+            cells = math.prod(len(d) for d in dims)
+            report.summary = (
+                f"{cells} matrix cell{'s' if cells != 1 else ''}, "
+                f"repeats {data['repeats']}, timeout {data['timeout_s']:g} s"
+            )
+        return report
+    raise UnsupportedRecord(
+        f"{p}: not a corpus manifest or campaign "
+        "(no entries or question); it also checks sut.json and <pcap>.truth.json"
+    )

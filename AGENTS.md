@@ -29,10 +29,10 @@ uv run pytest                          # tests
 uv run mbench --help                   # smoke: the CLI lists its subcommands
 ```
 
-`mbench sut`, `mbench validate` and `mbench corpus` are implemented; the other
-subcommands are stubs until their issue lands: each exits with status 3 and
-`not implemented yet (#N)`. The 10-s smoke campaign comes with #9, which adds
-its command here.
+`mbench sut`, `mbench validate`, `mbench corpus`, `mbench run` and
+`mbench report` are implemented; `mbench sweep` is a stub until its issue
+lands: it exits with status 3 and `not implemented yet (#17)`. The 10-s smoke
+campaign comes with #9, which adds its command here.
 
 ## Operating rules
 

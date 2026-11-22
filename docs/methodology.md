@@ -81,8 +81,10 @@ pinned and recorded.
 ## Statistics
 
 - Each cell is reported as the **median and IQR over 5 measured repeats**.
+  The p25/p75 quartiles use linear interpolation on the `(n-1)` rank — the
+  NumPy default (Hyndman–Fan type 7).
 - A cell whose coefficient of variation (CV) is **above 5 %** is flagged for
-  a rerun.
+  a rerun. CV uses the *sample* standard deviation (n−1 denominator).
 - Frequency is recorded during the run, so thermal throttling and core-type
   noise show up in the record.
 
@@ -185,6 +187,16 @@ attacks a tool missed.
 
 - Each run is capped by a timeout. A run that exceeds it is killed and
   recorded as `timeout`, never as a measurement.
+- A run's status is `ok`, `partial` (some measured passes ok), `timeout`,
+  `error`, `interrupted` (a Ctrl-C or a caught signal stopped the
+  campaign) or `invalid` (incomplete SUT record). A crashed or interrupted
+  campaign still writes its report over the runs it recorded.
+- Signal coverage: `mbench run` handles SIGINT (a Ctrl-C is already
+  `KeyboardInterrupt`) and catches SIGTERM and SIGHUP, raising
+  `SystemExit(128 + signum)` so they take the same interrupted path — the
+  tool is killed, the cell recorded `interrupted` and the report rendered.
+  SIGKILL cannot be caught: a `kill -9` can still leave the tool running
+  and the stage dir behind.
 - The harness never touches the production mmt-stack containers. It uses its
   own container names and data dirs.
 - Results are append-only: `results/<date>-<campaign>/` is never overwritten.

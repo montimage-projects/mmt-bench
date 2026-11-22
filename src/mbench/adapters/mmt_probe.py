@@ -771,6 +771,50 @@ class MmtProbeAdapter(Adapter):
     def run_online(self, iface: str, threads: int, cpuset: Sequence[int]) -> ProcessHandle:
         raise NotImplementedError("mmt-probe online mode is not implemented yet (P4)")
 
+    def container_limits(self, cpuset: Sequence[int]) -> dict[str, Json]:
+        """The run container's cgroup limits, read inside a scratch container.
+
+        ``docker run`` gives the container a private cgroup namespace on
+        cgroup v2 hosts, so ``/sys/fs/cgroup/*`` inside it is the run's own
+        cgroup: this records what the run actually gets (the daemon's
+        effective cpuset, not only the requested one). The scratch container
+        is ``mbench-``-named and ``--rm``, like every container the adapter
+        starts.
+        """
+        argv = [
+            "run",
+            "--rm",
+            "--name",
+            _container_name("limits"),
+            "--network",
+            "none",
+            "-w",
+            "/",
+        ]
+        if cpuset:
+            argv += ["--cpuset-cpus", sut.format_cpulist(cpuset)]
+        argv += [
+            self._run_image(),
+            "sh",
+            "-c",
+            "cat /sys/fs/cgroup/cpu.max; cat /sys/fs/cgroup/memory.max; "
+            "cat /sys/fs/cgroup/cpuset.cpus.effective",
+        ]
+        proc = self.docker.run(argv, timeout=120)
+
+        def missing(reason: str) -> sut.Marker:
+            return sut.unavailable("error", f"the run container's cgroup limits: {reason}")
+
+        if proc.returncode != 0:
+            marker = missing(f"the limits probe exited with status {proc.returncode}")
+            return {"cpu_max": marker, "memory_max": marker, "cpuset_cpus": marker}
+        lines = proc.stdout.decode("utf-8", "replace").splitlines()
+        keys = ("cpu_max", "memory_max", "cpuset_cpus")
+        return {
+            key: lines[i].strip() if i < len(lines) else missing(f"no {key} in the output")
+            for i, key in enumerate(keys)
+        }
+
     # -- outputs ----------------------------------------------------------------
 
     def _require_run(self) -> _Run:
