@@ -31,6 +31,9 @@ the campaign continues after an error and stops after an interrupt.
 tmpfs staging dir is removed on every exit path. ``mbench run`` also
 catches SIGTERM and SIGHUP, raising :class:`SignalExit` so the default
 kill signal takes the same interrupted path; SIGKILL cannot be caught.
+A signal landing inside the final cleanup or the interrupted-record
+write is deferred — recorded, not raised — until the section finishes,
+then re-raised, so the cleanup always completes (review N3).
 
 For a ``quiet_host`` campaign the runner only **prints** the commands that
 stop and restart ``vllm-qwen.service`` and ``vllm-health-watchdog.timer``
@@ -54,9 +57,9 @@ import time
 from collections.abc import Callable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from functools import partial
 from pathlib import Path
 from types import FrameType
-from typing import NoReturn
 
 from mbench import hostsrc, sut, truth, validate
 from mbench.adapters import ADAPTERS
@@ -449,33 +452,100 @@ class SignalExit(SystemExit):
         return f"received {signal.Signals(self.signum).name}"
 
 
+class _SignalState:
+    """The shared state of a campaign's signal handlers.
+
+    ``pending`` is ``None`` while a caught signal raises the interrupt
+    right away, and a list while a section defers them
+    (:func:`_defer_signals`): the handler then appends the interrupt to
+    the list instead of raising it. One slot keeps the defer windows
+    atomic — entering or leaving one is a single store, with no moment
+    where a signal could still raise inside the protected section.
+    """
+
+    __slots__ = ("pending",)
+
+    def __init__(self) -> None:
+        self.pending: list[BaseException] | None = None
+
+
 @contextlib.contextmanager
-def _signal_handlers() -> Iterator[None]:
+def _signal_handlers() -> Iterator[_SignalState]:
     """Catch :data:`SIGNALS_CAUGHT` and raise :class:`SignalExit` instead.
 
     Raising routes the default kill signals through the same
     ``BaseException`` paths as a Ctrl-C: the pass kills its container, the
     cell records ``interrupted`` with the signal named, ``REPORT.md`` is
-    rendered and the stage dir removed. Signal handlers are
-    process-global, so they are installed only in the main thread
-    (``signal`` requires it) and only for the campaign's duration; the
-    previous handlers are restored on the way out.
+    rendered and the stage dir removed. SIGINT is dispatched too, so a
+    deferred section (:func:`_defer_signals`) can also hold a Ctrl-C —
+    outside one it raises ``KeyboardInterrupt``, exactly like the
+    default handler. Signal handlers are process-global, so they are
+    installed only in the main thread (``signal`` requires it) and only
+    for the campaign's duration; the previous handlers are restored on
+    the way out.
     """
+    state = _SignalState()
     if threading.current_thread() is not threading.main_thread():
-        yield
+        yield state
         return
-    previous = {sig: signal.getsignal(sig) for sig in SIGNALS_CAUGHT}
+    previous = {sig: signal.getsignal(sig) for sig in (*SIGNALS_CAUGHT, signal.SIGINT)}
 
-    def raise_exit(signum: int, _frame: FrameType | None) -> NoReturn:
-        raise SignalExit(signum)
+    def dispatch(signum: int, _frame: FrameType | None) -> None:
+        exc: BaseException = KeyboardInterrupt() if signum == signal.SIGINT else SignalExit(signum)
+        if state.pending is not None:
+            state.pending.append(exc)
+        else:
+            raise exc
 
-    for sig in SIGNALS_CAUGHT:
-        signal.signal(sig, raise_exit)
+    for sig in previous:
+        signal.signal(sig, dispatch)
     try:
-        yield
+        yield state
     finally:
         for sig, handler in previous.items():
             signal.signal(sig, handler)
+
+
+@contextlib.contextmanager
+def _defer_signals(state: _SignalState, pending: list[BaseException]) -> Iterator[None]:
+    """Record a caught signal in ``pending`` instead of raising it.
+
+    The end-of-campaign cleanup and the interrupted-record write must
+    finish even when a second signal lands inside them (review N3):
+    under this context the handler records a :class:`SignalExit` or a
+    ``KeyboardInterrupt`` in ``pending`` and the interrupted work
+    continues; the caller re-raises the first pending interrupt once
+    the protected section is done. A worker thread installs no
+    handlers, so its signals can never land there — the slot is simply
+    set and unset.
+    """
+    previous = state.pending
+    state.pending = pending
+    try:
+        yield
+    finally:
+        state.pending = previous
+
+
+def _retry_on_interrupt[T](step: Callable[[], T], pending: list[BaseException]) -> T | None:
+    """Run ``step`` to completion; an interrupt raised inside is retried once.
+
+    A real signal cannot raise inside ``step`` under
+    :func:`_defer_signals` — it is recorded, never raised — but an
+    interrupt raised another way (a monkeypatched fault, an outside
+    handler) is appended to ``pending`` and the step retried. Cleanup
+    steps are idempotent, so finishing them is always safe. A step that
+    interrupts a second time is not facing a transient condition (review
+    L1): it is given up on — the interrupts stay in ``pending`` for the
+    caller to re-raise — and the remaining steps still run. ``None``
+    marks the give-up; a step whose result is used must be skipped then.
+    """
+    for _ in range(2):
+        try:
+            return step()
+        except (KeyboardInterrupt, SystemExit) as exc:
+            pending.append(exc)
+    return None
 
 
 def run_campaign(
@@ -500,6 +570,13 @@ def run_campaign(
     ``tmpfs`` selects the staging directory: ``None`` or ``True``
     auto-detects, a :class:`Path` forces one, ``False`` disables tmpfs
     staging (recorded as ``tmpfs: false``).
+
+    For the campaign's duration the harness owns SIGINT, SIGTERM and
+    SIGHUP: a caller's own handler — ``SIG_IGN`` included — is overridden
+    so each signal takes the interrupted path (``KeyboardInterrupt`` or
+    :class:`SignalExit`), and the previous handlers are restored on the
+    way out (decision 2). Handlers are process-global, so they are only
+    installed in the main thread; a worker-thread call installs none.
     """
     factories = dict(ADAPTERS) if adapters is None else dict(adapters)
     collect_sut = _collect_sut if collect is None else collect
@@ -531,7 +608,8 @@ def run_campaign(
     # kill signal takes the same interrupted path as a Ctrl-C (review N1):
     # the pass's own handling kills its container, the cell records
     # ``interrupted``, and the finally still runs on every exit.
-    with _signal_handlers():
+    with _signal_handlers() as sigstate:
+        propagating: BaseException | None = None
         try:
             host_record = collect_sut()
             sut_file = _unique(directory / "sut.json", batch_id, ".json")
@@ -591,25 +669,75 @@ def run_campaign(
                                 err(f"cell {cell.index} ({cell.tool}): run failed: {exc}")
                     outcome.runs.append(record)
                     path = runs_dir / f"{batch_id}-{cell.index:03d}-{_slug(cell)}.json"
-                    write(path, json.dumps(record, indent=2, ensure_ascii=False) + "\n")
-                    outcome.run_files.append(path)
+                    # The record write runs under the same deferral as the
+                    # cleanup below (review N3): a second signal mid-write is
+                    # recorded in ``pending``, not raised, so an interrupted
+                    # record is never lost to a partial write; a deferred
+                    # interrupt is raised once the record is on disk.
+                    pending: list[BaseException] = []
+
+                    def _write_record(run_file: Path, text: str) -> None:
+                        write(run_file, text)
+                        outcome.run_files.append(run_file)
+
+                    with _defer_signals(sigstate, pending):
+                        _retry_on_interrupt(
+                            partial(
+                                _write_record,
+                                path,
+                                json.dumps(record, indent=2, ensure_ascii=False) + "\n",
+                            ),
+                            pending,
+                        )
                     err(
                         f"cell {cell.index + 1}/{len(campaign.cells)} "
                         f"({_slug(cell)}): {record['status']}"
                     )
+                    if interrupt is None and pending:
+                        interrupt = pending[0]
                     if interrupt is not None:
                         raise interrupt
+        except BaseException as exc:
+            # What is already propagating outlives a signal deferred by the
+            # cleanup below: the first interrupt keeps the exit status.
+            propagating = exc
+            raise
         finally:
-            # The tmpfs staging dir never outlives the campaign — clean exit,
-            # failed cell or Ctrl-C alike (B1).
-            if stage_dir_root is not None:
-                shutil.rmtree(stage_dir_root / f"mbench-{batch_id}", ignore_errors=True)
-            # And a partial campaign still leaves its report: it renders over
-            # whatever run files exist, failed cells listed.
-            from mbench.report import render
+            # The cleanup finishes even when a signal lands inside it
+            # (review N3): while it runs a caught signal or Ctrl-C is
+            # recorded in ``pending`` instead of raising, and a step that
+            # still gets an interrupt through is retried once — each step
+            # is idempotent — then given up on so the rest of the cleanup
+            # still runs (review L1). The first deferred interrupt is
+            # re-raised once the cleanup is done, unless one is already
+            # propagating.
+            pending = []
+            with _defer_signals(sigstate, pending):
+                # The tmpfs staging dir never outlives the campaign — clean
+                # exit, failed cell or Ctrl-C alike (B1).
+                if stage_dir_root is not None:
+                    _retry_on_interrupt(
+                        partial(
+                            shutil.rmtree,
+                            stage_dir_root / f"mbench-{batch_id}",
+                            ignore_errors=True,
+                        ),
+                        pending,
+                    )
+                # And a partial campaign still leaves its report: it renders
+                # over whatever run files exist, failed cells listed. A
+                # render given up on leaves no report to write.
+                from mbench.report import render
 
-            report = render.render_dir(directory)
-            report_file = _unique(directory / "REPORT.md", batch_id, ".md")
-            write(report_file, report)
-            outcome.report_file = report_file
+                report = _retry_on_interrupt(partial(render.render_dir, directory), pending)
+
+                def _write_report(text: str) -> None:
+                    report_file = _unique(directory / "REPORT.md", batch_id, ".md")
+                    write(report_file, text)
+                    outcome.report_file = report_file
+
+                if report is not None:
+                    _retry_on_interrupt(partial(_write_report, report), pending)
+            if pending and propagating is None:
+                raise pending[0]
     return outcome

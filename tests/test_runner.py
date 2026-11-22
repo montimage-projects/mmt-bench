@@ -10,6 +10,7 @@ from __future__ import annotations
 import itertools
 import json
 import os
+import shutil
 import signal
 from collections.abc import Callable
 from datetime import UTC, datetime
@@ -476,3 +477,267 @@ def test_a_sigterm_before_the_first_cell_still_writes_the_report(
     assert list((directory / "runs").glob("*.json")) == []
     assert (directory / "REPORT.md").exists()
     assert not (stage_root / "mbench-20260105T120000Z").exists()
+
+
+# --- A signal inside the final cleanup (review N3, #32) ------------------------
+#
+# Each test injects the signal at one step of the cleanup and asserts the
+# cleanup still finishes: the stage dir removed, REPORT.md written, the
+# interrupted record kept — then the signal takes its usual exit status.
+
+
+def test_a_signal_at_the_stage_removal_still_finishes_the_cleanup(
+    tmp_path: Path, fake_tool: None, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A SIGTERM landing at the top of the stage-dir removal — the first
+    # step of the finally — must not abort it (N3): the stage dir is
+    # still removed, REPORT.md still written, and the signal keeps its
+    # 128 + signum exit once the cleanup is done.
+    campaign = _campaign(tmp_path, campaign_doc([{"label": "x"}]))
+    stage_root = tmp_path / "tmpfs"
+    stage_dir = stage_root / "mbench-20260105T120000Z"
+
+    real_rmtree = shutil.rmtree
+    raised = False
+
+    def rmtree_sigterm(path: Path, *args: Any, **kwargs: Any) -> Any:
+        nonlocal raised
+        if not raised and Path(path) == stage_dir:
+            raised = True
+            raise runner.SignalExit(signal.SIGTERM)
+        return real_rmtree(path, *args, **kwargs)
+
+    monkeypatch.setattr(shutil, "rmtree", rmtree_sigterm)
+
+    with pytest.raises(SystemExit) as excinfo:
+        _run(campaign, tmp_path, tmpfs=stage_root)
+    assert excinfo.value.code == 128 + signal.SIGTERM
+    assert raised  # the fault really was injected
+
+    assert not stage_dir.exists()
+    directory = tmp_path / "results" / "2026-01-05-test"
+    assert (directory / "REPORT.md").exists()
+
+
+def test_a_signal_in_render_dir_still_writes_the_report(
+    tmp_path: Path, fake_tool: None, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A SIGTERM landing at the top of ``render_dir`` used to lose
+    # REPORT.md (N3). The signal is deferred until the report is on
+    # disk, then raised: the exit is still 143.
+    campaign = _campaign(tmp_path, campaign_doc([{"label": "x"}]))
+    stage_root = tmp_path / "tmpfs"
+
+    from mbench.report import render
+
+    real_render_dir = render.render_dir
+    raised = False
+
+    def render_sigterm(directory: Path | str) -> str:
+        nonlocal raised
+        if not raised:
+            raised = True
+            raise runner.SignalExit(signal.SIGTERM)
+        return real_render_dir(directory)
+
+    monkeypatch.setattr(render, "render_dir", render_sigterm)
+
+    with pytest.raises(SystemExit) as excinfo:
+        _run(campaign, tmp_path, tmpfs=stage_root)
+    assert excinfo.value.code == 128 + signal.SIGTERM
+    assert raised
+
+    directory = tmp_path / "results" / "2026-01-05-test"
+    assert (directory / "REPORT.md").exists()
+    assert not (stage_root / "mbench-20260105T120000Z").exists()
+
+
+def test_a_second_signal_during_the_interrupted_record_write_keeps_the_record(
+    tmp_path: Path, fake_tool: None, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A second signal while the ``interrupted`` record is being written
+    # used to lose the record — ``write`` unlinks a partial file (N3).
+    # The write is now deferred-interrupt safe: the record lands on
+    # disk, and the first interrupt (the Ctrl-C) keeps the exit.
+    doc = campaign_doc([{"label": "x"}, {"label": "y"}], repeats=1)
+    campaign = _campaign(tmp_path, doc)
+    stage_root = tmp_path / "tmpfs"
+
+    real_write = runner.write
+    killed = False
+
+    def write_sigterm(path: Path, text: str) -> None:
+        nonlocal killed
+        if not killed and path.parent.name == "runs":
+            killed = True
+            os.kill(os.getpid(), signal.SIGTERM)  # a real second signal
+        real_write(path, text)
+
+    monkeypatch.setattr(runner, "write", write_sigterm)
+
+    with pytest.raises(KeyboardInterrupt):
+        _run(
+            campaign,
+            tmp_path,
+            factory=lambda: _FlakyPrepareAdapter(KeyboardInterrupt()),
+            tmpfs=stage_root,
+        )
+    assert killed
+
+    directory = tmp_path / "results" / "2026-01-05-test"
+    run_files = sorted((directory / "runs").glob("*.json"))
+    assert len(run_files) == 1  # the second cell never ran
+    record = json.loads(run_files[0].read_text(encoding="utf-8"))
+    assert record["status"] == "interrupted"
+    assert any("KeyboardInterrupt" in p for p in record["problems"])
+    assert (directory / "REPORT.md").exists()
+
+
+def test_a_signal_during_a_run_record_write_interrupts_after_the_write(
+    tmp_path: Path, fake_tool: None, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A signal during an ordinary cell's record write is deferred past
+    # the write, then interrupts the campaign: the record is on disk,
+    # the next cell never runs, and the exit is still 128 + signum.
+    doc = campaign_doc([{"label": "x"}, {"label": "y"}], repeats=1)
+    campaign = _campaign(tmp_path, doc)
+
+    real_write = runner.write
+    killed = False
+
+    def write_sigterm(path: Path, text: str) -> None:
+        nonlocal killed
+        if not killed and path.parent.name == "runs":
+            killed = True
+            os.kill(os.getpid(), signal.SIGTERM)
+        real_write(path, text)
+
+    monkeypatch.setattr(runner, "write", write_sigterm)
+
+    with pytest.raises(SystemExit) as excinfo:
+        _run(campaign, tmp_path)
+    assert excinfo.value.code == 128 + signal.SIGTERM
+    assert killed
+
+    directory = tmp_path / "results" / "2026-01-05-test"
+    run_files = sorted((directory / "runs").glob("*.json"))
+    assert len(run_files) == 1
+    assert json.loads(run_files[0].read_text(encoding="utf-8"))["status"] == "ok"
+    assert (directory / "REPORT.md").exists()
+
+
+def test_a_signal_in_the_cleanup_does_not_replace_the_interrupt_in_flight(
+    tmp_path: Path, fake_tool: None, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Ctrl-C stops the campaign; a SIGTERM landing inside the finally
+    # that follows is deferred so the cleanup finishes — but the first
+    # interrupt keeps the exit status (KeyboardInterrupt, not 143).
+    doc = campaign_doc([{"label": "x"}, {"label": "y"}], repeats=1)
+    campaign = _campaign(tmp_path, doc)
+    stage_root = tmp_path / "tmpfs"
+
+    from mbench.report import render
+
+    real_render_dir = render.render_dir
+
+    def render_kill(directory: Path | str) -> str:
+        os.kill(os.getpid(), signal.SIGTERM)
+        return real_render_dir(directory)
+
+    monkeypatch.setattr(render, "render_dir", render_kill)
+
+    with pytest.raises(KeyboardInterrupt):
+        _run(
+            campaign,
+            tmp_path,
+            factory=lambda: _FlakyPrepareAdapter(KeyboardInterrupt()),
+            tmpfs=stage_root,
+        )
+
+    directory = tmp_path / "results" / "2026-01-05-test"
+    run_files = sorted((directory / "runs").glob("*.json"))
+    assert len(run_files) == 1
+    assert json.loads(run_files[0].read_text(encoding="utf-8"))["status"] == "interrupted"
+    assert (directory / "REPORT.md").exists()
+    assert not (stage_root / "mbench-20260105T120000Z").exists()
+
+
+def test_a_ctrl_c_in_the_cleanup_is_deferred_then_raised(
+    tmp_path: Path, fake_tool: None, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A real SIGINT inside the finally is recorded as KeyboardInterrupt
+    # while the cleanup finishes, then raised — the exit is the Ctrl-C
+    # 130, and REPORT.md and the stage removal still complete.
+    campaign = _campaign(tmp_path, campaign_doc([{"label": "x"}]))
+    stage_root = tmp_path / "tmpfs"
+    stage_dir = stage_root / "mbench-20260105T120000Z"
+
+    real_rmtree = shutil.rmtree
+    killed = False
+
+    def rmtree_ctrl_c(path: Path, *args: Any, **kwargs: Any) -> Any:
+        nonlocal killed
+        if not killed and Path(path) == stage_dir:
+            killed = True
+            os.kill(os.getpid(), signal.SIGINT)
+        return real_rmtree(path, *args, **kwargs)
+
+    monkeypatch.setattr(shutil, "rmtree", rmtree_ctrl_c)
+
+    with pytest.raises(KeyboardInterrupt):
+        _run(campaign, tmp_path, tmpfs=stage_root)
+    assert killed
+
+    assert not stage_dir.exists()
+    directory = tmp_path / "results" / "2026-01-05-test"
+    assert (directory / "REPORT.md").exists()
+
+
+# --- A cleanup step that always interrupts (review L1) -------------------------
+
+
+def test_a_cleanup_step_that_always_interrupts_is_given_up_on(
+    tmp_path: Path, fake_tool: None, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A step that raises an interrupt on every attempt must not spin the
+    # retry forever (review L1): it is retried once, then given up on —
+    # the interrupt stays in ``pending`` and propagates — while the rest
+    # of the cleanup still runs. The watchdog timer turns the old
+    # unbounded loop's hang into a failure.
+    campaign = _campaign(tmp_path, campaign_doc([{"label": "x"}]))
+    stage_root = tmp_path / "tmpfs"
+    stage_dir = stage_root / "mbench-20260105T120000Z"
+
+    real_rmtree = shutil.rmtree
+    calls = 0
+
+    def rmtree_always(path: Path, *args: Any, **kwargs: Any) -> Any:
+        # Only the stage-dir step faults; other rmtree callers (for
+        # instance TemporaryDirectory's cleanup, which goes through
+        # shutil.rmtree on some Python versions) still run.
+        nonlocal calls
+        if Path(path) == stage_dir:
+            calls += 1
+            raise KeyboardInterrupt()
+        return real_rmtree(path, *args, **kwargs)
+
+    def time_up(signum: int, frame: Any) -> None:
+        raise AssertionError("the interrupt retry did not finish")
+
+    monkeypatch.setattr(shutil, "rmtree", rmtree_always)
+    previous = signal.signal(signal.SIGALRM, time_up)
+    signal.setitimer(signal.ITIMER_REAL, 10)
+    try:
+        with pytest.raises(KeyboardInterrupt):
+            _run(campaign, tmp_path, tmpfs=stage_root)
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        signal.signal(signal.SIGALRM, previous)
+
+    assert calls == 2  # retried once, then the step was given up on
+    directory = tmp_path / "results" / "2026-01-05-test"
+    run_files = list((directory / "runs").glob("*.json"))
+    assert len(run_files) == 1  # the cell's record is on disk
+    assert (directory / "REPORT.md").exists()  # the remaining cleanup ran
+    # and the given-up step's target stays behind
+    assert stage_dir.exists()
