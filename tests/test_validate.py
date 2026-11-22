@@ -167,11 +167,47 @@ def test_unreadable_or_unsupported_files_exit_2(
 ) -> None:
     assert main(["validate", str(tmp_path / "missing.json")]) == EXIT_USAGE
     assert main(["validate", str(write(tmp_path, {"a": 1}, "other.json"))]) == EXIT_USAGE
+    # a yaml that is neither a manifest nor a campaign is still unsupported
+    yaml_file = tmp_path / "other.yaml"
+    yaml_file.write_text("foo: bar\n", encoding="utf-8")
+    assert main(["validate", str(yaml_file)]) == EXIT_USAGE
+
+
+def test_a_campaign_file_is_checked(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    # Campaign files are checked by #8 against schemas/campaign.schema.json.
     campaign = tmp_path / "smoke.yaml"
     campaign.write_text("question: x\n", encoding="utf-8")
-    assert main(["validate", str(campaign)]) == EXIT_USAGE
-    err = capsys.readouterr().err
-    assert "#8" in err  # campaign files are checked by #8
+    assert main(["validate", str(campaign)]) == EXIT_INVALID
+    out = capsys.readouterr().out
+    assert "INVALID" in out
+    assert "missing field" in out
+
+
+def test_a_valid_campaign_names_its_matrix(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    campaign = tmp_path / "campaigns" / "smoke.yaml"
+    campaign.parent.mkdir()
+    campaign.write_text(
+        "\n".join(
+            [
+                "schema_version: 1",
+                "question: does it keep up?",
+                "tools: [mmt-probe]",
+                "rulesets: [rs]",
+                "corpus: [{path: x.pcap, sha256: '%s'}]" % ("0" * 64),
+                "threads: [1, 2]",
+                "cpusets: ['']",
+                "repeats: 3",
+                "timeout_s: 30",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    assert main(["validate", str(campaign)]) == EXIT_OK
+    out = capsys.readouterr().out
+    assert "valid campaign" in out
+    assert "2 matrix cells" in out
 
 
 def test_a_yaml_manifest_is_checked(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:

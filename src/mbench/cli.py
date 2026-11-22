@@ -1,10 +1,10 @@
 """The ``mbench`` command line.
 
 Each subcommand is filled in by its own issue in the mmt-bench v0 epic (#1).
-``sut`` and ``validate`` are implemented (#4), ``corpus`` too (#7). The others
-are still stubs that exit with :data:`EXIT_NOT_IMPLEMENTED` and name the issue
-that will implement them, so a script or CI job calling one fails loudly
-instead of silently doing nothing.
+``sut`` and ``validate`` are implemented (#4), ``corpus`` too (#7), and
+``run`` and ``report`` (#8). ``sweep`` is still a stub that exits with
+:data:`EXIT_NOT_IMPLEMENTED` and names the issue that implements it, so a
+script or CI job calling one fails loudly instead of silently doing nothing.
 """
 
 from __future__ import annotations
@@ -442,6 +442,129 @@ def _run_corpus(ns: argparse.Namespace) -> int:
     return EXIT_USAGE
 
 
+# --- mbench run ----------------------------------------------------------------
+
+
+def _configure_run(p: argparse.ArgumentParser) -> None:
+    from mbench import corpus, runner
+
+    p.add_argument(
+        "campaign",
+        type=Path,
+        metavar="CAMPAIGN",
+        help="the campaign file (campaigns/<x>.yaml)",
+    )
+    p.add_argument(
+        "--results",
+        type=Path,
+        default=runner.DEFAULT_RESULTS,
+        metavar="DIR",
+        help=f"results root (default: {runner.DEFAULT_RESULTS}); "
+        "a tool-comparison campaign goes under local/ instead",
+    )
+    p.add_argument(
+        "--manifest",
+        type=Path,
+        default=corpus.DEFAULT_MANIFEST,
+        metavar="PATH",
+        help=f"corpus manifest (default: {corpus.DEFAULT_MANIFEST})",
+    )
+
+
+def _run_run(ns: argparse.Namespace) -> int:
+    from mbench import matrix, runner
+
+    try:
+        campaign = matrix.load(ns.campaign, manifest_path=ns.manifest)
+    except matrix.CampaignError as exc:
+        print(f"mbench run: {exc}", file=sys.stderr)
+        for problem in exc.problems:
+            print(f"  {problem}", file=sys.stderr)
+        # Invalid record -> EXIT_INVALID; unresolved reference -> EXIT_USAGE.
+        return EXIT_INVALID if exc.problems else EXIT_USAGE
+    except (OSError, ValueError) as exc:
+        print(f"mbench run: {exc}", file=sys.stderr)
+        return EXIT_USAGE
+
+    tools = {cell.tool for cell in campaign.cells}
+    results_dir = ns.results
+    if len(tools) > 1:
+        # A tool-comparison report stays out of git until the licence and
+        # fairness review: the whole results dir goes under local/.
+        results_dir = Path("local") / "results"
+        print(
+            f"mbench run: {len(tools)} tools compared — results go under "
+            f"{results_dir}/ (tool-comparison reports are not committed)",
+            file=sys.stderr,
+        )
+    outcome = runner.run_campaign(campaign, results_dir=results_dir)
+    print(
+        f"mbench run: {outcome.directory}: {len(outcome.run_files)} runs "
+        f"({outcome.valid} valid, {outcome.invalid} invalid, {outcome.failed} failed); "
+        f"report: {outcome.report_file}"
+    )
+    return EXIT_OK if outcome.valid else EXIT_INVALID
+
+
+# --- mbench report -------------------------------------------------------------
+
+
+def _configure_report(p: argparse.ArgumentParser) -> None:
+    p.add_argument(
+        "directory",
+        type=Path,
+        metavar="DIR",
+        help="a results directory (results/<date>-<campaign>/)",
+    )
+    p.add_argument(
+        "-o",
+        "--output",
+        default=None,
+        metavar="PATH",
+        help="where to write REPORT.md (default: inside DIR, append-only; "
+        "'-' writes to standard output)",
+    )
+
+
+def _run_report(ns: argparse.Namespace) -> int:
+    from mbench import runner
+    from mbench.report import render
+
+    directory = ns.directory
+    if not directory.is_dir():
+        print(f"mbench report: no such directory: {directory}", file=sys.stderr)
+        return EXIT_USAGE
+    _, runs = render.load_dir(directory)
+    text = render.render_dir(directory)
+    tools = {
+        str(r.record.get("cell", {}).get("tool"))
+        for r in runs
+        if isinstance(r.record.get("cell"), dict)
+    }
+    local = "local" in directory.resolve().parts
+    if ns.output == "-" or (ns.output is None and len(tools) > 1 and not local):
+        if len(tools) > 1 and not local and ns.output is None:
+            print(
+                "mbench report: this report compares tools — writing it under "
+                "this directory would commit it; it is printed instead "
+                "(keep it under local/)",
+                file=sys.stderr,
+            )
+        sys.stdout.write(text)
+        return EXIT_OK
+    out = Path(ns.output) if ns.output is not None else directory / "REPORT.md"
+    try:
+        runner.write(out, text)
+    except FileExistsError:
+        print(f"mbench report: {out} exists — results are append-only", file=sys.stderr)
+        return EXIT_USAGE
+    except OSError as exc:
+        print(f"mbench report: {exc}", file=sys.stderr)
+        return EXIT_USAGE
+    print(f"mbench report: wrote {out}")
+    return EXIT_OK
+
+
 SUBCOMMANDS: tuple[Subcommand, ...] = (
     Subcommand(
         "sut",
@@ -457,9 +580,21 @@ SUBCOMMANDS: tuple[Subcommand, ...] = (
         _configure_corpus,
         _run_corpus,
     ),
-    Subcommand("run", "run a campaign and write its results", 8),
+    Subcommand(
+        "run",
+        "run a campaign and write its results",
+        8,
+        _configure_run,
+        _run_run,
+    ),
     Subcommand("sweep", "run a parameter sweep across a campaign matrix", 17),
-    Subcommand("report", "render REPORT.md from a results directory", 8),
+    Subcommand(
+        "report",
+        "render REPORT.md from a results directory",
+        8,
+        _configure_report,
+        _run_report,
+    ),
     Subcommand(
         "validate",
         "check a record (sut.json, campaign, manifest, truth) for completeness",

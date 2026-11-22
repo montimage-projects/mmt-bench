@@ -353,6 +353,18 @@ class Adapter(abc.ABC):
         """Start the tool on the live interface ``iface`` (a veth end, P4)."""
 
     @abc.abstractmethod
+    def container_limits(self, cpuset: Sequence[int]) -> dict[str, Json]:
+        """The cgroup limits a run pinned to ``cpuset`` is started with.
+
+        The ``{cpu_max, memory_max, cpuset_cpus}`` record (the cgroup v2
+        ``cpu.max``, ``memory.max`` and ``cpuset.cpus.effective`` contents) of
+        the run's container, as the runner (#8) embeds it in the run's
+        sut.json at ``container_runtime.limits.per_run``. A containerised
+        adapter reads them inside a scratch container, so the record shows
+        what the tool actually got, not what was requested.
+        """
+
+    @abc.abstractmethod
     def counters(self) -> Counters:
         """The last run's counters, from the tool's own stats output."""
 

@@ -2,6 +2,8 @@
 
 ``sut`` and ``validate`` are implemented (#4): see test_sut_cli.py.
 ``corpus`` is implemented (#7): see test_corpus.py.
+``run`` and ``report`` are implemented (#8): see test_runner.py and
+test_report.py.
 """
 
 from __future__ import annotations
@@ -17,7 +19,7 @@ from mbench.cli import EXIT_NOT_IMPLEMENTED, SUBCOMMANDS, Subcommand, main
 
 EXPECTED = {"sut", "corpus", "run", "sweep", "report", "validate"}
 EXPECTED_ISSUES = {"sut": 4, "corpus": 7, "run": 8, "sweep": 17, "report": 8, "validate": 4}
-IMPLEMENTED = {"sut", "corpus", "validate"}
+IMPLEMENTED = {"sut", "corpus", "run", "report", "validate"}
 STUBS = [s for s in SUBCOMMANDS if s.name not in IMPLEMENTED]
 
 
@@ -49,10 +51,10 @@ def test_stub_exits_non_zero_naming_its_issue(
 @pytest.mark.parametrize(
     ("argv", "issue"),
     [
-        (["run", "campaigns/smoke.yaml", "--repeats", "5"], 8),  # positional first
-        (["run", "--rate", "5", "x"], 8),  # option first
-        (["run", "--rate"], 8),  # option missing its value
-        (["report", "--", "-weird-name"], 8),
+        (["sweep", "campaigns/smoke.yaml", "--repeats", "5"], 17),  # positional first
+        (["sweep", "--rate", "5", "x"], 17),  # option first
+        (["sweep", "--rate"], 17),  # option missing its value
+        (["sweep", "--", "-weird-name"], 17),
     ],
 )
 def test_stub_accepts_the_arguments_of_the_finished_command(
@@ -74,7 +76,7 @@ def test_unknown_option_without_subcommand_is_a_usage_error() -> None:
     "argv",
     [
         ["--bogus", "sut"],
-        ["--bogus", "run", "campaigns/smoke.yaml"],
+        ["--bogus", "sweep", "campaigns/smoke.yaml"],
         ["-x", "validate", "sut.json"],
         ["sut", "--bogus"],  # an implemented subcommand parses strictly
         ["validate"],  # validate needs a path
@@ -108,10 +110,10 @@ def test_version(capsys: pytest.CaptureFixture[str]) -> None:
 
 def test_module_entry_point() -> None:
     proc = subprocess.run(
-        [sys.executable, "-m", "mbench", "run"], capture_output=True, text=True, check=False
+        [sys.executable, "-m", "mbench", "sweep"], capture_output=True, text=True, check=False
     )
     assert proc.returncode == EXIT_NOT_IMPLEMENTED
-    assert "mbench run: not implemented yet (#8)" in proc.stderr
+    assert "mbench sweep: not implemented yet (#17)" in proc.stderr
 
 
 def test_console_script_installed_by_uv_sync() -> None:

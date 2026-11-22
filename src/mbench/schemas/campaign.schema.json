@@ -1,0 +1,176 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/montimage-projects/mmt-bench/schemas/campaign.schema.json",
+  "title": "mmt-bench campaign",
+  "description": "One campaign file under campaigns/ (#8): one question, and the dimensions matrix.py expands into runs. Checked by `mbench validate`.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "question",
+    "tools",
+    "rulesets",
+    "corpus",
+    "threads",
+    "cpusets",
+    "repeats",
+    "timeout_s"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
+      "description": "The campaign name of results/<date>-<name>/ (default: the file's stem)."
+    },
+    "question": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The one question the campaign answers (plan §B1)."
+    },
+    "description": {
+      "type": "string"
+    },
+    "mode": {
+      "enum": [
+        "offline"
+      ],
+      "description": "offline: pcap from a tmpfs mount. Online comes with #13."
+    },
+    "quiet_host": {
+      "type": "boolean",
+      "description": "True when the campaign needs vLLM stopped: the runner prints the stop and restart commands for Luong and never runs them."
+    },
+    "tools": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": "Adapter names (mmt-probe; Suricata and Snort 3 come with P5)."
+    },
+    "rulesets": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1,
+            "description": "A ruleset id: rulesets/<id>/ or rulesets/<id>.so."
+          },
+          {
+            "type": "object",
+            "required": [
+              "id",
+              "path"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "path": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "additionalProperties": false,
+            "description": "A ruleset by id and path: the .so file or the directory holding it, relative to the working directory or absolute."
+          }
+        ]
+      }
+    },
+    "config_profiles": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "recommended",
+          "tuned"
+        ]
+      },
+      "description": "Default: [recommended]. The fair-comparison rule wants both."
+    },
+    "corpus": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "oneOf": [
+          {
+            "required": [
+              "label"
+            ],
+            "properties": {
+              "label": {
+                "type": "string",
+                "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"
+              }
+            },
+            "additionalProperties": false,
+            "description": "A corpus/manifest.yaml entry, by label."
+          },
+          {
+            "required": [
+              "path",
+              "sha256"
+            ],
+            "properties": {
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "truth": {
+                "type": "string",
+                "minLength": 1
+              },
+              "name": {
+                "type": "string",
+                "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"
+              }
+            },
+            "additionalProperties": false,
+            "description": "A pcap file pinned by its sha256, with an optional ground-truth file and display name."
+          }
+        ]
+      }
+    },
+    "threads": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "description": "The tool's thread count (mmt-probe: thread-nb; 0 = the capture thread does the work)."
+    },
+    "cpusets": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "pattern": "^$|^[0-9]+(-[0-9]+)?(,[0-9]+(-[0-9]+)?)*$"
+      },
+      "description": "cpulists the tool's threads are pinned to (\"\" = unpinned); the core type is resolved from the SUT record and recorded."
+    },
+    "repeats": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Measured passes per matrix cell (methodology: 5), after one warm-up pass."
+    },
+    "timeout_s": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "Per-pass cap in seconds; an exceeded pass is killed and recorded as timeout."
+    }
+  },
+  "additionalProperties": false
+}
