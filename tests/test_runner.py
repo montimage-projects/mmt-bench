@@ -706,13 +706,20 @@ def test_a_cleanup_step_that_always_interrupts_is_given_up_on(
     # unbounded loop's hang into a failure.
     campaign = _campaign(tmp_path, campaign_doc([{"label": "x"}]))
     stage_root = tmp_path / "tmpfs"
+    stage_dir = stage_root / "mbench-20260105T120000Z"
 
+    real_rmtree = shutil.rmtree
     calls = 0
 
-    def rmtree_always(*args: Any, **kwargs: Any) -> None:
+    def rmtree_always(path: Path, *args: Any, **kwargs: Any) -> Any:
+        # Only the stage-dir step faults; other rmtree callers (for
+        # instance TemporaryDirectory's cleanup, which goes through
+        # shutil.rmtree on some Python versions) still run.
         nonlocal calls
-        calls += 1
-        raise KeyboardInterrupt()
+        if Path(path) == stage_dir:
+            calls += 1
+            raise KeyboardInterrupt()
+        return real_rmtree(path, *args, **kwargs)
 
     def time_up(signum: int, frame: Any) -> None:
         raise AssertionError("the interrupt retry did not finish")
@@ -733,4 +740,4 @@ def test_a_cleanup_step_that_always_interrupts_is_given_up_on(
     assert len(run_files) == 1  # the cell's record is on disk
     assert (directory / "REPORT.md").exists()  # the remaining cleanup ran
     # and the given-up step's target stays behind
-    assert (stage_root / "mbench-20260105T120000Z").exists()
+    assert stage_dir.exists()
