@@ -197,8 +197,11 @@ attacks a tool missed.
   `KeyboardInterrupt`) and catches SIGTERM and SIGHUP, raising
   `SystemExit(128 + signum)` so they take the same interrupted path — the
   tool is killed, the cell recorded `interrupted` and the report rendered.
-  SIGKILL cannot be caught: a `kill -9` can still leave the tool running
-  and the stage dir behind.
+  A signal landing inside the final cleanup is deferred — recorded, not
+  raised — until the cleanup finishes, then re-raised with the same exit
+  status, so the stage removal, the report and the run records always
+  complete. SIGKILL cannot be caught: a `kill -9` can still leave the
+  tool running and the stage dir behind.
 - The harness never touches the production mmt-stack containers. It uses its
   own container names and data dirs.
 - Results are append-only: `results/<date>-<campaign>/` is never overwritten.
