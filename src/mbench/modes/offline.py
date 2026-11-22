@@ -20,6 +20,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from mbench.adapters.base import Adapter, Alert, Counters, ProcessHandle, Ruleset
+from mbench.metrics import perf
 
 
 def tmpfs_mounts(mounts_text: str | None = None) -> list[Path]:
@@ -63,6 +64,7 @@ class Outcome:
     counters: Counters | None = None
     alerts: list[Alert] | None = None
     detail: str = ""  # why a non-ok pass failed
+    perf: dict[str, object] | None = None  # the pass's perf stat record (#10)
 
 
 def run_pass(
@@ -76,19 +78,29 @@ def run_pass(
     timeout_s: float,
     *,
     clock: Callable[[], float] = time.monotonic,
+    perf_probe: perf.Probe | None = None,
 ) -> Outcome:
     """One measured pass: prepare, run under the timeout, read the outputs.
 
     A pass that exceeds ``timeout_s`` is killed and comes back ``timeout``;
     a non-zero exit, or unreadable counters, comes back ``error``. Only the
-    tool's own process is timed: ``prepare`` is harness work.
+    tool's own process is timed: ``prepare`` is harness work. With
+    ``perf_probe`` the tool's runtime is wrapped in a ``perf stat`` session
+    on the pass's cores: cycles and instructions burned over exactly the
+    measured window, or the probe's unavailable marker.
     """
     adapter.prepare(ruleset, config_profile, workdir)
     start = clock()
     handle: ProcessHandle | None = None
+    session: perf._Session | None = None
+    perf_record: dict[str, object] | None = (
+        perf_probe.unavailable if perf_probe is not None else None
+    )
     exited = False
     try:
         handle = adapter.run_offline(pcap, threads, cpuset)
+        if perf_probe is not None:
+            session = perf_probe.start(cpuset)
         returncode = handle.wait(timeout_s)
         exited = True
     except subprocess.TimeoutExpired:
@@ -99,7 +111,9 @@ def run_pass(
                 handle = None
         except Exception as exc:
             detail += f" (kill failed: {type(exc).__name__}: {exc})"
-        return Outcome("timeout", clock() - start, detail=detail)
+        if perf_probe is not None and session is not None:
+            perf_record = perf_probe.record(session, None)
+        return Outcome("timeout", clock() - start, detail=detail, perf=perf_record)
     except BaseException as exc:
         detail = f"{type(exc).__name__}: {exc}"
         try:
@@ -108,8 +122,10 @@ def run_pass(
                 handle = None
         except Exception as kill_exc:
             detail += f" (kill failed: {type(kill_exc).__name__}: {kill_exc})"
+        if perf_probe is not None and session is not None:
+            perf_record = perf_probe.record(session, None)
         if isinstance(exc, Exception):
-            return Outcome("error", clock() - start, detail=detail)
+            return Outcome("error", clock() - start, detail=detail, perf=perf_record)
         raise
     finally:
         # A started tool is dead on every non-normal exit — a failed kill
@@ -118,14 +134,31 @@ def run_pass(
         if handle is not None and not exited:
             with contextlib.suppress(Exception):
                 handle.kill()
+        # A still-running session never outlives its pass (e.g. the tool
+        # died before wait): the counts are discarded with the pass.
+        if session is not None and perf_probe is not None and not exited:
+            with contextlib.suppress(Exception):
+                perf_probe.record(session, None)
     wall_s = clock() - start
     if returncode != 0:
-        return Outcome("error", wall_s, returncode, detail=f"exit status {returncode}")
+        if perf_probe is not None and session is not None:
+            perf_record = perf_probe.record(session, None)
+        return Outcome(
+            "error", wall_s, returncode, detail=f"exit status {returncode}", perf=perf_record
+        )
     try:
         counters = adapter.counters()
         alerts = adapter.alerts()
     except Exception as exc:
+        if perf_probe is not None and session is not None:
+            perf_record = perf_probe.record(session, None)
         return Outcome(
-            "error", wall_s, returncode, detail=f"outputs unreadable: {type(exc).__name__}: {exc}"
+            "error",
+            wall_s,
+            returncode,
+            detail=f"outputs unreadable: {type(exc).__name__}: {exc}",
+            perf=perf_record,
         )
-    return Outcome("ok", wall_s, returncode, counters, alerts)
+    if perf_probe is not None:
+        perf_record = perf_probe.record(session, counters.packets)
+    return Outcome("ok", wall_s, returncode, counters, alerts, perf=perf_record)

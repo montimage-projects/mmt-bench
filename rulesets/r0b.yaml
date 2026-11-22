@@ -1,0 +1,15 @@
+# R0b: security enabled, zero rules — the engine's fixed cost alone (#10).
+# `security.enable = true` with an empty rules dir: mmt-security initialises
+# and verifies every flow against nothing, so R0 - R0b - R-all decompose
+# probe-only, engine overhead and rule-matching cost.
+# BLOCKED: the pinned probe segfaults with zero verified rules — an upstream
+# bug (rulesets/README.md); the cell records `error` until a fixed image
+# ships.
+schema_version: 1
+kind: ruleset
+tool: mmt-probe
+description: security engine on, zero rules — the engine's fixed cost
+rules: rulesets/empty
+allow_empty: true
+security:
+  enable: true

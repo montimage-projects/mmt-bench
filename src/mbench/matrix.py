@@ -21,7 +21,7 @@ from typing import Any
 
 import yaml
 
-from mbench import corpus, pcap, sut, truth
+from mbench import cores, corpus, pcap, sut, truth
 from mbench.adapters.base import Ruleset
 
 
@@ -76,6 +76,8 @@ class Campaign:
     timeout_s: float
     path: Path
     cells: tuple[Cell, ...]
+    # ``perf`` trails so existing positional constructions keep working.
+    perf: bool = False
 
     def meta(self) -> dict[str, Any]:
         """The campaign fields a run record and REPORT.md embed."""
@@ -85,15 +87,62 @@ class Campaign:
             "description": self.description or None,
             "mode": self.mode,
             "quiet_host": self.quiet_host,
+            "perf": self.perf,
             "repeats": self.repeats,
             "timeout_s": self.timeout_s,
         }
+
+
+def _resolve_def(ident: str, path: Path, base: Path) -> Ruleset:
+    """A ``rulesets/<id>.yaml`` definition: a rule set described, not stored.
+
+    The def points at where the ``.so`` files live (for r-all, the pinned
+    image's rules extracted into ``local/``) and says what the tool does
+    with them (``security.enable``, ``allow_empty``); the rules themselves
+    are never committed.
+    """
+    try:
+        data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    except (OSError, yaml.YAMLError) as exc:
+        raise CampaignError(f"ruleset {ident!r}: {path} cannot be read: {exc}") from None
+    if not isinstance(data, dict) or data.get("kind") != "ruleset":
+        raise CampaignError(f"ruleset {ident!r}: {path} is not a ruleset definition")
+    from mbench import validate
+
+    problems = validate.ruleset_errors(data)
+    if problems:
+        raise CampaignError(f"ruleset {ident!r}: INVALID", problems)
+    rules = Path(data["rules"])
+    if not rules.is_absolute():
+        rules = base / rules
+    if not rules.exists():
+        provenance = data.get("provenance") or {}
+        hint = f" — {provenance['extract']}" if provenance.get("extract") else ""
+        raise CampaignError(f"ruleset {ident!r}: no such file or directory: {rules}{hint}")
+    expected = (data.get("provenance") or {}).get("expect_rules")
+    if expected is not None and rules.is_dir():
+        found = len(list(rules.glob("*.so")))
+        if found != expected:
+            raise CampaignError(
+                f"ruleset {ident!r}: {found} .so rules under {rules}, "
+                f"expected {expected} (the definition's provenance)"
+            )
+    security = data.get("security") or {}
+    return Ruleset(
+        ident,
+        rules,
+        security=bool(security.get("enable", True)),
+        allow_empty=bool(data.get("allow_empty", False)),
+    )
 
 
 def _resolve_ruleset(item: str | dict[str, Any], base: Path) -> Ruleset:
     """A ruleset entry: an id under ``rulesets/``, or ``{id, path}``."""
     if isinstance(item, str):
         ident, path = item, base / "rulesets" / item
+        definition = path.with_suffix(".yaml")
+        if definition.exists():
+            return _resolve_def(ident, definition, base)
         if not path.exists():
             alt = path.with_suffix(".so")
             if alt.exists():
@@ -183,10 +232,36 @@ def _resolve_pcap(item: dict[str, Any], base: Path) -> CorpusRef:
     return CorpusRef(label, path, st.sha256, gt, corpus.result_ref(entry))
 
 
+def _resolve_cpusets(
+    items: Sequence[str], topology: dict[str, tuple[int, ...]] | None
+) -> list[tuple[tuple[int, ...], str]]:
+    """Each ``cpusets`` item as ``(cpus, canonical cpulist)``.
+
+    A ``core:<fragment>`` item resolves against the host's topology
+    (``topology``, live-derived when not given): the run then records the
+    resolved cpulist, and the campaign file never hard-codes host CPU
+    numbers.
+    """
+    resolved = []
+    for item in items:
+        if cores.selector(item) is not None:
+            if topology is None:
+                topology = cores.live()
+            try:
+                cpus = cores.resolve(item, topology)
+            except LookupError as exc:
+                raise CampaignError(str(exc)) from None
+            resolved.append((cpus, sut.format_cpulist(cpus)))
+        else:
+            resolved.append((tuple(sut.parse_cpulist(item)), item))
+    return resolved
+
+
 def load(
     path: str | Path,
     *,
     manifest_path: Path = corpus.DEFAULT_MANIFEST,
+    topology: dict[str, tuple[int, ...]] | None = None,
 ) -> Campaign:
     """Read, validate and resolve a campaign file.
 
@@ -221,7 +296,7 @@ def load(
         else _resolve_pcap(item, base)
         for item in data["corpus"]
     ]
-    cpusets = [(tuple(sut.parse_cpulist(item)), item) for item in data["cpusets"]]
+    cpusets = _resolve_cpusets(data["cpusets"], topology)
     cells = [
         Cell(
             index=i,
@@ -250,6 +325,7 @@ def load(
         description=data.get("description") or "",
         mode=data.get("mode") or "offline",
         quiet_host=bool(data.get("quiet_host", False)),
+        perf=bool(data.get("perf", False)),
         repeats=data["repeats"],
         timeout_s=float(data["timeout_s"]),
         path=p,

@@ -512,7 +512,7 @@ def _run_run(ns: argparse.Namespace) -> int:
             f"{results_dir}/ (tool-comparison reports are not committed)",
             file=sys.stderr,
         )
-    outcome = runner.run_campaign(campaign, results_dir=results_dir)
+    outcome = runner.run_campaign(campaign, results_dir=results_dir, pin_harness=True)
     print(
         f"mbench run: {outcome.directory}: {len(outcome.run_files)} runs "
         f"({outcome.valid} valid, {outcome.invalid} invalid, {outcome.failed} failed); "

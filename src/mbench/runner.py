@@ -62,6 +62,7 @@ from mbench import hostsrc, sut, truth, validate
 from mbench.adapters import ADAPTERS
 from mbench.adapters.base import Adapter, Json
 from mbench.matrix import Campaign, Cell
+from mbench.metrics import perf
 from mbench.modes import offline
 
 #: Where results go, relative to the working directory.
@@ -271,6 +272,8 @@ def _pass_record(
         "wall_s": round(outcome.wall_s, 6),
         "returncode": outcome.returncode,
     }
+    if outcome.perf is not None:
+        record["perf"] = outcome.perf
     if outcome.status != "ok":
         record["detail"] = outcome.detail
         return record
@@ -305,12 +308,16 @@ def run_cell(
     batch: str,
     clock: Callable[[], datetime] = utcnow,
     monotonic: Callable[[], float] = time.monotonic,
+    perf_probe: perf.Probe | None = None,
+    harness_cpuset: Sequence[int] = (),
 ) -> dict[str, Json]:
     """Run one matrix cell: one warm-up pass, then ``repeats`` measured ones.
 
     Returns the run record, which the caller writes under ``runs/``. The
     record embeds the run-scope SUT; when that record does not validate, the
-    run is ``invalid``.
+    run is ``invalid``. ``harness_cpuset`` is the cpuset the harness pinned
+    itself to for this cell (the cores the tool does not use), recorded so a
+    run proves the measurement was not self-disturbed.
     """
     started = clock()
     staged = offline.stage_pcap(cell.corpus.path, cell.corpus.sha256, stage_dir)
@@ -328,6 +335,9 @@ def run_cell(
             cell.cpuset,
             campaign.timeout_s,
             clock=monotonic,
+            # The warm-up warms caches; cycles/pkt belongs to the measured
+            # passes only.
+            perf_probe=perf_probe if kind == "measured" else None,
         )
         passes.append(_pass_record(kind, n, outcome, cell.corpus.truth, adapter.name))
     ended = clock()
@@ -373,6 +383,9 @@ def run_cell(
         "threads": cell.threads,
         "cpuset": cell.cpuset_str,
         "core_type": core_type(host_record, cell.cpuset),
+        # the cores the harness pinned itself to while the cell ran ("" =
+        # not pinned): the "harness on other cores" half of the pinning rule
+        "harness_cpuset": sut.format_cpulist(harness_cpuset) if harness_cpuset else "",
     }
     return {
         "schema_version": 1,
@@ -478,6 +491,26 @@ def _signal_handlers() -> Iterator[None]:
             signal.signal(sig, handler)
 
 
+#: The process-affinity syscalls, module-level so a test can substitute them.
+_getaffinity: Callable[[int], set[int]] | None = getattr(os, "sched_getaffinity", None)
+_setaffinity: Callable[[int, set[int]], None] | None = getattr(os, "sched_setaffinity", None)
+
+
+def _harness_cpus(cell: Cell, online: set[int]) -> tuple[int, ...] | None:
+    """The cpus the harness pins itself to while ``cell`` runs.
+
+    The tool owns ``cell.cpuset``; the harness (replayer, docker clients,
+    the mbench process itself) stays on the other online cores — the
+    "harness on other cores" half of the pinning rule (plan §B5). ``None``
+    when pinning is impossible (the tool takes every online cpu) or
+    unavailable (no ``sched_setaffinity``, empty cpuset).
+    """
+    if not cell.cpuset or _setaffinity is None:
+        return None
+    rest = sorted(online - set(cell.cpuset))
+    return tuple(rest) if rest else None
+
+
 def run_campaign(
     campaign: Campaign,
     *,
@@ -489,6 +522,8 @@ def run_campaign(
     monotonic: Callable[[], float] = time.monotonic,
     tmpfs: Path | bool | None = None,
     work_root: Path | None = None,
+    perf_probe: perf.Probe | None = None,
+    pin_harness: bool = False,
     out: Callable[[str], None] = print,
     err: Callable[[str], None] = lambda line: print(line, file=sys.stderr),
 ) -> CampaignOutcome:
@@ -499,7 +534,11 @@ def run_campaign(
     names to adapter factories (default: ``mbench.adapters.ADAPTERS``).
     ``tmpfs`` selects the staging directory: ``None`` or ``True``
     auto-detects, a :class:`Path` forces one, ``False`` disables tmpfs
-    staging (recorded as ``tmpfs: false``).
+    staging (recorded as ``tmpfs: false``). ``perf_probe`` wraps each pass
+    in ``perf stat`` (the default probes this host once when the campaign
+    asks ``perf: true``; nothing is recorded otherwise). ``pin_harness``
+    pins the harness process to the cpus the cell's tool does not use,
+    restored when the campaign ends.
     """
     factories = dict(ADAPTERS) if adapters is None else dict(adapters)
     collect_sut = _collect_sut if collect is None else collect
@@ -518,6 +557,11 @@ def run_campaign(
         out(f"    {QUIET_START}")
         err("mbench run: the harness does not run these itself (no sudo).")
 
+    probe = perf_probe or (perf.Probe() if campaign.perf else None)
+    if campaign.perf and probe is not None and probe.unavailable is not None:
+        for line in perf.enable_note(probe.unavailable, probe.paranoid):
+            out(line)
+
     if tmpfs is None or tmpfs is True:
         stage_dir_root = offline.tmpfs_dir()
     elif tmpfs is False:
@@ -526,6 +570,12 @@ def run_campaign(
         stage_dir_root = tmpfs
     if stage_dir_root is None:
         err("mbench run: no tmpfs mount found: captures are staged on the regular filesystem")
+
+    online: set[int] = set()
+    saved_affinity: set[int] | None = None
+    if pin_harness and _getaffinity is not None and _setaffinity is not None:
+        saved_affinity = set(_getaffinity(0))
+        online = set(_getaffinity(0))
 
     # From here on SIGTERM and SIGHUP raise SignalExit, so the default
     # kill signal takes the same interrupted path as a Ctrl-C (review N1):
@@ -559,6 +609,25 @@ def run_campaign(
                             what=f"adapter {cell.tool}",
                         )
                     else:
+                        harness_cpus: tuple[int, ...] = ()
+                        if saved_affinity is not None:
+                            candidate = _harness_cpus(cell, online)
+                            if candidate is None:
+                                if cell.cpuset:
+                                    err(
+                                        f"cell {cell.index}: the tool pins every online "
+                                        "cpu; the harness stays unpinned"
+                                    )
+                            else:
+                                try:
+                                    assert _setaffinity is not None
+                                    _setaffinity(0, set(candidate))
+                                    harness_cpus = candidate
+                                except OSError as exc:
+                                    err(
+                                        f"cell {cell.index}: cannot pin the harness "
+                                        f"({exc}); running unpinned"
+                                    )
                         try:
                             record = run_cell(
                                 adapter,
@@ -571,6 +640,8 @@ def run_campaign(
                                 batch=batch_id,
                                 clock=clock,
                                 monotonic=monotonic,
+                                perf_probe=probe,
+                                harness_cpuset=harness_cpus,
                             )
                         except BaseException as exc:
                             # A crashed cell is a run record, not a lost campaign:
@@ -600,6 +671,11 @@ def run_campaign(
                     if interrupt is not None:
                         raise interrupt
         finally:
+            # The harness's own affinity is restored on every exit path.
+            if saved_affinity is not None:
+                with contextlib.suppress(OSError):
+                    assert _setaffinity is not None
+                    _setaffinity(0, saved_affinity)
             # The tmpfs staging dir never outlives the campaign — clean exit,
             # failed cell or Ctrl-C alike (B1).
             if stage_dir_root is not None:

@@ -516,7 +516,7 @@ file-output {{
 }}
 
 security {{
-    enable                  = true
+    enable                  = {security_enable}
     # 0 = rules are verified in the probe thread
     thread-nb               = 0
     exclude-rules           = ""
@@ -583,14 +583,20 @@ _CONFIG_PROFILE_PARAMS = {
 }
 
 
-def render_config(profile: str, probe_id: int = 1) -> str:
-    """The ``mmt-probe.conf`` text of a config profile."""
+def render_config(profile: str, probe_id: int = 1, *, security: bool = True) -> str:
+    """The ``mmt-probe.conf`` text of a config profile.
+
+    ``security`` is the ruleset's switch (``Ruleset.security``): ``false``
+    writes ``security.enable = false`` — the R0 cell, engine off; ``true``
+    with an empty ruleset is R0b, the engine on with no rules to match.
+    """
     if profile not in _CONFIG_PROFILE_PARAMS:
         raise ValueError(f"unknown config profile: {profile!r} (expected one of {CONFIG_PROFILES})")
     return _CONF_TEMPLATE.format(
         profile=profile,
         probe_id=probe_id,
         workdir_mount=WORKDIR_MOUNT,
+        security_enable="true" if security else "false",
         **_CONFIG_PROFILE_PARAMS[profile],
     )
 
@@ -670,11 +676,11 @@ class MmtProbeAdapter(Adapter):
         """
         workdir.mkdir(parents=True, exist_ok=True)
         conf = workdir / "mmt-probe.conf"
-        conf.write_text(render_config(config_profile), encoding="utf-8")
+        conf.write_text(render_config(config_profile, security=ruleset.security), encoding="utf-8")
         rules_dir = workdir / "mmt-rules"
         rules_dir.mkdir(exist_ok=True)
         staged = self._stage_rules(ruleset, rules_dir)
-        if not staged:
+        if not staged and not ruleset.allow_empty:
             raise FileNotFoundError(f"ruleset {ruleset.id}: no .so rule found under {ruleset.path}")
         self._prepared = {
             "ruleset": ruleset,

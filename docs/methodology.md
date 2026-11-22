@@ -75,6 +75,15 @@ pinned and recorded.
   the core-type effect.
 - The replayer and the harness run on other cores than the tool.
 - Each run records its cpuset and the core type.
+- CPU numbers are never committed: campaigns name a core *type*
+  (`cpusets: ["core:x925"]`), and `mbench` resolves it from `lscpu -e` at
+  run time. A `core:` selector that matches nothing, or more than one core
+  type, is a campaign error.
+- `perf stat` for cycles/pkt measures the pinned cpus (`-C <cpuset>`) for
+  exactly the tool's runtime: `perf_event_paranoid = 4` refuses it to an
+  unprivileged user, so the run records the pass's perf entry as
+  `unavailable` with the reason — never a fabricated number — and prints the
+  root-only fix (`mbench.metrics.perf`).
 - The performance governor is used only if Luong sets it, because it needs
   sudo.
 
@@ -85,6 +94,10 @@ pinned and recorded.
   NumPy default (Hyndman–Fan type 7).
 - A cell whose coefficient of variation (CV) is **above 5 %** is flagged for
   a rerun. CV uses the *sample* standard deviation (n−1 denominator).
+- The verdict's 95 % confidence interval is a **seeded bootstrap over the
+  cell's measured passes**: 2000 resamples with replacement, median of each,
+  2.5–97.5 percentiles. The generator is seeded, so a re-render of the same
+  runs prints the same interval (`mbench.report.render.median_ci`).
 - Frequency is recorded during the run, so thermal throttling and core-type
   noise show up in the record.
 - The CI smoke campaign (`campaigns/smoke.yaml`) runs on a shared, noisy
@@ -184,6 +197,52 @@ Then, for one run:
 
 The run's JSON keeps the alert count per attack, so a report can show which
 attacks a tool missed.
+
+## The P1 headline (issue #10)
+
+The campaign is `campaigns/p1-headline.yaml`. Its rule sets are defined in
+`rulesets/` and its decisions are these:
+
+- **R-all is 94 rules, not 95.** Upstream mmt-security has 95 XML rules, but
+  the pinned image builds the fork at commit `defefb7a3f39c70527d3…`, which
+  disabled DICOM rules 206 and 212 (`aeacbe0428`, false positives on benign
+  traffic). "All 95 rules" in the question means the 94 `.so` files the
+  image loads; `expect_rules: 94` in `rulesets/r-all.yaml` makes the harness
+  refuse to run if the extracted count differs.
+- **R0/R0b/R-all decompose the cost.** R0 = `security.enable = false`
+  (probe only), R0b = engine on with zero rules (the engine's fixed cost),
+  R-all = all 94 rules. R0 − R0b − R-all separates probe, engine and
+  rule-matching cost. `security.thread-nb = 0`: rules are verified inside
+  the probe threads. **Blocked on the pinned image:** mmt-probe v1.6.5
+  segfaults in `file_output_alloc_init` with `security.enable = false`, and
+  with the engine on but zero verified rules (empty rules dir; the same
+  crash surfaces mid-packet when all rules are `exclude-rules`-ed or
+  `rules-mask`-ed). Upstream bug: the r0/r0b cells record `error` until a
+  fixed image ships; r-all runs.
+- **C-benign** is a 1-h capture of the host's own traffic, anonymised in the
+  pinned `mmt-bench/tcpreplay:local` container with `tcprewrite --seed`
+  (deterministic, crypto-PAn-style IP rewriting) plus MAC replacement and
+  checksum fix (`tools/capture/c-benign.sh` prints the root-only runbook;
+  the capture needs sudo `tcpdump`). IPs, MACs and checksums are covered;
+  **payloads are not** — DNS names, HTTP hosts and TLS SNI stay readable.
+  Truncating them would hide the names but break the payload rules the
+  benchmark exists to measure, so the capture is registered `local_only`
+  and only its label and sha256 ever appear in results. That is the decided
+  mitigation, pending Luong's confirmation.
+- **Public benign mix: unresolved.** CIC-IDS2017's Monday capture fits, its
+  terms allow redistribution with citation, but its official download URL
+  redirects to a landing page — there is no stable URL + sha256 to pin.
+  MAWI traces are payload-stripped, which breaks the payload-reading rules.
+  No public mix is added to the manifest until one resolves to a pinned
+  URL + sha256 with a clear licence (decision for Luong).
+- **Perf access**: `kernel.perf_event_paranoid = 4` on this host, so an
+  unprivileged `perf stat` is refused. The narrowest fix is a private perf
+  copy with `CAP_PERFMON` (`setcap
+  cap_perfmon+ep ~/.local/bin/perf-mbench`), the fallback
+  `sysctl kernel.perf_event_paranoid=1`; the harness prints both and Luong
+  runs one (perf, `enable_note`).
+- **Dry-run output is not a result.** The PR's dry run ran on a noisy host
+  (vLLM active, `quiet_host` off) purely to prove the pipeline.
 
 ## Duration and safety
 

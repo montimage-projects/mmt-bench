@@ -1,0 +1,30 @@
+# R-all: every rule the pinned mmt-probe image ships — 94 .so files (#10).
+#
+# Why 94 and not the plan's 95: upstream mmt-security has 95 XML rules, but
+# the pinned fork (montimage/mmt-security @
+# defefb7a3f39c70527d3e74d8f1150b7392ac050, via commit aeacbe0428
+# "fix(rules): disable DICOM rules 206 and 212, false positives on benign
+# traffic (#27) (#37)") ships 94 — rules 206 and 212 are disabled and not
+# built. "All 95 rules" in the P1 question therefore means the 94 rules the
+# pinned image loads.
+#
+# The rules are not committed: extract them from the image with
+#   tools/docker/mmt-probe/extract-rules.sh
+# which copies /opt/mmt/security/rules/*.so into local/rulesets/mmt-security
+# (git-ignored). `mbench validate rulesets/r-all.yaml` checks this file;
+# matrix.load checks the extracted count against `expect_rules`.
+schema_version: 1
+kind: ruleset
+tool: mmt-probe
+description: all 94 rules of the pinned image (206 and 212 disabled upstream)
+rules: local/rulesets/mmt-security
+security:
+  enable: true
+provenance:
+  source: >-
+    mmt-bench/mmt-probe:local image (sha256
+    c6311ed32fb97c57a87a5468de73b1720d9a377b7b56e94de63f01207e013c84) —
+    mmt-security fork commit defefb7a3f39c70527d3e74d8f1150b7392ac050;
+    upstream 95 rules minus DICOM rules 206 and 212, disabled in aeacbe0428
+  expect_rules: 94
+  extract: tools/docker/mmt-probe/extract-rules.sh

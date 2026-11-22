@@ -37,6 +37,7 @@ from mbench import sut
 SUT_SCHEMA = "sut.schema.json"
 MANIFEST_SCHEMA = "corpus-manifest.schema.json"
 CAMPAIGN_SCHEMA = "campaign.schema.json"
+RULESET_SCHEMA = "ruleset.schema.json"
 
 
 @cache
@@ -250,6 +251,25 @@ def is_campaign(path: Path, data: Any) -> bool:
     return path.parent.name == "campaigns" or (isinstance(data, dict) and "question" in data)
 
 
+def is_ruleset(path: Path, data: Any) -> bool:
+    """A file under ``rulesets/``, or a YAML mapping marked ``kind: ruleset``."""
+    return path.parent.name == "rulesets" or (
+        isinstance(data, dict) and data.get("kind") == "ruleset"
+    )
+
+
+def ruleset_errors(definition: Any) -> list[str]:
+    """Every reason ``definition`` is not a valid ruleset def; empty if it is."""
+    validator = Draft202012Validator(schema(RULESET_SCHEMA))
+    return sorted(
+        {
+            describe(leaf)
+            for error in validator.iter_errors(definition)
+            for leaf in _leaf_errors(error)
+        }
+    )
+
+
 def campaign_errors(campaign: Any, manifest_path: Path | None = None) -> list[str]:
     """Every reason ``campaign`` is not a valid campaign file; empty if it is.
 
@@ -275,8 +295,8 @@ def campaign_errors(campaign: Any, manifest_path: Path | None = None) -> list[st
         if tool not in adapters.ADAPTERS:
             errors.append(f"tools[{i}]: {tool!r} has no adapter (known: {', '.join(known)})")
     for i, cpuset in enumerate(campaign["cpusets"]):
-        if not cpuset:
-            continue  # "" pins nothing
+        if not cpuset or cpuset.startswith("core:"):
+            continue  # "" pins nothing; core:<type> resolves against the host at run time
         # A descending range (5-2) parses to nothing: the run would record a
         # cpuset that pins no cpu — mislabelled, so it is rejected.
         descending = any(
@@ -426,6 +446,12 @@ def _validate_yaml(p: Path, text: str) -> Report:
             local = sum(1 for e in entries if e["local_only"])
             report.summary = f"{len(entries)} entries, {local} local-only"
         return report
+    if is_ruleset(p, data):
+        report = Report(str(p), "ruleset", ruleset_errors(data))
+        if report.ok:
+            security = data.get("security") or {}
+            report.summary = f"{data['tool']}, security {'on' if security.get('enable') else 'off'}"
+        return report
     if is_campaign(p, data):
         report = Report(str(p), "campaign", campaign_errors(data))
         if report.ok:
@@ -444,6 +470,7 @@ def _validate_yaml(p: Path, text: str) -> Report:
             )
         return report
     raise UnsupportedRecord(
-        f"{p}: not a corpus manifest or campaign "
-        "(no entries or question); it also checks sut.json and <pcap>.truth.json"
+        f"{p}: not a corpus manifest, campaign or ruleset def "
+        "(no entries, question or kind: ruleset); it also checks sut.json "
+        "and <pcap>.truth.json"
     )

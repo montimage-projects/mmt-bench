@@ -1,0 +1,50 @@
+# P1 — the benchmark's headline number (issue #10, plan §B8).
+#
+#     How many Gbit/s can mmt-probe with all 95 rules process on one X925
+#     core on a benign mix?
+#
+# ("all 95 rules" is the 94 rules the pinned image ships — rules 206 and
+# 212 are disabled in the mmt-security fork, see rulesets/r-all.yaml.)
+#
+# Matrix: R0/R0b/R-all × C-benign/C-small/C-large × thread-nb 1,2,4,8 ×
+# the two core series = 72 cells, 1 warm-up + 5 measured passes each.
+# `core:x925`/`core:a725` resolve from lscpu at run time — no CPU numbers
+# are committed. The harness pins itself to the cores the cell does not
+# use. `security.thread-nb` is 0 in the generated config: rules are
+# verified in the probe threads, so thread-nb sweeps the processing
+# capacity, not a separate security pool.
+#
+# KNOWN BLOCKER: the pinned probe segfaults with security off (r0) and with
+# zero verified rules (r0b) — upstream bug, rulesets/README.md. Those cells
+# record `error` until a fixed image ships; r-all measures.
+#
+# This campaign needs Luong's root-only steps first — the runner prints
+# them (quiet_host: vLLM stop/start; perf access for cycles/pkt; the
+# C-benign capture runbook, tools/capture/c-benign.sh). `mbench validate`
+# reports `c-benign` as an unresolved label until the runbook's
+# `mbench corpus add` has registered it — that is the pending state.
+schema_version: 1
+name: p1-headline
+question: >-
+  How many Gbit/s can mmt-probe with all 95 rules process on one X925 core
+  on a benign mix?
+description: >-
+  The P1 headline (#10). mmt-probe over R0 (security off), R0b (engine on,
+  zero rules) and R-all (the pinned image's 94 rules); C-benign is the
+  anonymised 1-h local-only capture of the SUT's own traffic, C-small and
+  C-large the synthetic corpora; thread-nb 1, 2, 4 and 8 with
+  security.thread-nb = 0; one series per core type; the harness runs on
+  the cores the cell does not pin.
+mode: offline
+quiet_host: true
+perf: true
+tools: [mmt-probe]
+rulesets: [r0, r0b, r-all]
+corpus:
+  - {label: c-benign}
+  - {label: c-small}
+  - {label: c-large}
+threads: [1, 2, 4, 8]
+cpusets: ["core:x925", "core:a725"]
+repeats: 5
+timeout_s: 900

@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/montimage-projects/mmt-bench/schemas/ruleset.schema.json",
+  "title": "mmt-bench ruleset definition",
+  "description": "One rulesets/<id>.yaml file (issue #10): a rule set defined reproducibly, not the rules themselves — the .so files are extracted from the pinned image into local/ and never committed.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "kind",
+    "tool",
+    "rules",
+    "security"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "kind": {
+      "const": "ruleset"
+    },
+    "tool": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The adapter the rule set is for (mmt-probe)."
+    },
+    "description": {
+      "type": "string"
+    },
+    "rules": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The .so file or the directory holding the rule set's .so files, relative to the repository root."
+    },
+    "allow_empty": {
+      "type": "boolean",
+      "description": "True when zero rules are the point (r0, r0b); the adapter refuses an empty staging without it, so a silently missing extraction still fails the run."
+    },
+    "security": {
+      "type": "object",
+      "required": [
+        "enable"
+      ],
+      "properties": {
+        "enable": {
+          "type": "boolean",
+          "description": "What the tool's config writes for security.enable: false is R0 (security off), true with zero rules is R0b (engine on, nothing to match)."
+        }
+      },
+      "additionalProperties": false
+    },
+    "provenance": {
+      "type": "object",
+      "properties": {
+        "source": {
+          "type": "string",
+          "description": "Where the rules come from, with the pin (image digest, commit)."
+        },
+        "expect_rules": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "How many .so files the rules path is expected to hold; matrix.load reports a different count."
+        },
+        "extract": {
+          "type": "string",
+          "description": "The command that produces the rules path when it is missing."
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

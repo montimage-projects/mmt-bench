@@ -213,10 +213,20 @@ class RuleInfo:
 
 @dataclass(frozen=True)
 class Ruleset:
-    """A rule set under ``rulesets/``: its id and the file or directory holding it."""
+    """A rule set under ``rulesets/``: its id and the file or directory holding it.
+
+    ``security`` is the tool's own meaning of "the engine is on" — for
+    mmt-probe it is the ``security.enable`` the generated config writes (R0
+    is a run with the engine off, R0b a run with the engine on and no rules
+    to match). ``allow_empty`` marks a rule set that legitimately holds zero
+    ``.so`` files, so the adapter's "no rule staged" guard still catches a
+    silently missing extraction everywhere else.
+    """
 
     id: str
     path: Path
+    security: bool = True
+    allow_empty: bool = False
 
     def __post_init__(self) -> None:
         _text("id", self.id)
