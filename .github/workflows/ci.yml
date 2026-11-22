@@ -124,14 +124,16 @@ jobs:
         timeout-minutes: 5
 
       # The gate proves the alert path end to end: every measured pass must
-      # be ok, report the 4 alerts the generated ground truth holds, and
-      # score a detection rate of 1.0 against it.
+      # be ok, report one alert per attack of the generated ground truth,
+      # and score a detection rate of 1.0 against it. The count is stated
+      # once — the --data-in-syn flag above — and the gate derives it from
+      # the run record's own truth file (#35).
       - name: Validate the run, the SUT record and the report
         run: |
           set -euo pipefail
           dir=$(ls -dt results/*-smoke | head -1)
           uv run --locked mbench validate "$dir"/sut*.json "$dir"/runs/*.json "$dir"/REPORT*.md
-          python3 tools/ci/check_smoke_result.py "$dir" 4
+          python3 tools/ci/check_smoke_result.py "$dir"
         timeout-minutes: 2
 
       # The result is a CI artefact, never committed: a runner's numbers are

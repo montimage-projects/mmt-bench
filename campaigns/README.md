@@ -52,7 +52,7 @@ uv run mbench corpus gen c-small --seed 0 --packets 20000 --flows 64 --label smo
 uv run mbench run campaigns/smoke.yaml
 dir=$(ls -dt results/*-smoke | head -1)   # the newest smoke results dir
 uv run mbench validate "$dir"/sut*.json "$dir"/runs/*.json "$dir"/REPORT*.md
-python3 tools/ci/check_smoke_result.py "$dir" 4   # runs ok, 4 alerts, rate 1.0
+python3 tools/ci/check_smoke_result.py "$dir"   # runs ok, truth's alerts, rate 1.0
 ```
 
 The ruleset is a single `.so` of the image's mmt-security set: the compiled
