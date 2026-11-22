@@ -12,7 +12,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from mbench import sut
+from mbench import pcap, sut
 from mbench.adapters.base import (
     CONFIG_PROFILES,
     Adapter,
@@ -73,7 +73,7 @@ class FakeAdapter(Adapter):
     """
 
     run_alerts: list[Alert] = field(default_factory=list)
-    run_counters: Counters = field(default_factory=lambda: Counters(0, 0, 0))
+    run_counters: Counters | None = None
     counters_list: list[Counters] = field(default_factory=list)
     durations: list[float] = field(default_factory=list)
     duration_s: float = 0.0
@@ -81,6 +81,7 @@ class FakeAdapter(Adapter):
     limits: dict[str, Json] = field(default_factory=dict)
     calls: list[Call] = field(default_factory=list)
     _config_files: list[Path] = field(default_factory=list)
+    _last_pcap: Path | None = None
     _workdir: Path | None = None
     _ruleset: Ruleset | None = None
 
@@ -118,6 +119,7 @@ class FakeAdapter(Adapter):
         return FakeProcess(duration_s=duration)
 
     def run_offline(self, pcap: Path, threads: int, cpuset: Sequence[int]) -> ProcessHandle:
+        self._last_pcap = pcap
         return self._start("offline", pcap.name, threads, cpuset)
 
     def run_online(self, iface: str, threads: int, cpuset: Sequence[int]) -> ProcessHandle:
@@ -136,7 +138,14 @@ class FakeAdapter(Adapter):
         if self.counters_list:
             index = min(len(self.calls) - 1, len(self.counters_list) - 1)
             return self.counters_list[index]
-        return self.run_counters
+        if self.run_counters is not None:
+            return self.run_counters
+        # An honest default: the fake "processed" exactly the pcap it was
+        # given, so a test that does not script counters matches the corpus.
+        if self._last_pcap is not None and self._last_pcap.is_file():
+            stats = pcap.stats(self._last_pcap)
+            return Counters(stats.packets, stats.wire_bytes, 0)
+        return Counters(0, 0, 0)
 
     def alerts(self) -> list[Alert]:
         return list(self.run_alerts)

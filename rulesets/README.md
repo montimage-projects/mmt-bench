@@ -20,28 +20,29 @@ relative to the repo root), `security.enable`, `allow_empty`, and
 schema is `src/mbench/schemas/ruleset.schema.json`; `mbench validate
 rulesets/<id>.yaml` checks it.
 
-## Blocked on the pinned image: r0 and r0b
+## The pinned image's snap-len crash
 
-mmt-probe v1.6.5 in the pinned image (sha256 c6311ed3…) **segfaults** in
-both configurations — a dry run reproduced it on every cell:
+mmt-probe v1.6.5 in the pinned image (sha256 c6311ed3…) **segfaults** when
+the generated config sets `snap-len = 0`: `pcap_capture_start` inside
+libpcap crashes the worker path on frames of every size (the review saw it
+as `worker_on_start → dpi_alloc_init → file_output_alloc_init` on r0/r0b
+and as `__fread_chk ← libpcap` on C-large — the same upstream bug at
+different unwind points). The main-thread pipeline (`thread-nb = 0`) does
+not hit it. The adapter writes `snap-len = 65535`, and r0/r0b then run
+cleanly at every thread count; the campaigns keep them at t0 anyway as the
+main-thread baselines.
 
-- `security.enable = false` → SIGSEGV in `file_output_alloc_init` at worker
-  start (rules present or not, output-channel variants tried).
-- engine on with zero verified rules → SIGSEGV at init (empty rules dir),
-  or mid-packet when every rule is `exclude-rules`-ed or `rules-mask`-ed.
-
-These are upstream probe bugs, not harness errors: until a fixed image
-ships, the r0/r0b cells of a campaign record `error` — the run documents
-the blocker instead of measuring it. The definitions stay: they are
-correct, and they start measuring the day the image is fixed.
-
-## R-all is 94 rules, not 95
+## R-all is 94 `.so` files, and the engine says 95
 
 Upstream mmt-security has 95 XML rules. The pinned image builds the fork
 `montimage/mmt-security` at `defefb7a3f39c70527d3e74d8f1150b7392ac050`,
 which disabled DICOM rules 206 and 212 in `aeacbe0428` ("false positives on
-benign traffic"). It ships **94** `.so` files, so the P1 headline's "all 95
-rules" is the 94 rules the image loads.
+benign traffic"). It ships **94** `.so` files. The engine's log still says
+`verifying 95 rules`: its count includes **rule 84** — "SYNful Knock
+implant answer" — a builtin compiled into mmt-security, not a `.so`
+(`probe rule_info` over the extracted rules lists it among the 95). So the
+P1 headline's "all 95 rules" is what the image actually verifies: the 94
+extracted `.so` rules plus the engine's builtin.
 
 ## Producing the rules
 

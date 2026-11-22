@@ -6,6 +6,7 @@ mismatches flagged.
 from __future__ import annotations
 
 import json
+import math
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -317,3 +318,78 @@ def test_report_dir_twice_in_the_same_second_counts_up(
         "REPORT-20260105T120000Z-3.md",
         "REPORT-20260105T120000Z.md",
     ]
+
+
+# --- the verdict cell (review M2) and the interval (review M5) -------------------
+
+
+def test_the_verdict_names_the_campaigns_cell() -> None:
+    # M2: a campaign's verdict_cell names the cell its question asks about —
+    # not the fastest.
+    slow = _run("named.json", [1.0], cell_overrides={"threads": 1})
+    fast = _run("other.json", [4.0], cell_overrides={"threads": 8})
+    md = render.render({"verdict_cell": {"threads": 1}}, replay(), [slow, fast])
+    verdict = md.split("**Verdict:**")[1].split("\n")[0]
+    assert "1 thread" in verdict and "4 thread" not in verdict.split("median")[0]
+    assert "1.0" in verdict or "1 Gbit" in verdict
+
+
+def test_the_verdict_cell_falls_back_to_the_fastest_unnamed() -> None:
+    slow = _run("slow.json", [1.0], cell_overrides={"threads": 1})
+    fast = _run("fast.json", [4.0], cell_overrides={"threads": 8})
+    md = render.render({}, replay(), [slow, fast])
+    verdict = md.split("**Verdict:**")[1].split("\n")[0]
+    assert "8 thread" in verdict
+
+
+def test_a_verdict_cell_with_no_measured_run_says_so() -> None:
+    run = _run("r.json", [1.0], cell_overrides={"threads": 8})
+    md = render.render({"verdict_cell": {"threads": 1}}, replay(), [run])
+    assert "no run measured the cell" in md
+
+
+def test_the_verdict_cell_matches_the_ruleset_and_corpus_too() -> None:
+    cell = {"ruleset": {"id": "r-all"}, "corpus": {"label": "c-benign"}}
+    named = _run("named.json", [2.0], cell_overrides=cell)
+    other = _run("other.json", [4.0], cell_overrides={"ruleset": {"id": "r0"}})
+    md = render.render(
+        {"verdict_cell": {"ruleset": "r-all", "corpus": "c-benign"}},
+        replay(),
+        [named, other],
+    )
+    verdict = md.split("**Verdict:**")[1].split("\n")[0]
+    assert "2 Gbit" in verdict or "2.0" in verdict
+
+
+# --- the confidence interval: range below 5, order-statistic at >= 5 (M5) -------
+
+
+def _independent_interval(values: list[float]) -> tuple[float, float, str]:
+    """The order-statistic interval for the median, computed independently."""
+    xs = sorted(values)
+    n = len(xs)
+    if n < 5:
+        return xs[0], xs[-1], "range"
+    for k in range((n + 1) // 2, 0, -1):
+        level = 1 - 2 * sum(math.comb(n, j) for j in range(k)) / 2**n
+        if level >= 0.95:
+            return xs[k - 1], xs[n - k], f"{level:.2%} CI"
+    level = 1 - 2 / 2**n
+    return xs[0], xs[-1], f"{level:.2%} CI"
+
+
+@pytest.mark.parametrize("n", [1, 2, 4, 5, 9, 20])
+def test_the_interval_matches_the_independent_computation(n: int) -> None:
+    values = [float(i * 2 % 7 + i) for i in range(n)]
+    assert render.median_ci(values) == pytest.approx(_independent_interval(values))
+
+
+def test_the_interval_is_the_range_below_five() -> None:
+    assert render.median_ci([1.0, 3.0, 2.0]) == (1.0, 3.0, "range")
+
+
+def test_at_five_passes_the_level_is_exactly_93_75() -> None:
+    interval = render.median_ci([5.0, 1.0, 3.0, 2.0, 4.0])
+    assert interval is not None
+    assert interval[:2] == (1.0, 5.0)
+    assert "93.75%" in interval[2]

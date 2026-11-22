@@ -86,7 +86,8 @@ def _run(
     outcome = runner.run_campaign(
         campaign,
         results_dir=tmp_path / "results",
-        adapters={"fake": lambda: FakeAdapter(run_counters=Counters(1000, 640_000, 0))},
+        # the corpus fixture holds 200 packets — the fake reports exactly those
+        adapters={"fake": lambda: FakeAdapter(run_counters=Counters(200, 640_000, 0))},
         collect=lambda: replay(),
         clock=lambda: CLOCK,
         monotonic=itertools.count(0).__next__,
@@ -113,8 +114,8 @@ def test_measured_passes_carry_the_perf_record(tmp_path: Path, fake_tool: None) 
     for measured in record["passes"][1:]:
         assert measured["perf"]["cycles"] == 1_000_000
         assert measured["perf"]["instructions"] == 2_000_000
-        # the pass's 1000 packets divided the cpuset's cycles
-        assert measured["perf"]["cycles_per_packet"] == 1000.0
+        # the pass's 200 packets divided the cpuset's cycles
+        assert measured["perf"]["cycles_per_packet"] == 1_000_000 / 200
     assert validate.sut_errors(record["sut"]) == []
 
 
@@ -176,15 +177,15 @@ def test_the_harness_stays_unpinned_when_the_tool_takes_everything(
 
 
 def test_the_report_shows_cycles_and_the_ci(tmp_path: Path, fake_tool: None) -> None:
-    doc = campaign_doc([{"label": "x"}], repeats=3, cpusets=["core:x925"], perf=True)
+    doc = campaign_doc([{"label": "x"}], repeats=6, cpusets=["core:x925"], perf=True)
     campaign = _campaign(tmp_path, doc)
     outcome, _, _ = _run(campaign, tmp_path, perf_probe=_probe(tmp_path))
     assert outcome.report_file is not None
     text = outcome.report_file.read_text(encoding="utf-8")
 
     assert "cycles/pkt" in text
-    assert "1000" in text  # the median cycles per packet
-    assert "95% CI" in text  # the verdict's interval
+    assert "5000" in text  # the median cycles per packet
+    assert " CI " in text  # the verdict's order-statistic interval at n ≥ 5
 
 
 def test_a_marker_lands_in_the_report(tmp_path: Path, fake_tool: None) -> None:
@@ -234,4 +235,26 @@ def test_the_committed_p1_campaign_is_valid() -> None:
         "How many Gbit/s can mmt-probe with all 95 rules process on one X925 core"
     )
     assert data["perf"] is True and data["quiet_host"] is True
-    assert data["cpusets"] == ["core:x925", "core:a725"]
+    # the headline t1 cell runs on exactly one CPU of each core type; tN
+    # leaves the reader and output threads room (@N+2)
+    by_cpuset = {i["cpuset"]: i["threads"] for i in data["cpusets"]}
+    assert by_cpuset == {
+        "core:x925@1": [0, 1],
+        "core:x925@4": [2],
+        "core:x925@6": [4],
+        "core:x925@10": [8],
+        "core:a725@1": [0, 1],
+        "core:a725@4": [2],
+        "core:a725@6": [4],
+        "core:a725@10": [8],
+    }
+    # r0/r0b are the t0 main-thread baselines; r-all owns the scaling sweep
+    rs = {i["id"]: i.get("threads") for i in data["rulesets"]}
+    assert rs == {"r0": [0], "r0b": [0], "r-all": [1, 2, 4, 8]}
+    # the verdict names the headline cell (M2)
+    assert data["verdict_cell"] == {
+        "ruleset": "r-all",
+        "corpus": "c-benign",
+        "threads": 1,
+        "cpuset": "core:x925@1",
+    }

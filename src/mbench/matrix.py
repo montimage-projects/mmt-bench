@@ -39,7 +39,9 @@ class CorpusRef:
 
     ``ref`` is what results and reports may show, through
     :func:`mbench.corpus.result_ref` semantics: label and sha256, plus the
-    public fields for a non-local entry.
+    public fields for a non-local entry. ``packets`` is the declared packet
+    count a pass's counters are checked against: the tool must account for
+    every packet of the pinned capture (review B2).
     """
 
     label: str
@@ -47,6 +49,7 @@ class CorpusRef:
     sha256: str
     truth: truth.GroundTruth | None
     ref: dict[str, Any]
+    packets: int | None = None
 
 
 @dataclass(frozen=True)
@@ -78,6 +81,10 @@ class Campaign:
     cells: tuple[Cell, ...]
     # ``perf`` trails so existing positional constructions keep working.
     perf: bool = False
+    #: The cell the report's verdict answers on (``verdict_cell`` in the
+    #: file), resolved: ``cpuset`` is the canonical cpulist. ``None`` leaves
+    #: the verdict on the fastest measured cell.
+    verdict_cell: dict[str, Any] | None = None
 
     def meta(self) -> dict[str, Any]:
         """The campaign fields a run record and REPORT.md embed."""
@@ -90,6 +97,7 @@ class Campaign:
             "perf": self.perf,
             "repeats": self.repeats,
             "timeout_s": self.timeout_s,
+            "verdict_cell": self.verdict_cell,
         }
 
 
@@ -136,24 +144,33 @@ def _resolve_def(ident: str, path: Path, base: Path) -> Ruleset:
     )
 
 
-def _resolve_ruleset(item: str | dict[str, Any], base: Path) -> Ruleset:
-    """A ruleset entry: an id under ``rulesets/``, or ``{id, path}``."""
-    if isinstance(item, str):
-        ident, path = item, base / "rulesets" / item
+def _resolve_ruleset(item: str | dict[str, Any], base: Path) -> tuple[Ruleset, frozenset[int]]:
+    """A ruleset entry: an id under ``rulesets/``, or ``{id, path?, threads?}``.
+
+    Returns the ruleset and the thread counts it applies to (an empty set
+    means every count). ``threads`` keeps a rule set out of thread counts
+    it cannot run under — the r0/r0b baseline cells, which only the
+    main-thread pipeline (t0) survives on the pinned image.
+    """
+    threads = frozenset(item.get("threads", ())) if isinstance(item, dict) else frozenset()
+    ident = item["id"] if isinstance(item, dict) else item
+    raw = item.get("path") if isinstance(item, dict) else None
+    if raw is None:
+        path = base / "rulesets" / ident
         definition = path.with_suffix(".yaml")
         if definition.exists():
-            return _resolve_def(ident, definition, base)
+            return _resolve_def(ident, definition, base), threads
         if not path.exists():
             alt = path.with_suffix(".so")
             if alt.exists():
                 path = alt
     else:
-        ident, path = item["id"], Path(item["path"])
+        path = Path(raw)
         if not path.is_absolute():
             path = base / path
     if not path.exists():
         raise CampaignError(f"ruleset {ident!r}: no such file or directory: {path}")
-    return Ruleset(ident, path)
+    return Ruleset(ident, path), threads
 
 
 def _resolve_label(
@@ -182,6 +199,7 @@ def _resolve_label(
         entry["sha256"],
         gt,
         corpus.result_ref(entry),
+        packets=entry.get("packets"),
     )
 
 
@@ -229,31 +247,44 @@ def _resolve_pcap(item: dict[str, Any], base: Path) -> CorpusRef:
         "ground_truth": Path(item["truth"]).name if item.get("truth") else None,
         "local_only": True,
     }
-    return CorpusRef(label, path, st.sha256, gt, corpus.result_ref(entry))
+    return CorpusRef(label, path, st.sha256, gt, corpus.result_ref(entry), packets=st.packets)
+
+
+def _cpuset(item: str, topology: dict[str, tuple[int, ...]] | None) -> tuple[int, ...]:
+    """One cpuset string as its cpu tuple, ``core:`` items resolved."""
+    if cores.selector(item) is not None:
+        if topology is None:
+            topology = cores.live()
+        return cores.resolve(item, topology)
+    return tuple(sut.parse_cpulist(item))
 
 
 def _resolve_cpusets(
-    items: Sequence[str], topology: dict[str, tuple[int, ...]] | None
-) -> list[tuple[tuple[int, ...], str]]:
-    """Each ``cpusets`` item as ``(cpus, canonical cpulist)``.
+    items: Sequence[str | dict[str, Any]], topology: dict[str, tuple[int, ...]] | None
+) -> list[tuple[tuple[int, ...], str, frozenset[int]]]:
+    """Each ``cpusets`` item as ``(cpus, canonical cpulist, thread counts)``.
 
-    A ``core:<fragment>`` item resolves against the host's topology
+    A ``core:<fragment>[@<n>]`` item resolves against the host's topology
     (``topology``, live-derived when not given): the run then records the
     resolved cpulist, and the campaign file never hard-codes host CPU
-    numbers.
+    numbers. An object form ``{cpuset, threads}`` applies its cpuset only
+    to the named thread counts (an empty set means every count) — the form
+    the P1 matrix uses to give the 1-thread cell its own single-core set.
     """
     resolved = []
     for item in items:
-        if cores.selector(item) is not None:
+        text = item["cpuset"] if isinstance(item, dict) else item
+        threads = frozenset(item.get("threads", ())) if isinstance(item, dict) else frozenset()
+        if cores.selector(text) is not None:
             if topology is None:
                 topology = cores.live()
             try:
-                cpus = cores.resolve(item, topology)
+                cpus = cores.resolve(text, topology)
             except LookupError as exc:
                 raise CampaignError(str(exc)) from None
-            resolved.append((cpus, sut.format_cpulist(cpus)))
+            resolved.append((cpus, sut.format_cpulist(cpus), threads))
         else:
-            resolved.append((tuple(sut.parse_cpulist(item)), item))
+            resolved.append((tuple(sut.parse_cpulist(text)), text, threads))
     return resolved
 
 
@@ -299,7 +330,7 @@ def load(
     cpusets = _resolve_cpusets(data["cpusets"], topology)
     cells = [
         Cell(
-            index=i,
+            index=0,
             tool=tool,
             ruleset=ruleset,
             config_profile=profile,
@@ -308,17 +339,43 @@ def load(
             cpuset=cpuset,
             cpuset_str=cpuset_str,
         )
-        for i, (tool, ruleset, profile, ref, threads, (cpuset, cpuset_str)) in enumerate(
-            itertools.product(
-                data["tools"],
-                rulesets,
-                data.get("config_profiles") or ["recommended"],
-                corpus_refs,
-                data["threads"],
-                cpusets,
-            )
+        for (
+            tool,
+            (ruleset, ruleset_threads),
+            profile,
+            ref,
+            threads,
+            (cpuset, cpuset_str, cpuset_threads),
+        ) in itertools.product(
+            data["tools"],
+            rulesets,
+            data.get("config_profiles") or ["recommended"],
+            corpus_refs,
+            data["threads"],
+            cpusets,
         )
+        # A ruleset's or cpuset's ``threads`` list keeps it out of thread
+        # counts it does not apply to (r0/r0b run t0 only; the P1 1-thread
+        # cell gets its own single-core cpuset).
+        if (not ruleset_threads or threads in ruleset_threads)
+        and (not cpuset_threads or threads in cpuset_threads)
     ]
+    # Dense, stable indexes over the filtered product — never the sparse
+    # positions of cells the threads filters dropped.
+    cells = [
+        Cell(
+            index=i,
+            tool=c.tool,
+            ruleset=c.ruleset,
+            config_profile=c.config_profile,
+            corpus=c.corpus,
+            threads=c.threads,
+            cpuset=c.cpuset,
+            cpuset_str=c.cpuset_str,
+        )
+        for i, c in enumerate(cells)
+    ]
+    verdict_cell = _resolve_verdict(data.get("verdict_cell"), cells, topology)
     return Campaign(
         name=data.get("name") or p.stem,
         question=data["question"],
@@ -330,4 +387,44 @@ def load(
         timeout_s=float(data["timeout_s"]),
         path=p,
         cells=tuple(cells),
+        verdict_cell=verdict_cell,
     )
+
+
+def _resolve_verdict(
+    declared: dict[str, Any] | None,
+    cells: Sequence[Cell],
+    topology: dict[str, tuple[int, ...]] | None,
+) -> dict[str, Any] | None:
+    """The campaign's ``verdict_cell``, resolved and checked against the matrix.
+
+    ``cpuset`` is resolved like a ``cpusets`` item (``core:`` selectors to
+    the canonical cpulist a cell record carries). Every declared field must
+    match at least one cell — a selector that names no cell is a typo, and
+    a verdict that cannot point at its cell would silently fall back to
+    "fastest".
+    """
+    if not declared:
+        return None
+    verdict = dict(declared)
+    if "cpuset" in verdict:
+        text = verdict["cpuset"]
+        try:
+            cpus = _cpuset(text, topology)
+        except LookupError as exc:
+            raise CampaignError(f"verdict_cell.cpuset: {exc}") from None
+        verdict["cpuset"] = sut.format_cpulist(cpus)
+    matches = [
+        cell
+        for cell in cells
+        if ("ruleset" not in verdict or cell.ruleset.id == verdict["ruleset"])
+        and ("corpus" not in verdict or cell.corpus.label == verdict["corpus"])
+        and ("threads" not in verdict or cell.threads == verdict["threads"])
+        and ("cpuset" not in verdict or cell.cpuset_str == verdict["cpuset"])
+    ]
+    if not matches:
+        raise CampaignError(
+            "verdict_cell: no matrix cell matches "
+            + ", ".join(f"{k}={v!r}" for k, v in declared.items())
+        )
+    return verdict

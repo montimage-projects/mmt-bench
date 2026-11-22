@@ -41,9 +41,11 @@ def test_one_question(doc: dict[str, Any]) -> None:
 def test_one_offline_mmt_probe_cell(doc: dict[str, Any]) -> None:
     assert doc["mode"] == "offline"
     assert doc["tools"] == ["mmt-probe"]
-    # One matrix cell: every dimension has exactly one value.
-    for dim in ("tools", "rulesets", "corpus", "threads", "cpusets"):
+    # Two corpus cells (smoke + its 1500-B-frame twin for the snap-len
+    # regression); every other dimension has exactly one value.
+    for dim in ("tools", "rulesets", "threads", "cpusets"):
         assert len(doc[dim]) == 1, dim
+    assert doc["corpus"] == [{"label": "smoke"}, {"label": "smoke-large"}]
     profiles = doc.get("config_profiles") or ["recommended"]
     assert len(profiles) == 1
 
@@ -60,7 +62,7 @@ def test_no_quiet_host(doc: dict[str, Any]) -> None:
 
 
 def test_the_corpus_is_the_generated_smoke_entry(doc: dict[str, Any]) -> None:
-    (item,) = doc["corpus"]
+    item = doc["corpus"][0]
     # A label, never a {path, sha256} pair: nothing is fetched and the
     # private capture is never referenced.
     assert item == {"label": "smoke"}

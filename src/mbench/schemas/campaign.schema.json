@@ -68,8 +68,7 @@
           {
             "type": "object",
             "required": [
-              "id",
-              "path"
+              "id"
             ],
             "properties": {
               "id": {
@@ -79,10 +78,19 @@
               "path": {
                 "type": "string",
                 "minLength": 1
+              },
+              "threads": {
+                "type": "array",
+                "minItems": 1,
+                "uniqueItems": true,
+                "items": {
+                  "type": "integer",
+                  "minimum": 0
+                }
               }
             },
             "additionalProperties": false,
-            "description": "A ruleset by id and path: the .so file or the directory holding it, relative to the working directory or absolute."
+            "description": "A ruleset by id and path: the .so file or the directory holding it, relative to the working directory or absolute. `path` is optional when `id` names a rulesets/<id>.yaml definition. `threads` restricts the thread counts this ruleset runs under."
           }
         ]
       }
@@ -160,10 +168,65 @@
       "type": "array",
       "minItems": 1,
       "items": {
-        "type": "string",
-        "pattern": "^$|^[0-9]+(-[0-9]+)?(,[0-9]+(-[0-9]+)?)*$|^core:[a-z0-9][a-z0-9._-]*$"
+        "anyOf": [
+          {
+            "type": "string",
+            "pattern": "^$|^[0-9]+(-[0-9]+)?(,[0-9]+(-[0-9]+)?)*$|^core:[a-z0-9][a-z0-9._-]*(@[0-9]+)?$"
+          },
+          {
+            "type": "object",
+            "required": [
+              "cpuset"
+            ],
+            "properties": {
+              "cpuset": {
+                "type": "string",
+                "pattern": "^$|^[0-9]+(-[0-9]+)?(,[0-9]+(-[0-9]+)?)*$|^core:[a-z0-9][a-z0-9._-]*(@[0-9]+)?$"
+              },
+              "threads": {
+                "type": "array",
+                "minItems": 1,
+                "uniqueItems": true,
+                "items": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "additionalProperties": false,
+            "description": "A cpuset with an optional `threads` restriction: the item only applies to the named thread counts."
+          }
+        ]
       },
-      "description": "cpulists the tool's threads are pinned to (\"\" = unpinned); `core:<fragment>` selects every cpu of the one core type whose model name contains the fragment, resolved from lscpu at run time so no host CPU numbers are committed. The core type is recorded in each run."
+      "description": "cpulists the tool's threads are pinned to (\"\" = unpinned); `core:<fragment>` selects every cpu of the one core type whose model name contains the fragment, `core:<fragment>@<n>` the first n of them, resolved from lscpu at run time so no host CPU numbers are committed. The core type is recorded in each run."
+    },
+    "verdict_cell": {
+      "type": "object",
+      "minProperties": 1,
+      "properties": {
+        "ruleset": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The ruleset id of the verdict cell."
+        },
+        "corpus": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
+          "description": "The corpus label of the verdict cell."
+        },
+        "threads": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "The thread count of the verdict cell."
+        },
+        "cpuset": {
+          "type": "string",
+          "pattern": "^$|^[0-9]+(-[0-9]+)?(,[0-9]+(-[0-9]+)?)*$|^core:[a-z0-9][a-z0-9._-]*(@[0-9]+)?$",
+          "description": "The cpuset of the verdict cell: a cpulist or a core:<type>[@<n>] selector, resolved like cpusets items."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Which matrix cell the report's verdict answers on. Every named field must match a cell's record (cell.ruleset.id, cell.corpus.label, cell.threads, cell.cpuset). When absent, the verdict names the fastest measured cell."
     },
     "repeats": {
       "type": "integer",

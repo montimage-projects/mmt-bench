@@ -1,10 +1,14 @@
 """Cycles and instructions per packet from ``perf stat`` (issue #10, plan §B6).
 
-A measured pass is wrapped in ``perf stat -a -C <cpuset> -x , -e cycles -e
-instructions``: the cycles and instructions the pinned cores burned while
-the tool processed the capture. Dividing by the pass's packet count gives
-cycles per packet, the efficiency number the P1 report carries next to
-Gbit/s and Mpps.
+A measured pass is wrapped in ``perf stat``: the cycles and instructions
+burned while the tool processed the capture. The scope is the tool's
+container cgroup when the adapter can name one (``perf stat -G
+system.slice/docker-<id>.scope`` — the cycles the pass's own container
+burned, nothing else's), else the cell's pinned cores (``perf stat -a -C
+<cpuset>`` — every cycle the cpuset burned, including whatever else ran on
+it; the record's ``scope`` field says which). Dividing by the pass's
+packet count gives cycles per packet, the efficiency number the P1 report
+carries next to Gbit/s and Mpps.
 
 ``perf_event_paranoid`` 4 (dgx-spark's Ubuntu default) refuses unprivileged
 perf entirely, and a machine without perf cannot fake the metric: a
@@ -59,10 +63,17 @@ def _default_spawn(argv: Sequence[str]) -> subprocess.Popen[bytes]:
 
 @dataclass
 class _Session:
-    """One running ``perf stat``; ``stop`` reads the counts from ``out``."""
+    """One running ``perf stat``; ``stop`` reads the counts from ``out``.
+
+    ``scope`` is what the session counts: ``cgroup`` (the run's own
+    container, ``perf stat -G``) or ``cpuset`` (the whole pinned cpuset,
+    ``perf stat -a -C``) — recorded on the pass so a cycles/pkt column
+    never silently mixes the two.
+    """
 
     proc: subprocess.Popen[bytes]
     out: Path
+    scope: str = "cpuset"
 
 
 def parse_stat_csv(text: str) -> dict[str, float]:
@@ -106,6 +117,8 @@ def enable_note(marker: dict[str, Any] | None, paranoid: int | None = None) -> l
         "  # option A (recommended): CAP_PERFMON on a private copy of the real perf binary",
         "  install -Dm700 /usr/lib/linux-tools/$(uname -r)/perf ~/.local/bin/perf",
         "  sudo setcap 'cap_perfmon=ep' ~/.local/bin/perf   # restore: rm ~/.local/bin/perf",
+        "  # caveat: a nosuid/noexec home mount drops the capability — put the",
+        "  # copy somewhere executables keep file caps (e.g. /usr/local/bin)",
         "  # option B (broader, host-wide):",
         "  sudo sysctl kernel.perf_event_paranoid=1",
         f"  sudo sysctl kernel.perf_event_paranoid={restore}   # restore",
@@ -206,27 +219,34 @@ class Probe:
             self._detect()
         return self._paranoid
 
-    def start(self, cpuset: Sequence[int]) -> _Session | None:
-        """``perf stat`` counting ``cpuset``'s cores until :meth:`stop`.
+    def start(self, cpuset: Sequence[int], cgroup: str | None = None) -> _Session | None:
+        """``perf stat`` counting until :meth:`stop`, scoped as tightly as possible.
 
-        ``None`` when perf is unavailable (the marker is recorded by
-        :meth:`record`) or when the run is unpinned: ``-C`` needs a cpuset,
-        and all-CPU counting on a run pinned nowhere would mislabel the
-        metric.
+        ``cgroup`` — the run container's cgroup (a name relative to
+        ``/sys/fs/cgroup``, ``system.slice/docker-<id>.scope``) — counts
+        only the pass's own container: ``perf stat -G <cgroup>``. Without
+        it, ``perf stat -a -C <cpuset>`` counts every cycle the pinned
+        cores burn, including anything else scheduled on them. ``None``
+        when perf is unavailable (the marker is recorded by
+        :meth:`record`) or when neither scope can be named: ``-C`` needs a
+        cpuset, and all-CPU counting on a run pinned nowhere would mislabel
+        the metric.
         """
-        if self.unavailable is not None or not cpuset:
+        if self.unavailable is not None or not (cgroup or cpuset):
             return None
         fd, name = tempfile.mkstemp(
             prefix="mbench-perf-", suffix=".csv", dir=os.environ.get("TMPDIR")
         )
         os.close(fd)
         out = Path(name)
-        argv = [
-            str(self._binary),
-            "stat",
-            "-a",
-            "-C",
-            sut.format_cpulist(cpuset),
+        argv = [str(self._binary), "stat"]
+        scope = "cpuset"
+        if cgroup:
+            argv += ["-G", cgroup]
+            scope = "cgroup"
+        else:
+            argv += ["-a", "-C", sut.format_cpulist(cpuset)]
+        argv += [
             "-x",
             ",",
             "-e",
@@ -240,7 +260,7 @@ class Probe:
             _SESSION_CAP_S,
         ]
         try:
-            return _Session(self._spawn(argv), out)
+            return _Session(self._spawn(argv), out, scope)
         except (OSError, subprocess.SubprocessError):
             out.unlink(missing_ok=True)
             return None
@@ -275,6 +295,7 @@ class Probe:
         if "unavailable" in counts:
             return counts
         record: dict[str, Any] = dict(counts)
+        record["scope"] = session.scope
         cycles = counts.get("cycles")
         instructions = counts.get("instructions")
         if packets and cycles is not None:

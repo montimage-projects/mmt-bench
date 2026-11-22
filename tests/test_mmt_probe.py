@@ -58,6 +58,9 @@ class RecordingDocker:
         out = b""
         if argv[:2] == ["image", "inspect"]:
             out = self.digest.encode()
+        elif argv[0] == "inspect":
+            # after --rm teardown the container is gone
+            return subprocess.CompletedProcess(list(argv), 1, b"", b"")
         elif argv[0] == "run" and argv[-1] == "versions":
             out = self.versions_text.encode()
         elif argv[0] == "run" and argv[-1] == "rule_info":
@@ -425,3 +428,110 @@ def test_an_incomplete_tools_record_is_rejected(tmp_path: Path) -> None:
     record = adapter.tools_record()
     del record["version_strings"]
     assert tools_record_errors(record)
+
+
+# --- the generated config (review B1) ------------------------------------------
+
+
+def test_the_snap_length_is_the_full_frame() -> None:
+    # B1: snap-len 0 crashes pcap_capture_start inside libpcap on a 1500-B
+    # frame (C-large); 65535 keeps the whole packet.
+    for profile in ("recommended", "tuned"):
+        conf = mmt_probe.render_config(profile)
+        line = next(ln for ln in conf.splitlines() if ln.strip().startswith("snap-len"))
+        assert "65535" in line
+        assert "snap-len = 0" not in conf
+
+
+# --- the status lines and the exit's evidence (review B2) -----------------------
+
+_THREADED_LOG = """\
+mmt-probe: Overridden value of configuration parameter 'thread-nb' by '2'
+mmt-probe: Starting PCAP mode to analyze '/pcap/x.pcap' using 2 threads
+mmt-probe: Normally reached to the end of pcap file
+mmt-probe: Worker 0 processed 600000 packets (60.00%), dropped 12 packets (0.00%)
+mmt-probe: Worker 1 processed 400000 packets (40.00%), dropped 8 packets (0.00%)
+mmt-probe: Exit normally MMT-Probe
+Bye
+"""
+
+_ABORTED_LOG = """\
+mmt-probe: Starting PCAP mode to analyze '/pcap/x.pcap' using 2 threads
+mmt-probe: Normally reached to the end of pcap file
+malloc(): unaligned tcache chunk detected
+mmt-probe: Abort signal received
+"""
+
+
+def _run_with_log(adapter: MmtProbeAdapter, workdir: Path, tmp_path: Path, text: str) -> None:
+    _run(adapter, workdir, tmp_path)
+    _fill_reports(workdir)
+    (workdir / "probe.log").write_text(text, encoding="utf-8")
+
+
+def test_threaded_status_lines_sum_every_worker(tmp_path: Path) -> None:
+    # B2: at thread-nb >= 1 the probe logs one status line per worker; the
+    # run's packet and drop counts are the sum over all of them, never the
+    # first line alone.
+    adapter, _, workdir = _prepared(tmp_path)
+    _run_with_log(adapter, workdir, tmp_path, _THREADED_LOG)
+    counters = adapter.counters()
+    assert counters.packets == 1_000_000
+    assert counters.drops == 20
+    assert counters.extra["status_lines"] == 2
+    assert counters.extra["exit_state"] == "clean"
+    assert counters.extra["abnormal_exit"] is False
+
+
+def test_an_abort_is_abnormal_even_at_return_code_0(tmp_path: Path) -> None:
+    # B2: the probe's SIGABRT handler _exit(0)s, so the log's markers are
+    # what tell an abort from a clean exit.
+    adapter, _, workdir = _prepared(tmp_path)
+    _run_with_log(adapter, workdir, tmp_path, _ABORTED_LOG)
+    counters = adapter.counters()
+    assert counters.extra["exit_state"] == "abnormal"
+    assert counters.extra["abnormal_exit"] is True
+    assert "signal received" in counters.extra["exit_detail"]
+
+
+def test_no_status_line_means_no_packet_count_and_no_drops(tmp_path: Path) -> None:
+    # B2: a run that aborted before its status lines reports no drop
+    # counter at all — never a fabricated 0.
+    adapter, _, workdir = _prepared(tmp_path)
+    _run_with_log(adapter, workdir, tmp_path, _ABORTED_LOG)
+    counters = adapter.counters()
+    assert counters.drops is None
+    assert "no drop counter" in counters.extra["drops_reason"]
+    # the reports' packet sum stands in, marked as such
+    assert counters.extra["status_lines"] == 0
+
+
+def test_a_log_without_a_clean_exit_marker_is_incomplete(tmp_path: Path) -> None:
+    adapter, _, workdir = _prepared(tmp_path)
+    _run_with_log(adapter, workdir, tmp_path, "mmt-probe: started\n")
+    counters = adapter.counters()
+    assert counters.extra["exit_state"] == "incomplete"
+    assert counters.extra["abnormal_exit"] is True
+
+
+# --- the processing interval (review B3) ---------------------------------------
+
+
+def test_the_processing_interval_bounds_the_worker_window(tmp_path: Path) -> None:
+    # B3: [1] version-report timestamp (last worker's init end, just before
+    # packets) to the last status line's arrival.
+    adapter, _, workdir = _prepared(tmp_path)
+    _run_with_log(adapter, workdir, tmp_path, _THREADED_LOG)
+    run = adapter._run
+    assert run is not None
+    run.events["status"] = 1795300300.0
+    counters = adapter.counters()
+    # the fixture report's [1] row carries ts 1795300288.033619
+    assert counters.extra["processing_s"] == pytest.approx(11.966381)
+
+
+def test_no_status_arrival_means_no_processing_interval(tmp_path: Path) -> None:
+    adapter, _, workdir = _prepared(tmp_path)
+    _run_with_log(adapter, workdir, tmp_path, _THREADED_LOG)
+    counters = adapter.counters()
+    assert counters.extra["processing_s"] is None

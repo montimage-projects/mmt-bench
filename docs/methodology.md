@@ -42,9 +42,26 @@ How fast a tool processes a pcap it reads from memory.
 
 - The pcap lives in a tmpfs bind mount, so disk speed is not measured.
 - One warm-up pass, then N = 5 measured passes. The warm-up is never counted.
-- Throughput = bytes / processing time. Processing time is measured inside the
-  container from the first to the last packet, or taken from the tool's own
-  stats. It is cross-checked with the wall time.
+- Throughput = bytes / processing time. Processing time is the interval the
+  tool's own evidence bounds — for mmt-probe, from the `[1]` version
+  report's timestamp (written at the last worker's init, just before the
+  packet loop) to the last status line's arrival (every packet then
+  counted). The harness records it as `processing_s` and labels the pass
+  `timing.basis: tool`. It is cross-checked with `wall_s` (the tool
+  process's start-to-exit): a processing interval that does not sit inside
+  its wall window (beyond a 50 ms clock-skew tolerance) makes the pass
+  `invalid`. When the tool gives no interval, the rates fall back to wall
+  time and the pass says so (`basis: wall`) — wall time includes init and
+  teardown, so it under-reads throughput; the record's `overhead_s` shows
+  how much.
+- Bytes are **captured bytes** — the pcap's `incl_len`, Ethernet header
+  included, no wire overhead (no preamble, IFG or FCS).
+- The tool's packet count answers to the corpus manifest's declared count:
+  a mismatch makes the pass `invalid`, as does an abnormal exit the tool
+  masked as return code 0 (mmt-probe's signal handlers `_exit(0)` on
+  SIGABRT/SIGSEGV — the log's clean-exit markers, not the exit status, say
+  a run ended well). A pass reports `drops` only when the tool actually
+  emitted a drop counter; otherwise `null` with the reason.
 - Reported as Gbit/s, Mpps, and cycles per packet (`perf stat` on the pinned
   cores).
 
@@ -78,12 +95,24 @@ pinned and recorded.
 - CPU numbers are never committed: campaigns name a core *type*
   (`cpusets: ["core:x925"]`), and `mbench` resolves it from `lscpu -e` at
   run time. A `core:` selector that matches nothing, or more than one core
-  type, is a campaign error.
-- `perf stat` for cycles/pkt measures the pinned cpus (`-C <cpuset>`) for
-  exactly the tool's runtime: `perf_event_paranoid = 4` refuses it to an
-  unprivileged user, so the run records the pass's perf entry as
-  `unavailable` with the reason — never a fabricated number — and prints the
-  root-only fix (`mbench.metrics.perf`).
+  type, is a campaign error. `core:<type>@<n>` pins the first n CPUs of
+  the type — the form a cell uses when the question is "on n cores"
+  (`core:x925@1` for the one-core headline; `@N+2` for tN leaves the
+  probe's reader and output threads room beside its N workers: the probe
+  pins workers round-robin over the container's allowed set).
+- The harness pins itself to the CPUs the cell does not use, and the run
+  record carries `harness_cpuset` beside the cell's.
+- `perf stat` for cycles/pkt counts the run's own container cgroup
+  (`-G <cgroup>`) when the cgroup can be resolved — cycles burned by the
+  tool alone — else the pinned cpus (`-a -C <cpuset>`, labelled
+  `scope: cpuset` in the pass: every task scheduled on those CPUs,
+  including anything the host puts there). `perf_event_paranoid = 4`
+  refuses either to an unprivileged user, so the run records the pass's
+  perf entry as `unavailable` with the reason — never a fabricated number
+  — and prints the root-only fix (`mbench.metrics.perf`). The runbook's
+  CAP_PERFMON path needs the container's binary on an `exec`-able mount —
+  a `nosuid`/`noexec` home directory or tmpfs makes the capability file
+  attribute a no-op, so put it on a root filesystem mount.
 - The performance governor is used only if Luong sets it, because it needs
   sudo.
 
@@ -94,10 +123,14 @@ pinned and recorded.
   NumPy default (Hyndman–Fan type 7).
 - A cell whose coefficient of variation (CV) is **above 5 %** is flagged for
   a rerun. CV uses the *sample* standard deviation (n−1 denominator).
-- The verdict's 95 % confidence interval is a **seeded bootstrap over the
-  cell's measured passes**: 2000 resamples with replacement, median of each,
-  2.5–97.5 percentiles. The generator is seeded, so a re-render of the same
-  runs prints the same interval (`mbench.report.render.median_ci`).
+- The verdict's interval for the median is the **order-statistic confidence
+  interval**: `[x_(k), x_(n−k+1)]` over the cell's measured passes, choosing
+  the widest `k` whose exact level reaches 95 %, or `[x_(1), x_(n)]` when
+  none does — labelled with its exact level (93.75 % at n = 5; the level
+  comes from `1 − 2·P(Bin(n, ½) < k)`, not a rounded "95 %"). With fewer
+  than 5 measured passes the verdict prints the **range**, labelled
+  `range` — no confidence claim on so few passes
+  (`mbench.report.render.median_ci`).
 - Frequency is recorded during the run, so thermal throttling and core-type
   noise show up in the record.
 - The CI smoke campaign (`campaigns/smoke.yaml`) runs on a shared, noisy

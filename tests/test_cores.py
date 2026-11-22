@@ -55,3 +55,23 @@ def test_an_ambiguous_fragment_is_an_error() -> None:
 def test_a_fragment_needs_a_topology() -> None:
     with pytest.raises(LookupError):
         cores.resolve("core:x925", {})
+
+
+def test_at_n_keeps_the_first_n_cpus_of_the_type() -> None:
+    # M1: core:x925@1 pins exactly one CPU of the type — the headline cell's
+    # "one X925 core". The order is the sorted cpu numbers, deterministic.
+    assert cores.resolve("core:x925@1", TOPOLOGY) == (5,)
+    assert cores.resolve("core:x925@3", TOPOLOGY) == (5, 6, 7)
+    assert cores.resolve("core:a725@10", TOPOLOGY) == TOPOLOGY["Cortex-A725"]
+
+
+def test_at_zero_or_over_the_type_is_an_error() -> None:
+    with pytest.raises(LookupError, match="@0"):
+        cores.resolve("core:x925@0", TOPOLOGY)
+    with pytest.raises(LookupError, match="cannot select 11"):
+        cores.resolve("core:x925@11", TOPOLOGY)
+
+
+def test_at_n_still_rejects_an_ambiguous_fragment() -> None:
+    with pytest.raises(LookupError, match="ambiguous"):
+        cores.resolve("core:cortex@2", TOPOLOGY)

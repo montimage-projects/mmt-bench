@@ -5,10 +5,11 @@
 # step needs root, and agents never use sudo (AGENTS.md). Paste each step
 # into a root-capable shell.
 #
-# What it produces, under local/ (git-ignored, never committed):
-#   local/c-benign-raw.pcap        the raw 1-h capture — DELETE after step 3
-#   local/c-benign.pcap            the anonymised capture, registered as
-#                                  corpus entry `c-benign` (local_only)
+# What it produces, under local/ and corpus/data/ (both git-ignored, never
+# committed):
+#   local/capture/c-benign-raw.pcap   the raw 1-h capture — DELETE in step 4
+#   corpus/data/c-benign.pcap         the anonymised capture, registered as
+#                                     corpus entry `c-benign` (local_only)
 #
 # Anonymisation is `tcprewrite` in the pinned mmt-bench/tcpreplay:local
 # image (built by tools/docker/tcpreplay/Dockerfile, image id
@@ -16,16 +17,24 @@
 # at authoring; `docker inspect` prints the digest of the local build):
 #   --seed        deterministic IP rewriting (tcprewrite's crypto-PAn-style
 #                 seeded anonymisation: the same address always maps to the
-#                 same address, so flows and client/server roles survive;
-#                 the seed is the secret — keep it local, do not commit it)
+#                 same address, preserving prefix, so flows and client/server
+#                 roles survive; the seed is the secret — keep it local, do
+#                 not commit it)
 #   --enet-smac/--enet-dmac   MAC addresses replaced
 #   --fixcsum     IP/TCP/UDP checksums recomputed
 #
-# NOT anonymised: packet *payloads* — DNS names, HTTP hosts and TLS SNI stay
-# readable. Truncating with a snaplen would hide them but breaks the
-# payload-reading rules (the 94 of R-all need payloads to fire), so the
-# recommendation is: keep full packets, keep the capture local_only (it is
-# never published, only its label and sha256 appear in results).
+# What tcprewrite does NOT touch (it rewrites headers only):
+#   - ARP payload: the sender/target MAC and IP addresses inside the ARP
+#     body survive at their payload offsets.
+#   - DHCP payload: chaddr (client MAC), yiaddr and giaddr survive inside
+#     the BOOTP body.
+#   - every L7 payload: DNS names, HTTP hosts and TLS SNI stay readable.
+# tcprewrite cannot rewrite or strip those fields, and truncating with a
+# snaplen would hide them but breaks the payload-reading rules (the 94 of
+# R-all need payloads to fire). So the recommendation stands: keep full
+# packets, keep the capture local_only — it is never published; only its
+# label and sha256 appear in results. If the capture must ever leave this
+# host, re-evaluate with a payload-aware anonymiser first.
 set -eu
 
 # The interface to listen on: the route to the outside, not a veth.

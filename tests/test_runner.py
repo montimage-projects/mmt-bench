@@ -102,7 +102,8 @@ def test_a_campaign_writes_its_results_directory(tmp_path: Path, fake_tool: None
 def test_warmup_plus_n_measured_passes(tmp_path: Path, fake_tool: None) -> None:
     doc = campaign_doc([{"label": "x"}], repeats=3)
     campaign = _campaign(tmp_path, doc)
-    adapter = FakeAdapter(run_counters=Counters(1_000_000, 64_000_000, 0))
+    # the corpus fixture holds 200 packets — the fake reports exactly those
+    adapter = FakeAdapter(run_counters=Counters(200, 64_000_000, 0))
     outcome = _run(campaign, tmp_path, adapter=adapter)
     record = _load_run(outcome)
 
@@ -112,7 +113,7 @@ def test_warmup_plus_n_measured_passes(tmp_path: Path, fake_tool: None) -> None:
     assert all(p["status"] == "ok" for p in passes)
     # 64 MB in the scripted 1 s of wall time
     assert passes[1]["gbps"] == pytest.approx(0.512, abs=1e-3)
-    assert passes[1]["mpps"] == pytest.approx(1.0)
+    assert passes[1]["mpps"] == pytest.approx(200 / 1e6)
     # the tool saw the run: 1 warmup + 3 measured
     assert len(adapter.calls) == 4
 
@@ -476,3 +477,32 @@ def test_a_sigterm_before_the_first_cell_still_writes_the_report(
     assert list((directory / "runs").glob("*.json")) == []
     assert (directory / "REPORT.md").exists()
     assert not (stage_root / "mbench-20260105T120000Z").exists()
+
+
+def test_an_invalid_pass_marks_the_run_invalid(tmp_path: Path, fake_tool: None) -> None:
+    # B2: a pass whose counters disagree with the corpus manifest never
+    # counts — the run records it invalid, with the counts.
+    doc = campaign_doc([{"label": "x"}])
+    campaign = _campaign(tmp_path, doc)
+    adapter = FakeAdapter(run_counters=Counters(199, 64_000, 0))
+    outcome = _run(campaign, tmp_path, adapter=adapter)
+    record = _load_run(outcome)
+    assert record["status"] == "invalid"
+    measured = [p for p in record["passes"] if p["kind"] == "measured"]
+    assert all(p["status"] == "invalid" for p in measured)
+    assert any("199" in p and "200" in p for p in record["problems"])
+    assert measured[0]["expected_packets"] == 200
+
+
+def test_a_timed_pass_records_the_tool_basis(tmp_path: Path, fake_tool: None) -> None:
+    # B3: a pass on the tool's own interval rates on it and says so.
+    doc = campaign_doc([{"label": "x"}])
+    campaign = _campaign(tmp_path, doc)
+    adapter = FakeAdapter(run_counters=Counters(200, 64_000_000, 0, {"processing_s": 0.5}))
+    outcome = _run(campaign, tmp_path, adapter=adapter)
+    record = _load_run(outcome)
+    measured = next(p for p in record["passes"] if p["kind"] == "measured")
+    assert measured["timing"]["basis"] == "tool"
+    assert measured["timing"]["processing_s"] == 0.5
+    # 64 MB in the tool's 0.5 s, not the pass's 1 s of wall time
+    assert measured["gbps"] == pytest.approx(1.024, abs=1e-3)

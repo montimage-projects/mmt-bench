@@ -32,6 +32,7 @@ uv run mbench --help                   # smoke: the CLI lists its subcommands
 docker build -t mmt-bench/mmt-probe:local tools/docker/mmt-probe  # pinned image
 tools/docker/mmt-probe/extract-rules.sh  # the image's rules -> local/ (never committed)
 uv run mbench corpus gen c-small --seed 0 --packets 20000 --flows 64 --label smoke --data-in-syn 4
+uv run mbench corpus gen c-large --seed 0 --packets 500 --flows 8 --label smoke-large --data-in-syn 4
 uv run mbench run campaigns/smoke.yaml   # the 10-s campaign, a pipeline check
 dir=$(ls -dt results/*-smoke | head -1)  # the newest smoke results dir
 uv run mbench validate "$dir"/sut*.json "$dir"/runs/*.json "$dir"/REPORT*.md
@@ -42,11 +43,13 @@ python3 tools/ci/check_smoke_result.py "$dir"  # gate: ok, the truth's alerts, r
 `mbench report` are implemented; `mbench sweep` is a stub until its issue
 lands: it exits with status 3 and `not implemented yet (#17)`. The 10-s
 smoke campaign (#9) — `mbench run campaigns/smoke.yaml` after
-`tools/docker/mmt-probe/extract-rules.sh` and `mbench corpus gen … --label
-smoke`, see `campaigns/README.md` — runs in CI on every PR and push to
-`main` (`smoke` job), as a pipeline check, not a benchmark. Its capture's
+`tools/docker/mmt-probe/extract-rules.sh` and the two `mbench corpus gen`
+lines above, see `campaigns/README.md` — runs in CI on every PR and push to
+`main` (`smoke` job), as a pipeline check, not a benchmark. Each capture's
 first packets are TCP SYNs carrying payload (the rule-13 trigger), so the
-gate also proves the alert path: 4 alerts and detection rate 1.0 a pass.
+gate also proves the alert path: every cell's truth-derived alerts and
+detection rate 1.0 a pass; `smoke-large` keeps the 1500-B-frame snap-len
+regression covered.
 
 ## Operating rules
 

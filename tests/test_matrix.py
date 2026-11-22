@@ -248,3 +248,41 @@ def test_an_edge_cpuset_still_loads(tmp_path: Path, fake_tool: None) -> None:
 
 def test_parse_cpulist_roundtrip() -> None:
     assert sut.parse_cpulist("0-3,8") == [0, 1, 2, 3, 8]
+
+
+# --- the verdict cell (review M2) ------------------------------------------------
+
+
+def test_a_verdict_cell_loads_and_resolves_its_cpuset(tmp_path: Path, fake_tool: None) -> None:
+    doc = campaign_doc(
+        [{"label": "x"}],
+        threads=[1, 8],
+        cpusets=["core:x925"],
+        verdict_cell={"ruleset": "rs", "corpus": "x", "threads": 1, "cpuset": "core:x925"},
+    )
+    parts = layout(tmp_path, doc)
+    campaign = _load(parts)
+    assert campaign.verdict_cell == {
+        "ruleset": "rs",
+        "corpus": "x",
+        "threads": 1,
+        "cpuset": "5-9,15-19",
+    }
+    assert campaign.meta()["verdict_cell"]["threads"] == 1
+
+
+def test_a_verdict_cell_naming_no_cell_is_an_error(tmp_path: Path, fake_tool: None) -> None:
+    doc = campaign_doc(
+        [{"label": "x"}],
+        threads=[1],
+        verdict_cell={"threads": 4},
+    )
+    parts = layout(tmp_path, doc)
+    with pytest.raises(matrix.CampaignError, match="no matrix cell matches"):
+        _load(parts)
+
+
+def test_no_verdict_cell_means_the_fastest_default(tmp_path: Path, fake_tool: None) -> None:
+    doc = campaign_doc([{"label": "x"}])
+    parts = layout(tmp_path, doc)
+    assert _load(parts).verdict_cell is None

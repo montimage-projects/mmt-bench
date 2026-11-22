@@ -1,0 +1,44 @@
+# P1-synthetic — the headline matrix on the committed corpora only.
+#
+# campaigns/p1-headline.yaml without C-benign (the local-only anonymised
+# capture): the same cell layout — r0/r0b at thread-nb 0 (the main-thread
+# pipeline), r-all at t1 on @1 and t2 on @4, over both core series — but
+# quiet_host off and two measured passes, so a host that did not do the
+# root-only setup can dry-run the full pipeline and validate its REPORT.
+# Its numbers are a pipeline check, not the headline: only the five-pass
+# quiet-host run answers the question.
+schema_version: 1
+name: p1-synthetic
+question: >-
+  How many Gbit/s can mmt-probe with all 95 rules process on one X925 core
+  on a benign mix? (synthetic corpora, dry-run layout)
+description: >-
+  The P1 headline's dry-run campaign: the committed synthetic corpora only
+  (c-small, c-large), no quiet-host and no perf, two measured passes.
+  Exercises the full record path — SUT, pinned cpusets, per-pass timing
+  basis, counters against the manifest, detection — so a fresh host can
+  prove the pipeline end to end before the quiet run measures.
+mode: offline
+quiet_host: false
+perf: false
+tools: [mmt-probe]
+rulesets:
+  - {id: r0, threads: [0]}
+  - {id: r0b, threads: [0]}
+  - {id: r-all, threads: [1, 2]}
+corpus:
+  - {label: c-small}
+  - {label: c-large}
+threads: [0, 1, 2]
+cpusets:
+  - {cpuset: "core:x925@1", threads: [0, 1]}
+  - {cpuset: "core:x925@4", threads: [2]}
+  - {cpuset: "core:a725@1", threads: [0, 1]}
+  - {cpuset: "core:a725@4", threads: [2]}
+repeats: 2
+timeout_s: 900
+verdict_cell:
+  ruleset: r-all
+  corpus: c-small
+  threads: 1
+  cpuset: "core:x925@1"

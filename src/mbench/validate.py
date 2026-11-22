@@ -19,7 +19,6 @@ Every problem is reported by the dotted path of the field, for example
 from __future__ import annotations
 
 import json
-import math
 import re
 from collections.abc import Iterator
 from dataclasses import dataclass, field
@@ -294,9 +293,10 @@ def campaign_errors(campaign: Any, manifest_path: Path | None = None) -> list[st
     for i, tool in enumerate(campaign["tools"]):
         if tool not in adapters.ADAPTERS:
             errors.append(f"tools[{i}]: {tool!r} has no adapter (known: {', '.join(known)})")
-    for i, cpuset in enumerate(campaign["cpusets"]):
+    for i, item in enumerate(campaign["cpusets"]):
+        cpuset = item["cpuset"] if isinstance(item, dict) else item
         if not cpuset or cpuset.startswith("core:"):
-            continue  # "" pins nothing; core:<type> resolves against the host at run time
+            continue  # "" pins nothing; core:<type>[@n] resolves against the host at run time
         # A descending range (5-2) parses to nothing: the run would record a
         # cpuset that pins no cpu — mislabelled, so it is rejected.
         descending = any(
@@ -455,15 +455,22 @@ def _validate_yaml(p: Path, text: str) -> Report:
     if is_campaign(p, data):
         report = Report(str(p), "campaign", campaign_errors(data))
         if report.ok:
-            dims = [
-                data["tools"],
-                data["rulesets"],
-                data.get("config_profiles") or ["recommended"],
-                data["corpus"],
-                data["threads"],
-                data["cpusets"],
-            ]
-            cells = math.prod(len(d) for d in dims)
+            pairs = 0
+            for rs in data["rulesets"]:
+                rs_t = set(rs.get("threads", ())) if isinstance(rs, dict) else set()
+                for cs in data["cpusets"]:
+                    cs_t = set(cs.get("threads", ())) if isinstance(cs, dict) else set()
+                    pairs += sum(
+                        1
+                        for t in data["threads"]
+                        if (not rs_t or t in rs_t) and (not cs_t or t in cs_t)
+                    )
+            cells = (
+                len(data["tools"])
+                * len(data.get("config_profiles") or ["recommended"])
+                * len(data["corpus"])
+                * pairs
+            )
             report.summary = (
                 f"{cells} matrix cell{'s' if cells != 1 else ''}, "
                 f"repeats {data['repeats']}, timeout {data['timeout_s']:g} s"

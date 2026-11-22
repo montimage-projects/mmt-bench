@@ -264,7 +264,13 @@ def _failed_cell_record(
 def _pass_record(
     kind: str, n: int, outcome: offline.Outcome, gt: truth.GroundTruth | None, tool: str
 ) -> dict[str, Json]:
-    """One pass of a run as the run's JSON records it."""
+    """One pass of a run as the run's JSON records it.
+
+    Throughput uses the tool's own processing interval when the pass
+    carries one (``timing.basis == "tool"``), else wall time — the
+    methodology's basis, with the fallback labelled. ``expected_packets``
+    records the corpus count the tool's counters were checked against.
+    """
     record: dict[str, Json] = {
         "kind": kind,
         "n": n,
@@ -272,6 +278,10 @@ def _pass_record(
         "wall_s": round(outcome.wall_s, 6),
         "returncode": outcome.returncode,
     }
+    if outcome.timing is not None:
+        record["timing"] = outcome.timing
+    if outcome.expected_packets is not None:
+        record["expected_packets"] = outcome.expected_packets
     if outcome.perf is not None:
         record["perf"] = outcome.perf
     if outcome.status != "ok":
@@ -279,14 +289,15 @@ def _pass_record(
         return record
     assert outcome.counters is not None and outcome.alerts is not None
     counters = outcome.counters
-    wall = outcome.wall_s
+    basis = outcome.timing["processing_s"] if outcome.timing else None
+    seconds = basis if isinstance(basis, int | float) and basis > 0 else outcome.wall_s
     record.update(
         {
             "packets": counters.packets,
             "bytes": counters.bytes,
             "drops": counters.drops,
-            "gbps": round(counters.bytes * 8 / wall / 1e9, 4) if wall > 0 else None,
-            "mpps": round(counters.packets / wall / 1e6, 4) if wall > 0 else None,
+            "gbps": round(counters.bytes * 8 / seconds / 1e9, 4) if seconds > 0 else None,
+            "mpps": round(counters.packets / seconds / 1e6, 4) if seconds > 0 else None,
             "alerts": len(outcome.alerts),
             "extra": dict(counters.extra),
         }
@@ -324,6 +335,7 @@ def run_cell(
 
     passes: list[dict[str, Json]] = []
     plan = [("warmup", 0), *[("measured", n) for n in range(1, campaign.repeats + 1)]]
+    problems: list[str] = []
     for kind, n in plan:
         outcome = offline.run_pass(
             adapter,
@@ -335,14 +347,18 @@ def run_cell(
             cell.cpuset,
             campaign.timeout_s,
             clock=monotonic,
+            # The corpus's declared packet count is what the tool's
+            # counters must equal — a mismatch invalidates the pass (B2).
+            expected_packets=cell.corpus.packets,
             # The warm-up warms caches; cycles/pkt belongs to the measured
             # passes only.
             perf_probe=perf_probe if kind == "measured" else None,
         )
         passes.append(_pass_record(kind, n, outcome, cell.corpus.truth, adapter.name))
+        if outcome.status == "invalid":
+            problems.append(f"{kind} pass {n}: {outcome.detail}")
     ended = clock()
 
-    problems: list[str] = []
     try:
         tools = [adapter.tools_record()]
     except Exception as exc:
