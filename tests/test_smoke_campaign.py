@@ -77,6 +77,12 @@ def test_the_corpus_is_the_generated_smoke_entry(doc: dict[str, Any]) -> None:
     # A generator block means deterministic bytes; the fixed seed is what
     # makes the same pcap on every host.
     assert isinstance(entry["generator"].get("seed"), int)
+    # The detection gate's truth: `--data-in-syn` writes the leading TCP
+    # SYN-with-payload packets (the rule-13 trigger) and their ground truth
+    # data/smoke.truth.json, one attack per packet.
+    assert entry["generator"]["data_in_syn"] == 4
+    assert entry["ground_truth"] == "data/smoke.truth.json"
+    assert "--data-in-syn 4" in str(entry["source"])
 
 
 def test_the_ruleset_is_one_rule_under_git_ignored_local(doc: dict[str, Any]) -> None:
@@ -88,3 +94,6 @@ def test_the_ruleset_is_one_rule_under_git_ignored_local(doc: dict[str, Any]) ->
     assert set(ruleset) == {"id", "path"}
     path = str(ruleset["path"])
     assert path.startswith("local/") and path.endswith(".so")
+    # Rule 13 is the one the smoke capture's SYN-with-payload packets and
+    # their generated truth file are built for.
+    assert path.endswith("datainSYN.so")

@@ -10,7 +10,7 @@ from typing import Any
 import pytest
 import yaml
 
-from mbench import corpus, pcap, validate
+from mbench import corpus, pcap, truth, validate
 from mbench.cli import EXIT_INVALID, EXIT_OK, EXIT_USAGE, main
 
 
@@ -111,6 +111,46 @@ def test_payloads_carry_the_sequence_number(tmp_path: Path) -> None:
     corpus.generate(corpus.SETS["c-small"], 0, 20, 2, out)
     for i, (frame, _) in enumerate(frames(out)):
         assert struct.unpack(">Q", frame[14 + 20 + 8 : 14 + 20 + 16])[0] == i
+
+
+def test_data_in_syn_packets_are_tcp_syn_with_payload(tmp_path: Path) -> None:
+    out = tmp_path / "x.pcap"
+    corpus.generate(corpus.SETS["c-small"], 0, 20, 2, out, data_in_syn=3)
+    seen5 = set()
+    for i, (frame, _) in enumerate(frames(out)):
+        ip = frame[14:]
+        if i < 3:
+            assert ip[9] == 6, "not TCP"
+            tcp = ip[20:]
+            assert tcp[13] & 0x02, "not a SYN"
+            assert len(tcp) > 20, "a SYN without payload"
+            assert _fold(_sum16(ip[:20])) == 0xFFFF, "bad IPv4 header checksum"
+            tcp_len = struct.unpack(">H", ip[2:4])[0] - 20
+            pseudo = ip[12:20] + struct.pack(">BBH", 0, 6, tcp_len)
+            assert _fold(_sum16(pseudo) + _sum16(ip[20 : 20 + tcp_len])) == 0xFFFF
+            seen5.add((ip[12:16], ip[16:20], struct.unpack(">H", tcp[:2])[0]))
+        else:
+            assert ip[9] == 17, "a data-in-SYN packet beyond the first N"
+    assert len(seen5) == 3, "the SYN packets must each be their own 5-tuple"
+
+
+def test_data_in_syn_bounds_are_checked(tmp_path: Path) -> None:
+    spec = corpus.SETS["c-small"]
+    out = tmp_path / "x.pcap"
+    with pytest.raises(ValueError, match="data-in-SYN"):
+        corpus.generate(spec, 0, 10, 2, out, data_in_syn=-1)
+    with pytest.raises(ValueError, match="data-in-SYN"):
+        corpus.generate(spec, 0, 10, 2, out, data_in_syn=11)
+
+
+def test_data_in_syn_is_deterministic(tmp_path: Path) -> None:
+    spec = corpus.SETS["c-small"]
+    a, b, c = (tmp_path / n for n in "abc")
+    corpus.generate(spec, 7, 20, 2, a, data_in_syn=3)
+    corpus.generate(spec, 7, 20, 2, b, data_in_syn=3)
+    corpus.generate(spec, 7, 20, 2, c, data_in_syn=4)
+    assert a.read_bytes() == b.read_bytes()
+    assert a.read_bytes() != c.read_bytes()
 
 
 @pytest.mark.parametrize(
@@ -334,6 +374,43 @@ def test_gen_writes_the_entry_from_the_file(tmp_path: Path) -> None:
     assert validate.manifest_errors(corpus.load(mpath)) == []
 
 
+def test_gen_entry_with_data_in_syn_writes_the_truth(tmp_path: Path) -> None:
+    mpath = tmp_path / "manifest.yaml"
+    spec = corpus.SETS["c-small"]
+    m = corpus.load(mpath)
+    e, outcome = corpus.gen_entry(mpath, spec, 0, 20, 2, "x", m, data_in_syn=3)
+    assert outcome == "generated"
+    assert e["ground_truth"] == "data/x.truth.json"
+    assert e["generator"]["data_in_syn"] == 3
+    truth_path = tmp_path / "data" / "x.truth.json"
+    gt = truth.load(truth_path)
+    assert gt.pcap_sha256 == e["sha256"] and len(gt.attacks) == 3
+    assert validate.manifest_errors(corpus.load(mpath)) == []
+    # The same gen is unchanged while the pcap and its truth both match.
+    m = corpus.load(mpath)
+    e2, outcome = corpus.gen_entry(mpath, spec, 0, 20, 2, "x", m, data_in_syn=3)
+    assert outcome == "unchanged" and e2 == e
+    # A missing truth is regenerated, exactly like a corrupted capture.
+    truth_path.unlink()
+    m = corpus.load(mpath)
+    e3, outcome = corpus.gen_entry(mpath, spec, 0, 20, 2, "x", m, data_in_syn=3)
+    assert outcome == "generated" and e3 == e and truth_path.is_file()
+
+
+def test_gen_entry_without_data_in_syn_removes_a_stale_truth(tmp_path: Path) -> None:
+    mpath = tmp_path / "manifest.yaml"
+    spec = corpus.SETS["c-small"]
+    m = corpus.load(mpath)
+    corpus.gen_entry(mpath, spec, 0, 20, 2, "x", m, data_in_syn=3)
+    truth_path = tmp_path / "data" / "x.truth.json"
+    assert truth_path.is_file()
+    m = corpus.load(mpath)
+    e, outcome = corpus.gen_entry(mpath, spec, 0, 20, 2, "x", m)
+    assert outcome == "generated"
+    assert e["ground_truth"] is None and "data_in_syn" not in e["generator"]
+    assert not truth_path.exists()
+
+
 # --- result_ref: what results may show ------------------------------------------
 
 
@@ -487,6 +564,34 @@ def test_cli_gen_rejects_bad_parameters(tmp_path: Path, capsys: pytest.CaptureFi
         EXIT_USAGE
     )
     assert "label" in capsys.readouterr().err
+
+
+def test_cli_gen_data_in_syn_writes_a_valid_truth(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    m = tmp_path / "manifest.yaml"
+    assert (
+        main(
+            [
+                "corpus",
+                "gen",
+                "c-small",
+                "--packets",
+                "20",
+                "--flows",
+                "2",
+                "--data-in-syn",
+                "3",
+                "--manifest",
+                str(m),
+            ]
+        )
+        == EXIT_OK
+    )
+    truth_path = tmp_path / "data" / "c-small.truth.json"
+    assert truth_path.is_file()
+    assert main(["validate", str(truth_path)]) == EXIT_OK
+    assert "valid ground truth" in capsys.readouterr().out
 
 
 def test_cli_gen_does_not_clobber_a_manual_entry(tmp_path: Path) -> None:

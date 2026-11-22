@@ -17,7 +17,10 @@ rm -f "$dest"/*.so   # a rebuilt image's rule set replaces the last copy's
 
 # An mbench- container, --rm, no network, like every container the harness
 # starts; --user keeps the copied files owned by the invoking user.
-docker run --rm --name "mbench-extract-rules-$$" --network none \
+# --pull never keeps the extraction strictly local: a missing or typo'd image
+# fails fast instead of trying a registry pull; timeout caps a hung daemon.
+timeout 120 docker run --rm --pull never --name "mbench-extract-rules-$$" \
+  --network none \
   --user "$(id -u):$(id -g)" -w / \
   -v "$dest:/data" \
   "$image" sh -c 'cp /opt/mmt/security/rules/*.so /data/'

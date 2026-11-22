@@ -48,10 +48,11 @@ a CI runner; its numbers are a pipeline check, not results. On each host:
 ```sh
 docker build -t mmt-bench/mmt-probe:local tools/docker/mmt-probe
 tools/docker/mmt-probe/extract-rules.sh   # the image's rules -> local/rulesets/
-uv run mbench corpus gen c-small --seed 0 --packets 20000 --flows 64 --label smoke
+uv run mbench corpus gen c-small --seed 0 --packets 20000 --flows 64 --label smoke --data-in-syn 4
 uv run mbench run campaigns/smoke.yaml
-uv run mbench validate results/<date>-smoke/REPORT*.md   # the report files
-python3 tools/ci/check_smoke_result.py results/<date>-smoke/   # every run ok
+dir=$(ls -dt results/*-smoke | head -1)   # the newest smoke results dir
+uv run mbench validate "$dir"/sut*.json "$dir"/runs/*.json "$dir"/REPORT*.md
+python3 tools/ci/check_smoke_result.py "$dir" 4   # runs ok, 4 alerts, rate 1.0
 ```
 
 The ruleset is a single `.so` of the image's mmt-security set: the compiled
@@ -60,6 +61,11 @@ git-ignored `local/` by `extract-rules.sh`, never committed. One rule keeps
 a pass under a second; the image's full set costs more than the 10-s budget
 of init per pass. The `smoke` corpus entry is deterministic
 (`mbench corpus gen`, seed 0): the same bytes on every host, generated into
-`corpus/data/` and never committed. The smoke CI job (`.github/workflows/ci.yml`)
-runs the same steps on every pull request and push to `main` and uploads the
-results directory as an artefact — never a commit.
+`corpus/data/` and never committed. Its first 4 packets are TCP SYNs
+carrying payload — the trigger of the ruleset's `13.datainSYN.so` — and
+`gen` writes their ground truth as `data/smoke.truth.json` (one attack per
+packet), so every measured pass must report 4 alerts and detection rate 1.0:
+the smoke proves the alert path end to end, not only throughput plumbing.
+The smoke CI job (`.github/workflows/ci.yml`) runs the same steps on every
+pull request and push to `main` and uploads the results directory as an
+artefact — never a commit.

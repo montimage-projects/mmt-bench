@@ -52,15 +52,17 @@ entries:
     frame_bytes: 1500
 - label: smoke
   path: data/smoke.pcap
-  sha256: b6539c87d238aed17f7d0833bf73f71e58e0b93c8f66aa5ad5e93f5ec22b0f3c
+  sha256: 127febcbfe54857b3e393284126b77bcff13e35932ea9c24ec5461a9de02a890
   size_bytes: 1600024
   packets: 20000
   avg_packet_bytes: 64.0
-  source: 'synthetic: mbench corpus gen c-small --seed 0 --packets 20000 --flows 64'
+  source: 'synthetic: mbench corpus gen c-small --seed 0 --packets 20000 --flows 64
+    --data-in-syn 4'
   licence: CC0-1.0
-  ground_truth: null
+  ground_truth: data/smoke.truth.json
   local_only: false
-  description: synthetic 64 B Ethernet/IPv4/UDP frames (packet-rate bound)
+  description: synthetic 64 B Ethernet/IPv4/UDP frames (packet-rate bound); its first
+    4 packets are TCP SYNs with payload
   generator:
     set: c-small
     version: 1
@@ -68,3 +70,4 @@ entries:
     packets: 20000
     flows: 64
     frame_bytes: 64
+    data_in_syn: 4
