@@ -197,7 +197,10 @@ attacks a tool missed.
   `KeyboardInterrupt`) and catches SIGTERM and SIGHUP, raising
   `SystemExit(128 + signum)` so they take the same interrupted path — the
   tool is killed, the cell recorded `interrupted` and the report rendered.
-  A signal landing inside the final cleanup is deferred — recorded, not
+  For the campaign's duration the harness owns all three handlers: a
+  caller's own handler — `SIG_IGN` included — is overridden, and the
+  previous handlers are restored when `mbench run` returns. A signal
+  landing inside the final cleanup is deferred — recorded, not
   raised — until the cleanup finishes, then re-raised with the same exit
   status, so the stage removal, the report and the run records always
   complete. SIGKILL cannot be caught: a `kill -9` can still leave the

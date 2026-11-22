@@ -691,3 +691,46 @@ def test_a_ctrl_c_in_the_cleanup_is_deferred_then_raised(
     assert not stage_dir.exists()
     directory = tmp_path / "results" / "2026-01-05-test"
     assert (directory / "REPORT.md").exists()
+
+
+# --- A cleanup step that always interrupts (review L1) -------------------------
+
+
+def test_a_cleanup_step_that_always_interrupts_is_given_up_on(
+    tmp_path: Path, fake_tool: None, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A step that raises an interrupt on every attempt must not spin the
+    # retry forever (review L1): it is retried once, then given up on —
+    # the interrupt stays in ``pending`` and propagates — while the rest
+    # of the cleanup still runs. The watchdog timer turns the old
+    # unbounded loop's hang into a failure.
+    campaign = _campaign(tmp_path, campaign_doc([{"label": "x"}]))
+    stage_root = tmp_path / "tmpfs"
+
+    calls = 0
+
+    def rmtree_always(*args: Any, **kwargs: Any) -> None:
+        nonlocal calls
+        calls += 1
+        raise KeyboardInterrupt()
+
+    def time_up(signum: int, frame: Any) -> None:
+        raise AssertionError("the interrupt retry did not finish")
+
+    monkeypatch.setattr(shutil, "rmtree", rmtree_always)
+    previous = signal.signal(signal.SIGALRM, time_up)
+    signal.setitimer(signal.ITIMER_REAL, 10)
+    try:
+        with pytest.raises(KeyboardInterrupt):
+            _run(campaign, tmp_path, tmpfs=stage_root)
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        signal.signal(signal.SIGALRM, previous)
+
+    assert calls == 2  # retried once, then the step was given up on
+    directory = tmp_path / "results" / "2026-01-05-test"
+    run_files = list((directory / "runs").glob("*.json"))
+    assert len(run_files) == 1  # the cell's record is on disk
+    assert (directory / "REPORT.md").exists()  # the remaining cleanup ran
+    # and the given-up step's target stays behind
+    assert (stage_root / "mbench-20260105T120000Z").exists()
