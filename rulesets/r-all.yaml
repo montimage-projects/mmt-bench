@@ -2,7 +2,7 @@
 #
 # Why 94 and not the plan's 95: upstream mmt-security has 95 XML rules, but
 # the pinned fork (montimage/mmt-security @
-# defefb7a3f39c70527d3e74d8f1150b7392ac050, via commit aeacbe0428
+# 855931a37bd73bd43b26ff03ea108c6745c11b19, via commit aeacbe0428
 # "fix(rules): disable DICOM rules 206 and 212, false positives on benign
 # traffic (#27) (#37)") ships 94 — rules 206 and 212 are disabled and not
 # built. "All 95 rules" in the P1 question therefore means the 94 rules the
@@ -23,8 +23,8 @@ security:
 provenance:
   source: >-
     mmt-bench/mmt-probe:local image (sha256
-    c6311ed32fb97c57a87a5468de73b1720d9a377b7b56e94de63f01207e013c84) —
-    mmt-security fork commit defefb7a3f39c70527d3e74d8f1150b7392ac050;
+    2db1c335165c0f30f035302ceea415bafc6a1e103bff1a3b4c22347377f4cc7c) —
+    mmt-security fork commit 855931a37bd73bd43b26ff03ea108c6745c11b19;
     upstream 95 rules minus DICOM rules 206 and 212, disabled in aeacbe0428
   expect_rules: 94
   extract: tools/docker/mmt-probe/extract-rules.sh

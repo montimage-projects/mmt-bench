@@ -26,7 +26,7 @@ ARG DPI_SHA256SUMS_SHA256=f7f7a80990bdb3c98f48978ff2bf00fa649a5c70633c906bd66654
 # /opt/mmt/VERSIONS either way).
 ARG SECURITY_REPO=https://github.com/montimage-projects/mmt-security.git
 ARG SECURITY_TAG=
-ARG SECURITY_COMMIT=defefb7a3f39c70527d3e74d8f1150b7392ac050
+ARG SECURITY_COMMIT=855931a37bd73bd43b26ff03ea108c6745c11b19
 ARG PROBE_COMMIT=1e00441a00bba1d064ede2ef95b851428c2b0183   # branch intact-new-features
 # Ubuntu packages (noble-updates/-security, 2026-11-19). Ubuntu removes a
 # version from the archive when it publishes the next update, and has no
