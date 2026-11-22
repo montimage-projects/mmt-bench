@@ -98,8 +98,15 @@ pinned and recorded.
   type, is a campaign error. `core:<type>@<n>` pins the first n CPUs of
   the type — the form a cell uses when the question is "on n cores"
   (`core:x925@1` for the one-core headline; `@N+2` for tN leaves the
-  probe's reader and output threads room beside its N workers: the probe
-  pins workers round-robin over the container's allowed set).
+  probe's reader and output threads room beside its N workers: this
+  mmt-probe build cannot pin them — worker pinning is hardcoded to
+  `worker_index % (online_cpus - 1) + 1`, host-numbered ordinals with no
+  config option — so the `sched_setaffinity` calls fail inside the
+  container's `--cpuset-cpus` set and the workers float within it).
+- At `@1` the whole probe — reader, worker and output — shares the
+  verdict core; the re-review measured about 25 % contention against the
+  same cell on the 10-CPU cpuset, a cost the headline number carries by
+  construction.
 - The harness pins itself to the CPUs the cell does not use, and the run
   record carries `harness_cpuset` beside the cell's.
 - `perf stat` for cycles/pkt counts the run's own container cgroup

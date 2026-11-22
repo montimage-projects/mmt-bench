@@ -114,8 +114,12 @@ def _integrity(counters: Counters, expected_packets: int | None) -> list[str]:
     """Why a completed pass cannot count, from the tool's own outputs (B2).
 
     An abnormal exit — the tool caught a signal it masked as return code 0
-    — is never a clean measurement; and a packet count that does not equal
-    the pinned corpus's means the tool lost or double-counted packets.
+    — is never a clean measurement; a packet count that does not equal
+    the pinned corpus's means the tool lost or double-counted packets;
+    and when the tool's reports are a counter source, their sums answer
+    to the pass's total: a report truncated after the status lines are
+    written keeps ``packets`` whole while the reports' own counts are
+    short or empty.
     """
     problems = []
     if counters.extra.get("abnormal_exit"):
@@ -126,6 +130,15 @@ def _integrity(counters: Counters, expected_packets: int | None) -> list[str]:
             f"the tool counted {counters.packets} packets, "
             f"the pinned corpus holds {expected_packets}"
         )
+    report_packets = counters.extra.get("report_packets")
+    if isinstance(report_packets, int) and not isinstance(report_packets, bool):
+        if report_packets < counters.packets:
+            problems.append(
+                f"the tool's reports counted {report_packets} packets, "
+                f"the pass's total is {counters.packets}"
+            )
+        if counters.bytes == 0 and counters.packets > 0:
+            problems.append(f"the tool's reports counted 0 bytes for {counters.packets} packets")
     return problems
 
 

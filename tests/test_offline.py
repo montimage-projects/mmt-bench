@@ -249,3 +249,52 @@ def test_the_matching_packet_count_stays_ok(tmp_path: Path) -> None:
     adapter = FakeAdapter(run_counters=Counters(200, 640, 0))
     outcome = _pass(adapter, tmp_path, expected_packets=200)
     assert outcome.status == "ok"
+
+
+def test_a_report_shorter_than_the_pass_is_invalid(tmp_path: Path) -> None:
+    # B2's residual gap (re-review): the status lines keep the pass's
+    # packet count whole while the reports were cut mid-record — the
+    # report's own sums answer to the pass total.
+    (tmp_path / "rs.so").write_bytes(b"rules")
+    make_pcap(tmp_path, "x.pcap")
+    adapter = FakeAdapter(
+        run_counters=Counters(
+            1_000_000,
+            64_000_000,
+            0,
+            {"report_packets": 901_281, "report_bytes": 57_681_984, "status_lines": 2},
+        )
+    )
+    outcome = _pass(adapter, tmp_path, expected_packets=1_000_000)
+    assert outcome.status == "invalid"
+    assert "901281" in outcome.detail and "1000000" in outcome.detail
+
+
+def test_a_zero_byte_report_for_packets_is_invalid(tmp_path: Path) -> None:
+    # A report truncated before any volume row: 0 bytes for a pass that
+    # counted packets is a broken report, never an ok measurement.
+    (tmp_path / "rs.so").write_bytes(b"rules")
+    make_pcap(tmp_path, "x.pcap")
+    adapter = FakeAdapter(
+        run_counters=Counters(
+            1_000_000, 0, 0, {"report_packets": 0, "report_bytes": 0, "status_lines": 2}
+        )
+    )
+    outcome = _pass(adapter, tmp_path, expected_packets=1_000_000)
+    assert outcome.status == "invalid"
+    assert "0 bytes for 1000000 packets" in outcome.detail
+
+
+def test_consistent_report_sums_stay_ok(tmp_path: Path) -> None:
+    (tmp_path / "rs.so").write_bytes(b"rules")
+    make_pcap(tmp_path, "x.pcap")
+    adapter = FakeAdapter(
+        run_counters=Counters(
+            1_000_000,
+            64_000_000,
+            0,
+            {"report_packets": 1_000_000, "report_bytes": 64_000_000, "status_lines": 2},
+        )
+    )
+    outcome = _pass(adapter, tmp_path, expected_packets=1_000_000)
+    assert outcome.status == "ok"

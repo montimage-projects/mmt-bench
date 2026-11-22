@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import signal
 import subprocess
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from pathlib import Path
 
 import pytest
@@ -29,6 +29,12 @@ STAT_CSV = """# started on 2026-01-05T12:00:00
 #: be taken for the ``cycles`` event — matching is on the name exactly.
 TRICKY_CSV = """999,,cpu-cycles,100.00,,,,
 777,,cpu-cycles/foo/,100.00,,,,
+"""
+
+#: A ``perf stat -x ,`` output scoped to one cgroup: each counter row
+#: carries the cgroup name as a trailing field.
+CGROUP_CSV = """1234567,,cycles,100.00,,,,system.slice/docker-abc.scope
+2345678,,instructions,100.00,,,,system.slice/docker-abc.scope
 """
 
 
@@ -125,16 +131,21 @@ def test_a_passing_canary_leaves_the_probe_available(tmp_path: Path) -> None:
 # --- a session -----------------------------------------------------------------
 
 
-def test_a_session_counts_the_cpuset_and_divides(tmp_path: Path) -> None:
-    knob = tmp_path / "perf_event_paranoid"
-    knob.write_text("1\n", encoding="utf-8")
-    spawned: list[FakePopen] = []
+def _spawned() -> tuple[list[FakePopen], Callable[[Sequence[str]], subprocess.Popen[bytes]]]:
+    procs: list[FakePopen] = []
 
     def spawn(argv: Sequence[str]) -> subprocess.Popen[bytes]:
         proc = FakePopen(argv, {})
-        spawned.append(proc)
+        procs.append(proc)
         return proc  # type: ignore[return-value]
 
+    return procs, spawn
+
+
+def test_a_session_counts_the_cpuset_and_divides(tmp_path: Path) -> None:
+    knob = tmp_path / "perf_event_paranoid"
+    knob.write_text("1\n", encoding="utf-8")
+    spawned, spawn = _spawned()
     probe = perf.Probe(
         binary="/usr/bin/perf",
         paranoid_path=knob,
@@ -142,10 +153,26 @@ def test_a_session_counts_the_cpuset_and_divides(tmp_path: Path) -> None:
         spawn=spawn,
     )
     session = probe.start([5, 6])
-    assert session is not None
-    argv = spawned[0].argv
-    assert argv[argv.index("-C") + 1] == "5-6"
-    assert "cycles" in argv and "instructions" in argv
+    assert session is not None and session.scope == "cpuset"
+    # the exact argv this perf build gets (re-reviewed: events precede -G)
+    assert spawned[0].argv == [
+        "/usr/bin/perf",
+        "stat",
+        "-e",
+        "cycles",
+        "-e",
+        "instructions",
+        "-a",
+        "-C",
+        "5-6",
+        "-x",
+        ",",
+        "-o",
+        str(session.out),
+        "--",
+        "sleep",
+        perf._SESSION_CAP_S,
+    ]
     session.out.write_text(STAT_CSV, encoding="utf-8")
 
     record = probe.record(session, 1000)
@@ -154,6 +181,57 @@ def test_a_session_counts_the_cpuset_and_divides(tmp_path: Path) -> None:
     assert record["instructions_per_cycle"] == pytest.approx(2345678 / 1234567)
     assert spawned[0].signals == [signal.SIGINT]  # stopped like a Ctrl-C
     assert not session.out.exists()  # the csv never outlives the pass
+
+
+def test_the_cgroup_scope_counts_the_passs_own_container(tmp_path: Path) -> None:
+    # The run's own container is the tighter scope; on this perf build
+    # `-G` must follow the events ("must define events before cgroups")
+    # and needs system-wide `-a`.
+    knob = tmp_path / "perf_event_paranoid"
+    knob.write_text("1\n", encoding="utf-8")
+    spawned, spawn = _spawned()
+    probe = perf.Probe(
+        binary="/usr/bin/perf",
+        paranoid_path=knob,
+        run=lambda argv: _completed(argv),
+        spawn=spawn,
+    )
+    session = probe.start([5, 6], "system.slice/docker-" + "ab" * 32 + ".scope")
+    assert session is not None and session.scope == "cgroup"
+    argv = spawned[0].argv
+    assert argv == [
+        "/usr/bin/perf",
+        "stat",
+        "-e",
+        "cycles",
+        "-e",
+        "instructions",
+        "-a",
+        "-G",
+        "system.slice/docker-" + "ab" * 32 + ".scope",
+        "-x",
+        ",",
+        "-o",
+        str(session.out),
+        "--",
+        "sleep",
+        perf._SESSION_CAP_S,
+    ]
+    assert "-C" not in argv
+    session.out.write_text(CGROUP_CSV, encoding="utf-8")
+    record = probe.record(session, 1000)
+    assert record["scope"] == "cgroup"
+    assert record["cycles"] == 1234567.0
+    assert record["cycles_per_packet"] == pytest.approx(1234.567)
+
+
+def test_the_parser_tolerates_the_cgroup_column() -> None:
+    # -G output carries the cgroup name on each row; the count is field 0
+    # and the event name matched exactly wherever the column lands.
+    assert perf.parse_stat_csv(CGROUP_CSV) == {
+        "cycles": 1234567.0,
+        "instructions": 2345678.0,
+    }
 
 
 def test_an_unpinned_pass_is_not_applicable(tmp_path: Path) -> None:

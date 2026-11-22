@@ -30,6 +30,7 @@ from mbench.adapters.base import (
     tools_record_errors,
 )
 from mbench.adapters.mmt_probe import MmtProbeAdapter
+from mbench.modes import offline
 
 FIXTURES = Path(__file__).parent / "fixtures" / "mmt-probe"
 DIGEST = "sha256:" + "ab" * 32
@@ -512,6 +513,28 @@ def test_a_log_without_a_clean_exit_marker_is_incomplete(tmp_path: Path) -> None
     counters = adapter.counters()
     assert counters.extra["exit_state"] == "incomplete"
     assert counters.extra["abnormal_exit"] is True
+
+
+def test_a_truncated_report_fails_the_pass_integrity(tmp_path: Path) -> None:
+    # B2's residual gap (re-review): a report cut before its volume rows
+    # leaves the status lines' packet count whole — packets stays 1M while
+    # the reports' own sums are 0 — so the pass must not stay ok.
+    adapter, _, workdir = _prepared(tmp_path)
+    _run(adapter, workdir, tmp_path)
+    report = (FIXTURES / "report.json").read_text(encoding="utf-8")
+    (workdir / "reports" / "truncated.json").write_text(
+        report[: report.rindex("[100,")], encoding="utf-8"
+    )
+    (workdir / "probe.log").write_text(_THREADED_LOG, encoding="utf-8")
+    counters = adapter.counters()
+    assert (counters.packets, counters.bytes) == (1_000_000, 0)
+    assert counters.extra["report_packets"] == 0
+    assert counters.extra["exit_state"] == "clean"
+    problems = offline._integrity(counters, 1_000_000)
+    assert problems == [
+        "the tool's reports counted 0 packets, the pass's total is 1000000",
+        "the tool's reports counted 0 bytes for 1000000 packets",
+    ]
 
 
 # --- the processing interval (review B3) ---------------------------------------

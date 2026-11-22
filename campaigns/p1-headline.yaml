@@ -24,11 +24,16 @@
 # cpusets are `core:<type>@<n>` — the first n CPUs of the core type,
 # resolved from lscpu at run time, so no CPU numbers are committed and the
 # 1-thread X925 cell runs on exactly one CPU. `@N+2` for tN leaves the
-# probe's reader and output threads room beside the N workers (the probe
-# pins its workers round-robin over its allowed set). The harness pins
-# itself to the cores the cell does not use. `security.thread-nb` is 0 in
-# the generated config: rules are verified in the probe threads, so
-# thread-nb sweeps the processing capacity, not a separate security pool.
+# probe's reader and output threads room beside the N workers — needed
+# because this mmt-probe build cannot pin them: worker pinning is
+# hardcoded (`worker_index % (online_cpus - 1) + 1`, host-numbered
+# ordinals), the sched_setaffinity calls fail inside the cpuset, and the
+# workers float within it. At @1 the whole probe — reader, worker and
+# output — shares the verdict core (~25% contention vs the 10-CPU
+# cpuset, measured on re-review). The harness pins itself to the cores
+# the cell does not use. `security.thread-nb` is 0 in the generated
+# config: rules are verified in the probe threads, so thread-nb sweeps
+# the processing capacity, not a separate security pool.
 #
 # This campaign needs Luong's root-only steps first — the runner prints
 # them (quiet_host: vLLM stop/start; perf access for cycles/pkt; the

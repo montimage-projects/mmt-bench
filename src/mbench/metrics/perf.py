@@ -2,7 +2,7 @@
 
 A measured pass is wrapped in ``perf stat``: the cycles and instructions
 burned while the tool processed the capture. The scope is the tool's
-container cgroup when the adapter can name one (``perf stat -G
+container cgroup when the adapter can name one (``perf stat -e … -a -G
 system.slice/docker-<id>.scope`` — the cycles the pass's own container
 burned, nothing else's), else the cell's pinned cores (``perf stat -a -C
 <cpuset>`` — every cycle the cpuset burned, including whatever else ran on
@@ -224,10 +224,10 @@ class Probe:
 
         ``cgroup`` — the run container's cgroup (a name relative to
         ``/sys/fs/cgroup``, ``system.slice/docker-<id>.scope``) — counts
-        only the pass's own container: ``perf stat -G <cgroup>``. Without
-        it, ``perf stat -a -C <cpuset>`` counts every cycle the pinned
-        cores burn, including anything else scheduled on them. ``None``
-        when perf is unavailable (the marker is recorded by
+        only the pass's own container: ``perf stat -e … -a -G <cgroup>``.
+        Without it, ``perf stat -e … -a -C <cpuset>`` counts every cycle
+        the pinned cores burn, including anything else scheduled on them.
+        ``None`` when perf is unavailable (the marker is recorded by
         :meth:`record`) or when neither scope can be named: ``-C`` needs a
         cpuset, and all-CPU counting on a run pinned nowhere would mislabel
         the metric.
@@ -239,20 +239,29 @@ class Probe:
         )
         os.close(fd)
         out = Path(name)
-        argv = [str(self._binary), "stat"]
+        # Events precede any -G: this perf build refuses them after
+        # ("must define events before cgroups"), and the cgroup scope
+        # needs system-wide -a — the container's cpuset already confines
+        # its cycles, so all-CPU counting still counts only the pass's
+        # own container.
+        argv = [
+            str(self._binary),
+            "stat",
+            "-e",
+            "cycles",
+            "-e",
+            "instructions",
+            "-a",
+        ]
         scope = "cpuset"
         if cgroup:
             argv += ["-G", cgroup]
             scope = "cgroup"
         else:
-            argv += ["-a", "-C", sut.format_cpulist(cpuset)]
+            argv += ["-C", sut.format_cpulist(cpuset)]
         argv += [
             "-x",
             ",",
-            "-e",
-            "cycles",
-            "-e",
-            "instructions",
             "-o",
             str(out),
             "--",
