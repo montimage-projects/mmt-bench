@@ -135,6 +135,8 @@ def test_a_path_corpus_entry_needs_no_manifest(
     ref = campaign.cells[0].corpus
     assert ref.sha256 == sha
     assert str(root) not in repr(ref.ref)  # the private path stays out of results
+    # a path-pinned capture is the private-capture case: label and sha256 only
+    assert ref.ref == {"label": "capture", "sha256": sha, "local_only": True}
 
 
 def test_a_sha_mismatch_is_an_error(tmp_path: Path, fake_tool: None) -> None:
@@ -225,6 +227,23 @@ def test_cpusets_must_be_valid_cpulists(tmp_path: Path, fake_tool: None) -> None
     parts = layout(tmp_path, doc)
     with pytest.raises(matrix.CampaignError):
         _load(parts)
+
+
+@pytest.mark.parametrize("cpuset", ["5-2", "0,5-2", "9-8"])
+def test_a_descending_cpuset_is_an_error(cpuset: str, tmp_path: Path, fake_tool: None) -> None:
+    # "5-2" parses to nothing: it would run unpinned while recording a
+    # cpuset — a mislabelled measurement, so it is rejected (review L4).
+    doc = campaign_doc([{"label": "x"}], cpusets=[cpuset])
+    parts = layout(tmp_path, doc)
+    with pytest.raises(matrix.CampaignError) as exc:
+        _load(parts)
+    assert any("cpusets[0]" in p for p in exc.value.problems)
+
+
+def test_an_edge_cpuset_still_loads(tmp_path: Path, fake_tool: None) -> None:
+    doc = campaign_doc([{"label": "x"}], cpusets=["5-5", "0-3,8"])
+    campaign = _load(layout(tmp_path, doc))
+    assert [c.cpuset for c in campaign.cells] == [(5,), (0, 1, 2, 3, 8)]
 
 
 def test_parse_cpulist_roundtrip() -> None:

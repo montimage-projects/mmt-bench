@@ -172,11 +172,13 @@ def _resolve_pcap(item: dict[str, Any], base: Path) -> CorpusRef:
         "size_bytes": st.size_bytes,
         "packets": st.packets,
         "avg_packet_bytes": st.avg_packet_bytes,
-        # The path is never recorded: it may be a private local file.
+        # The path is never recorded, and the entry is local-only: a
+        # path-pinned capture is the private-capture case — results name it
+        # by its label and sha256 only (AGENTS.md).
         "source": "a path pinned in the campaign file",
         "licence": "unspecified (campaign-local capture)",
         "ground_truth": Path(item["truth"]).name if item.get("truth") else None,
-        "local_only": False,
+        "local_only": True,
     }
     return CorpusRef(label, path, st.sha256, gt, corpus.result_ref(entry))
 

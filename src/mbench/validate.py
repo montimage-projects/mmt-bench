@@ -270,6 +270,19 @@ def campaign_errors(campaign: Any, manifest_path: Path | None = None) -> list[st
     for i, tool in enumerate(campaign["tools"]):
         if tool not in adapters.ADAPTERS:
             errors.append(f"tools[{i}]: {tool!r} has no adapter (known: {', '.join(known)})")
+    for i, cpuset in enumerate(campaign["cpusets"]):
+        if not cpuset:
+            continue  # "" pins nothing
+        # A descending range (5-2) parses to nothing: the run would record a
+        # cpuset that pins no cpu — mislabelled, so it is rejected.
+        descending = any(
+            int(hi) < int(lo)
+            for part in cpuset.split(",")
+            if "-" in part
+            for lo, hi in [part.split("-", 1)]
+        )
+        if descending or not sut.parse_cpulist(cpuset):
+            errors.append(f"cpusets[{i}]: {cpuset!r} is empty or has a descending range")
     if manifest_path is None:
         manifest_path = corpus.DEFAULT_MANIFEST
     for i, item in enumerate(campaign["corpus"]):

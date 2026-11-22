@@ -24,6 +24,12 @@ the pcap sha256 and the run container's cgroup limits. A record that fails
 excluded from every report table. A pass that exceeds ``timeout_s`` is
 killed and recorded ``timeout``; it never counts as a measurement.
 
+A cell that raises is a run record too — ``error``, or ``interrupted`` on
+``KeyboardInterrupt``/``SystemExit`` — with the exception in ``problems``;
+the campaign continues after an error and stops after an interrupt.
+``REPORT.md`` is always rendered over whatever run files exist, and the
+tmpfs staging dir is removed on every exit path.
+
 For a ``quiet_host`` campaign the runner only **prints** the commands that
 stop and restart ``vllm-qwen.service`` and ``vllm-health-watchdog.timer``
 (``systemctl --user``, user units — the decision of 2026-11-21); it never
@@ -37,6 +43,7 @@ import copy
 import json
 import os
 import re
+import shutil
 import sys
 import tempfile
 import time
@@ -204,6 +211,38 @@ def _slug(cell: Cell) -> str:
     return re.sub(r"[^a-z0-9._-]+", "_", raw.lower())[:80]
 
 
+def _failed_cell_record(
+    campaign: Campaign,
+    cell: Cell,
+    exc: BaseException,
+    *,
+    batch: str,
+    tmpfs: bool,
+    at: datetime,
+    what: str,
+) -> dict[str, Json]:
+    """The run record of a cell that never measured: what failed and why.
+
+    ``error`` for an exception — a failed adapter build, a stage or prepare
+    error, a crashed pass — and ``interrupted`` for
+    ``KeyboardInterrupt``/``SystemExit``. What raised, in ``what``, and the
+    exception itself go to ``problems``.
+    """
+    status = "interrupted" if isinstance(exc, (KeyboardInterrupt, SystemExit)) else "error"
+    return {
+        "schema_version": 1,
+        "batch": batch,
+        "campaign": campaign.meta(),
+        "cell": {"index": cell.index, "tool": cell.tool},
+        "status": status,
+        "problems": [f"{what}: {type(exc).__name__}: {exc}"],
+        "started_at": _iso(at),
+        "ended_at": _iso(at),
+        "mode": {"name": campaign.mode, "tmpfs": tmpfs},
+        "passes": [],
+    }
+
+
 def _pass_record(
     kind: str, n: int, outcome: offline.Outcome, gt: truth.GroundTruth | None, tool: str
 ) -> dict[str, Json]:
@@ -353,7 +392,7 @@ class CampaignOutcome:
 
     @property
     def failed(self) -> int:
-        return sum(1 for r in self.runs if r["status"] in ("timeout", "error"))
+        return sum(1 for r in self.runs if r["status"] in ("timeout", "error", "interrupted"))
 
 
 def _collect_sut() -> dict[str, Json]:
@@ -419,52 +458,80 @@ def run_campaign(
     if stage_dir_root is None:
         err("mbench run: no tmpfs mount found: captures are staged on the regular filesystem")
 
-    with tempfile.TemporaryDirectory(prefix="mbench-run-", dir=work_root) as work_root_dir:
-        work = Path(work_root_dir)
-        on_tmpfs = stage_dir_root is not None
-        stage_dir = work / "staged"
-        if stage_dir_root is not None:
-            stage_dir = stage_dir_root / f"mbench-{batch_id}"
-        for cell in campaign.cells:
-            try:
-                adapter = factories[cell.tool]()
-            except Exception as exc:
-                err(f"cell {cell.index} ({cell.tool}): adapter failed: {exc}")
-                record = {
-                    "schema_version": 1,
-                    "batch": batch_id,
-                    "campaign": campaign.meta(),
-                    "cell": {"index": cell.index, "tool": cell.tool},
-                    "status": "error",
-                    "problems": [f"adapter {cell.tool}: {type(exc).__name__}: {exc}"],
-                    "started_at": _iso(now),
-                    "ended_at": _iso(now),
-                    "mode": {"name": campaign.mode, "tmpfs": on_tmpfs},
-                    "passes": [],
-                }
-            else:
-                record = run_cell(
-                    adapter,
-                    campaign,
-                    cell,
-                    workdir=work / f"cell-{cell.index:03d}",
-                    stage_dir=stage_dir,
-                    tmpfs=on_tmpfs,
-                    host_record=host_record,
-                    batch=batch_id,
-                    clock=clock,
-                    monotonic=monotonic,
+    try:
+        with tempfile.TemporaryDirectory(prefix="mbench-run-", dir=work_root) as work_root_dir:
+            work = Path(work_root_dir)
+            on_tmpfs = stage_dir_root is not None
+            stage_dir = work / "staged"
+            if stage_dir_root is not None:
+                stage_dir = stage_dir_root / f"mbench-{batch_id}"
+            for cell in campaign.cells:
+                interrupt: BaseException | None = None
+                try:
+                    adapter = factories[cell.tool]()
+                except Exception as exc:
+                    err(f"cell {cell.index} ({cell.tool}): adapter failed: {exc}")
+                    record = _failed_cell_record(
+                        campaign,
+                        cell,
+                        exc,
+                        batch=batch_id,
+                        tmpfs=on_tmpfs,
+                        at=now,
+                        what=f"adapter {cell.tool}",
+                    )
+                else:
+                    try:
+                        record = run_cell(
+                            adapter,
+                            campaign,
+                            cell,
+                            workdir=work / f"cell-{cell.index:03d}",
+                            stage_dir=stage_dir,
+                            tmpfs=on_tmpfs,
+                            host_record=host_record,
+                            batch=batch_id,
+                            clock=clock,
+                            monotonic=monotonic,
+                        )
+                    except BaseException as exc:
+                        # A crashed cell is a run record, not a lost campaign:
+                        # ``error`` — the campaign continues; ``interrupted``
+                        # (Ctrl-C, SystemExit) — it is recorded, then re-raised.
+                        record = _failed_cell_record(
+                            campaign,
+                            cell,
+                            exc,
+                            batch=batch_id,
+                            tmpfs=on_tmpfs,
+                            at=clock(),
+                            what="the run",
+                        )
+                        if isinstance(exc, (KeyboardInterrupt, SystemExit)):
+                            interrupt = exc
+                        else:
+                            err(f"cell {cell.index} ({cell.tool}): run failed: {exc}")
+                outcome.runs.append(record)
+                path = runs_dir / f"{batch_id}-{cell.index:03d}-{_slug(cell)}.json"
+                write(path, json.dumps(record, indent=2, ensure_ascii=False) + "\n")
+                outcome.run_files.append(path)
+                err(
+                    f"cell {cell.index + 1}/{len(campaign.cells)} "
+                    f"({_slug(cell)}): {record['status']}"
                 )
-            outcome.runs.append(record)
-            path = runs_dir / f"{batch_id}-{cell.index:03d}-{_slug(cell)}.json"
-            write(path, json.dumps(record, indent=2, ensure_ascii=False) + "\n")
-            outcome.run_files.append(path)
-            err(f"cell {cell.index + 1}/{len(campaign.cells)} ({_slug(cell)}): {record['status']}")
+                if interrupt is not None:
+                    raise interrupt
+    finally:
+        # The tmpfs staging dir never outlives the campaign — clean exit,
+        # failed cell or Ctrl-C alike (B1).
+        if stage_dir_root is not None:
+            shutil.rmtree(stage_dir_root / f"mbench-{batch_id}", ignore_errors=True)
+        # And a partial campaign still leaves its report: it renders over
+        # whatever run files exist, failed cells listed.
+        from mbench.report import render
 
-    from mbench.report import render
-
-    report = render.render_dir(directory)
-    report_file = _unique(directory / "REPORT.md", batch_id, ".md")
-    write(report_file, report)
-    outcome.report_file = report_file
+        report = render.render_dir(directory)
+        report_file = _unique(directory / "REPORT.md", batch_id, ".md")
+        write(report_file, report)
+        outcome.report_file = report_file
     return outcome

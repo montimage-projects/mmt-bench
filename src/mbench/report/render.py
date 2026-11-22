@@ -5,7 +5,8 @@ from ``sut.json``, and one row per matrix cell — median and IQR over the
 *measured* passes only (the warm-up is never counted), the CV flagged when
 it exceeds 5 %, the detection rate next to the throughput. A run is listed
 explicitly when it is not in the results table: ``invalid`` (its SUT record
-failed validation), ``timeout`` or ``error`` (no measured pass completed).
+failed validation), ``timeout``, ``error`` or ``interrupted`` (no measured
+pass completed, or the run crashed or was interrupted).
 Runs are compared only when their ``sut_hash`` matches; a mismatch between
 the run files in one directory is called out, with a note when it comes only
 from the fields that need root to read.
@@ -59,7 +60,6 @@ class CellStats:
     mpps_median: float | None = None
     detection_rate: float | None = None
     precision: float | None = None
-    alerts: float | None = None
 
 
 def _median(values: list[float]) -> float | None:
@@ -127,14 +127,27 @@ def cell_stats(run: RunFile) -> CellStats:
         mpps_median=_median(mpps),
         detection_rate=_median(rates),
         precision=_median(precisions),
-        alerts=_median([float(p.get("alerts", 0)) for p in ok]),
     )
 
 
+def _sut_batch(path: Path) -> tuple[str, int]:
+    """The batch key of a ``sut*.json`` name; ``sut.json`` is the oldest.
+
+    Later batches are ``sut-<batch>.json`` and ``sut-<batch>-N.json``; the
+    batch id is a UTC timestamp (``YYYYMMDDTHHMMSSZ``) so it sorts as text,
+    and the ``-N`` rerun suffix orders numerically.
+    """
+    stem = path.stem
+    if stem == "sut":
+        return ("", 0)
+    base, _, n = stem.removeprefix("sut-").rpartition("-")
+    return (base, int(n)) if n.isdigit() else (stem.removeprefix("sut-"), 1)
+
+
 def load_dir(directory: Path) -> tuple[dict[str, Json] | None, list[RunFile]]:
-    """The ``sut*.json`` host record (newest first) and every ``runs/*.json``."""
+    """The ``sut*.json`` host record (newest batch first) and every ``runs/*.json``."""
     host = None
-    for name in sorted(directory.glob("sut*.json"), reverse=True):
+    for name in sorted(directory.glob("sut*.json"), key=_sut_batch, reverse=True):
         try:
             data = json.loads(name.read_text(encoding="utf-8"))
         except (OSError, ValueError):
@@ -285,7 +298,9 @@ def _hash_notes(runs: list[RunFile]) -> list[str]:
     for h in by_hash:
         run = next(r for r in runs if r.record["sut"]["sut_hash"] == h)
         records.append(sut.hash_input(run.record["sut"]))
-    diff = _differing_paths(records[0], records[1])
+    diff: set[str] = set()
+    for other in records[1:]:
+        diff |= _differing_paths(records[0], other)
     if diff and diff <= _ROOT_ONLY_PATHS:
         notes.append(
             "  - the difference is confined to fields only root can read "
@@ -329,7 +344,7 @@ def render(
     )
     cells = sorted((cell_stats(r) for r in runs), key=lambda s: _cell_key(s.run))
     invalid = [c for c in cells if c.run.record.get("status") == "invalid"]
-    failed = [c for c in cells if c.run.record.get("status") in ("timeout", "error")]
+    failed = [c for c in cells if c.run.record.get("status") in ("timeout", "error", "interrupted")]
     compared = len(tools) > 1
 
     out: list[str] = [

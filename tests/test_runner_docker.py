@@ -14,14 +14,19 @@ Skipped wherever docker is not usable (CI).
 from __future__ import annotations
 
 import json
+import shutil
+import signal
 import subprocess
+import sys
+import time
 from pathlib import Path
 
 import pytest
+import yaml
 from sutfixtures import replay
 from test_mmt_probe_docker import _docker_usable, _extract
 
-from mbench import matrix, pcap, runner, validate
+from mbench import corpus, matrix, pcap, runner, validate
 from mbench.adapters.base import Ruleset
 from mbench.adapters.mmt_probe import CliDocker, MmtProbeAdapter
 
@@ -135,4 +140,91 @@ def test_a_tiny_campaign_runs_end_to_end(adapter: MmtProbeAdapter, tmp_path: Pat
         text=True,
         timeout=30,
     ).stdout.strip()
+    assert left == "", f"mbench containers left running: {left}"
+
+
+def _mbench_containers(name: str = "mbench-") -> str:
+    """Every running container id whose name matches ``name``, or ""."""
+    return subprocess.run(
+        ["docker", "ps", "-q", "--filter", f"name={name}"],
+        capture_output=True,
+        text=True,
+        timeout=30,
+    ).stdout.strip()
+
+
+@needs_docker
+def test_sigint_during_a_pass_leaves_no_container(adapter: MmtProbeAdapter, tmp_path: Path) -> None:
+    """Ctrl-C mid-pass kills the run container (review B2).
+
+    ``mbench run`` is spawned for real over a generated capture big enough
+    that the measured pass lives tens of seconds; once the pass's
+    ``mbench-mmt-probe-run-*`` container is up it gets SIGINT. The
+    interrupted cell must still be recorded and no ``mbench-`` container
+    may remain.
+    """
+    rules_dir = _extract(adapter, "mmt-rules", "/opt/mmt/security/rules", tmp_path)
+
+    # A minimal campaign, resolved by its own anchor.
+    root = tmp_path / "proj"
+    (root / "campaigns").mkdir(parents=True)
+    shutil.copytree(rules_dir, root / "rules")
+    big = root / "big.pcap"
+    corpus.generate(corpus.SETS["c-small"], 0, 750_000, 256, big)
+    campaign = root / "campaigns" / "sigint.yaml"
+    campaign.write_text(
+        yaml.safe_dump(
+            {
+                "schema_version": 1,
+                "question": "does a Ctrl-C kill the run container?",
+                "tools": ["mmt-probe"],
+                "rulesets": [{"id": "mmt-security", "path": "rules"}],
+                "corpus": [{"path": "big.pcap", "sha256": pcap.sha256_file(big)}],
+                "threads": [0],
+                "cpusets": [""],
+                "repeats": 1,
+                "timeout_s": 300,
+            }
+        ),
+        encoding="utf-8",
+    )
+    results = tmp_path / "results"
+    proc = subprocess.Popen(
+        [sys.executable, "-m", "mbench", "run", str(campaign), "--results", str(results)],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.PIPE,
+    )
+    seen_container = False
+    try:
+        # Wait for the pass's run container to come up, then Ctrl-C.
+        deadline = time.monotonic() + 180
+        while time.monotonic() < deadline and proc.poll() is None:
+            if _mbench_containers("mbench-mmt-probe-run-"):
+                seen_container = True
+                break
+            time.sleep(0.2)
+        proc.send_signal(signal.SIGINT)
+        proc.wait(timeout=120)
+    finally:
+        if proc.poll() is None:
+            proc.kill()
+            proc.wait(timeout=30)
+    assert proc.stderr is not None
+    stderr = proc.stderr.read().decode()
+    assert seen_container, f"the run container never came up; mbench stderr: {stderr}"
+
+    # The pass was interrupted -> its run record is written, the report is
+    # rendered over it, and no mbench- container is left running.
+    run_files = sorted(results.rglob("runs/*.json"))
+    assert run_files, f"no run file; mbench stderr: {stderr}"
+    statuses = {json.loads(p.read_text(encoding="utf-8"))["status"] for p in run_files}
+    assert "interrupted" in statuses
+    assert list(results.rglob("REPORT*.md")), "no REPORT.md after a Ctrl-C"
+    # docker kill is synchronous; a short grace covers the daemon's --rm sweep.
+    left = _mbench_containers()
+    for _ in range(50):
+        if not left:
+            break
+        time.sleep(0.2)
+        left = _mbench_containers()
     assert left == "", f"mbench containers left running: {left}"

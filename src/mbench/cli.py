@@ -541,18 +541,35 @@ def _run_report(ns: argparse.Namespace) -> int:
         for r in runs
         if isinstance(r.record.get("cell"), dict)
     }
-    local = "local" in directory.resolve().parts
-    if ns.output == "-" or (ns.output is None and len(tools) > 1 and not local):
-        if len(tools) > 1 and not local and ns.output is None:
-            print(
-                "mbench report: this report compares tools — writing it under "
-                "this directory would commit it; it is printed instead "
-                "(keep it under local/)",
-                file=sys.stderr,
-            )
+    if ns.output == "-":
         sys.stdout.write(text)
         return EXIT_OK
     out = Path(ns.output) if ns.output is not None else directory / "REPORT.md"
+    compared = len(tools) > 1
+    if compared and "local" not in out.resolve().parts:
+        if ns.output is not None:
+            # A tool-comparison report must never land outside local/,
+            # whatever -o says (the licence and fairness review comes first).
+            print(
+                f"mbench report: {out}: refusing to write a tool-comparison "
+                "report outside local/ (use -o - to print it, or a path "
+                "under local/)",
+                file=sys.stderr,
+            )
+            return EXIT_USAGE
+        # With no -o the report would go into the results directory itself,
+        # which would commit it: print it instead (the review's guard).
+        print(
+            "mbench report: this report compares tools — writing it under "
+            "this directory would commit it; it is printed instead "
+            "(keep it under local/)",
+            file=sys.stderr,
+        )
+        sys.stdout.write(text)
+        return EXIT_OK
+    if ns.output is None and out.exists():
+        # Append-only, like the runner's own REPORT-<batch>.md fallback.
+        out = runner._unique(out, runner._batch_id(runner.utcnow()), ".md")
     try:
         runner.write(out, text)
     except FileExistsError:

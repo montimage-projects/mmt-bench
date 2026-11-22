@@ -21,7 +21,7 @@ from fakeadapter import FakeAdapter
 from sutfixtures import replay
 
 from mbench import adapters, matrix, pcap, runner, validate
-from mbench.adapters.base import Alert, Counters
+from mbench.adapters.base import Alert, Counters, Ruleset
 
 CLOCK = datetime(2026, 1, 5, 12, 0, 0, tzinfo=UTC)
 
@@ -321,3 +321,88 @@ def test_sut_json_and_run_share_the_same_hash(tmp_path: Path, fake_tool: None) -
     # host scope vs run scope differ (scope, harness.run, per_run) but the
     # hashed fields are the same machine
     assert record["sut"]["sut_hash"] == host["sut_hash"]
+
+
+# --- A cell that raises (review B1) --------------------------------------------
+
+
+class _FlakyPrepareAdapter(FakeAdapter):
+    """A fake whose ``prepare`` raises ``blow_up`` when there is one.
+
+    ``prepare`` runs outside the ``try`` of ``run_pass`` (offline.py): a
+    failure there is a failure of the cell, not of a measured pass.
+    """
+
+    def __init__(self, blow_up: BaseException | None = None) -> None:
+        super().__init__()
+        self.blow_up = blow_up
+
+    def prepare(self, ruleset: Ruleset, config_profile: str, workdir: Path) -> list[Path]:
+        if self.blow_up is not None:
+            raise self.blow_up
+        return super().prepare(ruleset, config_profile, workdir)
+
+
+def test_a_crashed_cell_is_an_error_record_and_the_campaign_continues(
+    tmp_path: Path, fake_tool: None
+) -> None:
+    # The first cell's prepare blows up; the second must still run (B1).
+    doc = campaign_doc([{"label": "x"}, {"label": "y"}])
+    campaign = _campaign(tmp_path, doc)
+    made = itertools.count()
+
+    def factory() -> FakeAdapter:
+        boom = RuntimeError("planted: ruleset staging blew up") if next(made) == 0 else None
+        return _FlakyPrepareAdapter(boom)
+
+    stage_root = tmp_path / "tmpfs"
+    outcome = _run(campaign, tmp_path, factory=factory, tmpfs=stage_root)
+
+    assert len(outcome.run_files) == 2
+    crashed = _load_run(outcome, 0)
+    assert crashed["status"] == "error"
+    assert any("planted" in p for p in crashed["problems"])
+    assert _load_run(outcome, 1)["status"] == "ok"
+    assert outcome.failed == 1 and outcome.valid == 1
+    # the partial campaign still leaves its report, the failed cell listed
+    report = outcome.report_file.read_text(encoding="utf-8")  # type: ignore[union-attr]
+    assert outcome.run_files[0].name in report
+    # and the tmpfs staging dir is removed on exit
+    assert not (stage_root / "mbench-20260105T120000Z").exists()
+
+
+def test_an_interrupted_cell_is_recorded_and_the_campaign_stops(
+    tmp_path: Path, fake_tool: None
+) -> None:
+    # A Ctrl-C inside run_cell (here, out of prepare): the cell is recorded
+    # as interrupted, the run file and REPORT.md are written, the staging
+    # dir is removed — then the interrupt is re-raised (B1).
+    doc = campaign_doc([{"label": "x"}, {"label": "y"}], repeats=1)
+    campaign = _campaign(tmp_path, doc)
+    stage_root = tmp_path / "tmpfs"
+
+    with pytest.raises(KeyboardInterrupt):
+        _run(
+            campaign,
+            tmp_path,
+            factory=lambda: _FlakyPrepareAdapter(KeyboardInterrupt()),
+            tmpfs=stage_root,
+        )
+
+    directory = tmp_path / "results" / "2026-01-05-test"
+    run_files = sorted((directory / "runs").glob("*.json"))
+    assert len(run_files) == 1  # the second cell never ran
+    record = json.loads(run_files[0].read_text(encoding="utf-8"))
+    assert record["status"] == "interrupted"
+    assert any("KeyboardInterrupt" in p for p in record["problems"])
+    report = (directory / "REPORT.md").read_text(encoding="utf-8")
+    assert run_files[0].name in report  # the failed cell is listed
+    assert not (stage_root / "mbench-20260105T120000Z").exists()
+
+
+def test_the_stage_dir_is_removed_after_a_normal_campaign(tmp_path: Path, fake_tool: None) -> None:
+    campaign = _campaign(tmp_path, campaign_doc([{"label": "x"}]))
+    stage_root = tmp_path / "tmpfs"
+    outcome = _run(campaign, tmp_path, tmpfs=stage_root)
+    assert outcome.report_file is not None
+    assert not (stage_root / "mbench-20260105T120000Z").exists()

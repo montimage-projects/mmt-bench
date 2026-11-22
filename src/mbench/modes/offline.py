@@ -11,6 +11,7 @@ capture must not show — never reaches a container or a result.
 
 from __future__ import annotations
 
+import contextlib
 import shutil
 import subprocess
 import time
@@ -18,7 +19,7 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
-from mbench.adapters.base import Adapter, Alert, Counters, Ruleset
+from mbench.adapters.base import Adapter, Alert, Counters, ProcessHandle, Ruleset
 
 
 def tmpfs_mounts(mounts_text: str | None = None) -> list[Path]:
@@ -84,18 +85,39 @@ def run_pass(
     """
     adapter.prepare(ruleset, config_profile, workdir)
     start = clock()
+    handle: ProcessHandle | None = None
+    exited = False
     try:
         handle = adapter.run_offline(pcap, threads, cpuset)
         returncode = handle.wait(timeout_s)
+        exited = True
     except subprocess.TimeoutExpired:
         detail = f"killed after {timeout_s:g} s"
         try:
-            handle.kill()
+            if handle is not None:
+                handle.kill()
+                handle = None
         except Exception as exc:
             detail += f" (kill failed: {type(exc).__name__}: {exc})"
         return Outcome("timeout", clock() - start, detail=detail)
-    except Exception as exc:
-        return Outcome("error", clock() - start, detail=f"{type(exc).__name__}: {exc}")
+    except BaseException as exc:
+        detail = f"{type(exc).__name__}: {exc}"
+        try:
+            if handle is not None:
+                handle.kill()
+                handle = None
+        except Exception as kill_exc:
+            detail += f" (kill failed: {type(kill_exc).__name__}: {kill_exc})"
+        if isinstance(exc, Exception):
+            return Outcome("error", clock() - start, detail=detail)
+        raise
+    finally:
+        # A started tool is dead on every non-normal exit — a failed kill
+        # above, a Ctrl-C escaping the except block; for Docker this kills
+        # the container, not only the client process.
+        if handle is not None and not exited:
+            with contextlib.suppress(Exception):
+                handle.kill()
     wall_s = clock() - start
     if returncode != 0:
         return Outcome("error", wall_s, returncode, detail=f"exit status {returncode}")

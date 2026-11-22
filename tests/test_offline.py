@@ -97,6 +97,61 @@ def test_a_crashing_start_is_an_error(tmp_path: Path, monkeypatch: pytest.Monkey
     assert "docker daemon gone" in outcome.detail
 
 
+def test_an_error_from_wait_kills_the_tool(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    # A RuntimeError out of wait() returns an error pass — and the tool is
+    # dead: for Docker the container, not only the client (review B2).
+    (tmp_path / "rs.so").write_bytes(b"rules")
+    make_pcap(tmp_path, "x.pcap")
+    handle = FakeProcess()
+    adapter = FakeAdapter()
+    monkeypatch.setattr(adapter, "run_offline", lambda *a, **k: handle)
+
+    def boom(timeout: float | None = None) -> int:
+        raise RuntimeError("daemon gone")
+
+    monkeypatch.setattr(handle, "wait", boom)
+    outcome = _pass(adapter, tmp_path)
+    assert outcome.status == "error"
+    assert "daemon gone" in outcome.detail
+    assert handle.killed
+
+
+def test_a_keyboardinterrupt_kills_the_tool(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Ctrl-C escapes wait(): the pass propagates it — after killing the tool
+    # (review B2: a BaseException never leaves the container running).
+    (tmp_path / "rs.so").write_bytes(b"rules")
+    make_pcap(tmp_path, "x.pcap")
+    handle = FakeProcess()
+    adapter = FakeAdapter()
+    monkeypatch.setattr(adapter, "run_offline", lambda *a, **k: handle)
+
+    def ctrl_c(timeout: float | None = None) -> int:
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(handle, "wait", ctrl_c)
+    with pytest.raises(KeyboardInterrupt):
+        _pass(adapter, tmp_path)
+    assert handle.killed
+
+
+def test_a_keyboardinterrupt_in_run_offline_propagates(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A Ctrl-C while the tool starts leaves no handle behind to kill.
+    (tmp_path / "rs.so").write_bytes(b"rules")
+    make_pcap(tmp_path, "x.pcap")
+    adapter = FakeAdapter()
+
+    def ctrl_c(*a: object, **k: object) -> FakeProcess:
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(adapter, "run_offline", ctrl_c)
+    with pytest.raises(KeyboardInterrupt):
+        _pass(adapter, tmp_path)
+
+
 def test_prepare_must_have_run_first(tmp_path: Path) -> None:
     # run_pass prepares itself; a bare run_offline refuses (the fake enforces
     # the adapter contract)

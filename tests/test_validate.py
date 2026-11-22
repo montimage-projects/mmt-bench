@@ -183,6 +183,27 @@ def test_a_campaign_file_is_checked(tmp_path: Path, capsys: pytest.CaptureFixtur
     assert "missing field" in out
 
 
+def test_campaign_errors_rejects_an_empty_or_descending_cpuset(tmp_path: Path) -> None:
+    # The schema's pattern accepts "5-2", which parses to no cpu at all:
+    # campaign_errors rejects it (review L4). "" stays valid — unpinned.
+    doc: dict[str, Any] = {
+        "schema_version": 1,
+        "question": "q",
+        "tools": ["mmt-probe"],
+        "rulesets": ["rs"],
+        "corpus": [{"path": "x.pcap", "sha256": "0" * 64}],
+        "threads": [1],
+        "cpusets": ["", "0-3"],
+        "repeats": 1,
+        "timeout_s": 1,
+    }
+    assert validate.campaign_errors(doc, manifest_path=tmp_path / "none.yaml") == []
+    for cpuset in ("5-2", "0,5-2"):
+        doc["cpusets"] = [cpuset]
+        errors = validate.campaign_errors(doc, manifest_path=tmp_path / "none.yaml")
+        assert any("cpusets[0]" in e for e in errors), cpuset
+
+
 def test_a_valid_campaign_names_its_matrix(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
