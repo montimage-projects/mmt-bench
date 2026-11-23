@@ -23,8 +23,10 @@ security:
 provenance:
   source: >-
     mmt-bench/mmt-probe:local image (sha256
-    2db1c335165c0f30f035302ceea415bafc6a1e103bff1a3b4c22347377f4cc7c) —
-    mmt-security fork commit 855931a37bd73bd43b26ff03ea108c6745c11b19;
-    upstream 95 rules minus DICOM rules 206 and 212, disabled in aeacbe0428
+    4414f3c839294d76c3cc31f61c5f08dff50edd7c7427f583ec3a6386722e34f7) —
+    mmt-probe fork intact-new-features @
+    7f4710d9846c1654ca3555479394ed720556f340 and mmt-security fork commit
+    855931a37bd73bd43b26ff03ea108c6745c11b19; upstream 95 rules minus
+    DICOM rules 206 and 212, disabled in aeacbe0428
   expect_rules: 94
   extract: tools/docker/mmt-probe/extract-rules.sh
