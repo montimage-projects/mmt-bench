@@ -27,7 +27,16 @@ ARG DPI_SHA256SUMS_SHA256=f7f7a80990bdb3c98f48978ff2bf00fa649a5c70633c906bd66654
 ARG SECURITY_REPO=https://github.com/montimage-projects/mmt-security.git
 ARG SECURITY_TAG=
 ARG SECURITY_COMMIT=855931a37bd73bd43b26ff03ea108c6745c11b19
-ARG PROBE_COMMIT=1e00441a00bba1d064ede2ef95b851428c2b0183   # branch intact-new-features
+# mmt-probe's source repo and commit: the fork's intact-new-features by
+# default, which fixes the two bugs the P1 review (#10) found upstream —
+# the pcap worker ring overflowing at snap-len = 0 (fork #1) and offline
+# crash signals exiting 0 (fork #2, now a real signal death). The upstream
+# commit stays selectable:
+#   --build-arg PROBE_REPO=https://github.com/Montimage/mmt-probe.git \
+#               PROBE_COMMIT=1e00441a00bba1d064ede2ef95b851428c2b0183
+# (the repo lands in /opt/mmt/VERSIONS either way).
+ARG PROBE_REPO=https://github.com/montimage-projects/mmt-probe.git
+ARG PROBE_COMMIT=7f4710d9846c1654ca3555479394ed720556f340   # branch intact-new-features
 # Ubuntu packages (noble-updates/-security, 2026-11-19). Ubuntu removes a
 # version from the archive when it publishes the next update, and has no
 # archive snapshot for arm64 (snapshot.ubuntu.com serves amd64 only). When a
@@ -44,7 +53,7 @@ ARG APT_PIN_LIBCONFUSE=3.3-3build1
 # fetch: downloads only (DPI .debs for both arches, sources), all verified
 # =============================================================================
 FROM --platform=$BUILDPLATFORM ${UBUNTU_IMAGE} AS fetch
-ARG DPI_VERSION DPI_BUILD DPI_SHA256SUMS_SHA256 SECURITY_REPO SECURITY_TAG SECURITY_COMMIT PROBE_COMMIT
+ARG DPI_VERSION DPI_BUILD DPI_SHA256SUMS_SHA256 SECURITY_REPO SECURITY_TAG SECURITY_COMMIT PROBE_REPO PROBE_COMMIT
 RUN apt-get update \
  && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
       ca-certificates curl git \
@@ -68,7 +77,7 @@ RUN set -eux; \
     fetch() { git init -q "$1"; git -C "$1" fetch -q --depth 1 "$2" "$3"; \
               git -C "$1" checkout -q FETCH_HEAD; test "$(git -C "$1" rev-parse HEAD)" = "$3"; }; \
     fetch mmt-security "${SECURITY_REPO}" "${SECURITY_COMMIT}"; \
-    fetch mmt-probe https://github.com/Montimage/mmt-probe.git "${PROBE_COMMIT}"; \
+    fetch mmt-probe "${PROBE_REPO}" "${PROBE_COMMIT}"; \
     if [ -n "${SECURITY_TAG}" ]; then \
       git ls-remote "${SECURITY_REPO}" "refs/tags/${SECURITY_TAG}^{}" "refs/tags/${SECURITY_TAG}" \
         | grep -q "^${SECURITY_COMMIT}"; \
@@ -108,7 +117,7 @@ RUN cp -a /fetch/mmt-probe/. . \
 # runtime: probe + security tools + the shared objects they load
 # =============================================================================
 FROM ${UBUNTU_IMAGE} AS runtime
-ARG DPI_VERSION SECURITY_REPO SECURITY_TAG SECURITY_COMMIT PROBE_COMMIT APT_PIN_LIBPCAP APT_PIN_LIBXML2 APT_PIN_UTIL_LINUX MMT_STRICT_PINS
+ARG DPI_VERSION SECURITY_REPO SECURITY_TAG SECURITY_COMMIT PROBE_REPO PROBE_COMMIT APT_PIN_LIBPCAP APT_PIN_LIBXML2 APT_PIN_UTIL_LINUX MMT_STRICT_PINS
 COPY apt-install-pinned.sh /usr/local/bin/apt-install-pinned
 RUN apt-get update \
  && apt-install-pinned /opt/mmt/apt-versions \
@@ -125,8 +134,8 @@ RUN rm -f /opt/mmt/dpi/lib/*.a /opt/mmt/security/lib/*.a* \
  && printf '/opt/mmt/dpi/lib\n/opt/mmt/security/lib\n' > /etc/ld.so.conf.d/mmt.conf && ldconfig \
  && security_label="${SECURITY_COMMIT}" \
  && if [ -n "${SECURITY_TAG}" ]; then security_label="${SECURITY_TAG} (${SECURITY_COMMIT})"; fi \
- && printf 'dpi=%s\nsecurity=%s\nsecurity_repo=%s\nprobe=%s\nprobe_modules=SECURITY_MODULE STIX_FORMAT\n' \
-        "${DPI_VERSION}" "${security_label}" "${SECURITY_REPO}" "${PROBE_COMMIT}" > /opt/mmt/VERSIONS \
+ && printf 'dpi=%s\nsecurity=%s\nsecurity_repo=%s\nprobe=%s\nprobe_repo=%s\nprobe_modules=SECURITY_MODULE STIX_FORMAT\n' \
+        "${DPI_VERSION}" "${security_label}" "${SECURITY_REPO}" "${PROBE_COMMIT}" "${PROBE_REPO}" > /opt/mmt/VERSIONS \
  && cat /opt/mmt/apt-versions >> /opt/mmt/VERSIONS && rm -f /opt/mmt/apt-versions \
  && sed 's/^/build_/' /opt/mmt/probe/apt-build-versions >> /opt/mmt/VERSIONS \
  && /opt/mmt/probe/bin/probe -v
@@ -135,7 +144,8 @@ LABEL org.opencontainers.image.title="mmt-bench probe" \
       io.montimage.mmt-security.version="${SECURITY_TAG}" \
       io.montimage.mmt-security.commit="${SECURITY_COMMIT}" \
       io.montimage.mmt-security.repo="${SECURITY_REPO}" \
-      io.montimage.mmt-probe.commit="${PROBE_COMMIT}"
+      io.montimage.mmt-probe.commit="${PROBE_COMMIT}" \
+      io.montimage.mmt-probe.repo="${PROBE_REPO}"
 # mmt-security's check captures and expected alerts: the integration test
 # runs the probe on them and compares with the expects and mmt_sec_standalone
 # (all from the same pinned commit). No capture leaves the image or the repo.

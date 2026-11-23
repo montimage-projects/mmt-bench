@@ -11,7 +11,7 @@ the production mmt-stack image.
 | base image | `ubuntu:24.04@sha256:73b999393d07f2bf65a40373778a44dc9a6d54ad7718d29247d8ff9413c4d6a8` |
 | mmt-dpi | v1.10.3 release `.deb`, build `6a0afb46`; the release `SHA256SUMS` is itself pinned by `f7f7a809…ea6ed5`, and the `.deb` is verified against it |
 | mmt-security | fork `main` = commit `855931a37bd73bd43b26ff03ea108c6745c11b19` from `SECURITY_REPO` (default `montimage-projects/mmt-security`; no tag names it, so `SECURITY_TAG` is empty) |
-| mmt-probe | commit `1e00441a00bba1d064ede2ef95b851428c2b0183` (branch `intact-new-features`, on top of v1.6.5; the STIX alert output needs it) |
+| mmt-probe | fork `intact-new-features` = commit `7f4710d9846c1654ca3555479394ed720556f340` from `PROBE_REPO` (default `montimage-projects/mmt-probe`; fixes the upstream `snap-len = 0` worker-ring overflow and the exit-0 crash masking the P1 review found — fork PRs #3 and #4) |
 
 The probe is built with `SECURITY_MODULE` and `STIX_FORMAT`; security alerts
 come out as STIX bundles, other reports as JSON.
@@ -28,7 +28,17 @@ docker build -t mmt-bench/mmt-probe:local tools/docker/mmt-probe \
 
 An empty `SECURITY_TAG` skips the tag→commit check; the source repo is
 recorded in `/opt/mmt/VERSIONS` (`security_repo=`) either way, and reaches the
-tools record through the `versions` output.
+tools record through the `versions` output. The probe's source is a build
+argument too: the upstream `Montimage/mmt-probe` commit the image used to pin
+builds with
+
+```sh
+docker build -t mmt-bench/mmt-probe:local tools/docker/mmt-probe \
+  --build-arg PROBE_REPO=https://github.com/Montimage/mmt-probe.git \
+  --build-arg PROBE_COMMIT=1e00441a00bba1d064ede2ef95b851428c2b0183
+```
+
+and `/opt/mmt/VERSIONS` records `probe=` and `probe_repo=` the same way.
 
 ## Build
 

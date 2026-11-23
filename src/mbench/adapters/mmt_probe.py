@@ -101,10 +101,12 @@ _STATUS_COUNTS = re.compile(
 #: ``status`` — a worker/aggregate status line (last arrival = every
 #: packet processed and counted); ``eof`` — the reader reached the end of
 #: the pcap; ``clean_exit`` — the probe's normal shutdown; ``fatal`` —
-#: a signal or allocator fault (the probe catches SIGSEGV/SIGABRT and
-#: calls ``_exit(0)``, so an abort can surface as return code 0: the log
-#: marker, not the return code, is what says the exit was clean — review
-#: B2).
+#: a signal or allocator fault. The upstream probe catches SIGSEGV/SIGABRT
+#: and calls ``_exit(0)``, so an abort can surface as return code 0: the
+#: log marker, not the return code, is what says the exit was clean
+#: (review B2). The pinned fork build instead dies by the signal
+#: (128 + signum) — its handler still logs ``crash signal received``
+#: before re-raising — and the markers stay the backstop either way.
 _LOG_MARKERS: tuple[tuple[str, re.Pattern[bytes]], ...] = (
     ("status", re.compile(rb"MMT processed |Worker\s+\d+\s+processed\s")),
     ("eof", re.compile(rb"reached to the end of pcap file")),
@@ -646,8 +648,10 @@ thread-queue = {thread_queue}
 input {{
     mode        = ONLINE
     source      = "offline"    # overridden by `-t <pcap>`
-    # 65535, not 0: a zero snap-len crashes pcap_capture_start inside
-    # libpcap on 1500-B frames (upstream bug, review B1).
+    # 65535, not 0: a zero snap-len overflows the upstream probe's pcap
+    # worker ring on 1500-B frames (upstream bug, review B1; the pinned
+    # fork build fixes it, and 65535 stays the explicit full-frame choice,
+    # safe on either source).
     snap-len    = 65535
     buffer-size = {buffer_size}   # bytes (pcap_set_buffer_size)
     timeout     = 1000
@@ -1012,10 +1016,11 @@ class MmtProbeAdapter(Adapter):
         actually reported drops: the status lines' dropped count, or the
         last status report's ``mmt-lost`` — a pass never records a ``0``
         the tool did not say (review B2). ``extra`` carries the provenance
-        and the run's own timing: whether the probe exited clean (its
-        SIGABRT handler masks an abort as return code 0), and the
-        ``processing_s`` interval derived from the version report and the
-        status lines' arrival (review B3).
+        and the run's own timing: whether the probe exited clean (upstream
+        its SIGABRT handler masks an abort as return code 0; the pinned
+        fork build dies by the signal — the log markers tell either way),
+        and the ``processing_s`` interval derived from the version report
+        and the status lines' arrival (review B3).
         """
         report_packets = report_bytes = 0
         status_lost = status_mmt_pkts = None
@@ -1115,12 +1120,14 @@ class MmtProbeAdapter(Adapter):
     def _exit_state(self) -> tuple[str, str]:
         """``(state, detail)``: how the probe's run ended, from its own log.
 
-        The probe installs handlers that turn SIGSEGV/SIGABRT into
-        ``_exit(0)``, so return code 0 cannot tell a clean exit from an
-        abort (review B2): ``clean`` needs the probe's shutdown marker
-        (``Exit normally MMT-Probe``/``Bye``), ``abnormal`` a signal or
-        allocator fault, ``incomplete`` neither (a truncated log — e.g.
-        the tap died with a killed client).
+        The upstream probe installs handlers that turn SIGSEGV/SIGABRT
+        into ``_exit(0)``, so return code 0 cannot tell a clean exit from
+        an abort (review B2); the pinned fork build dies by the signal
+        (128 + signum), which the caller sees as a non-zero exit — the log
+        markers stay the backstop for both. ``clean`` needs the probe's
+        shutdown marker (``Exit normally MMT-Probe``/``Bye``), ``abnormal``
+        a signal or allocator fault, ``incomplete`` neither (a truncated
+        log — e.g. the tap died with a killed client).
         """
         run = self._require_run()
         fatal_line = ""

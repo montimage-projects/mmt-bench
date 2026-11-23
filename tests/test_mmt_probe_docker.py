@@ -18,13 +18,15 @@ import json
 import re
 import secrets
 import shutil
+import signal
 import subprocess
+import time
 from collections.abc import Mapping
 from pathlib import Path
 
 import pytest
 
-from mbench import pcap, truth
+from mbench import corpus, pcap, truth
 from mbench.adapters.base import ImageRef, Ruleset, tools_record_errors
 from mbench.adapters.mmt_probe import CliDocker, MmtProbeAdapter, _pick_protocol
 
@@ -268,3 +270,102 @@ def test_the_pcap_sha_pin_is_the_recorded_one(
     pcap_path = _extract(adapter, pcap_name, f"/opt/mmt/check/pcap/{pcap_name}", tmp_path)
     assert pcap.sha256_file(pcap_path) == pcap_sha256
     assert re.fullmatch(r"[0-9a-f]{64}", pcap_sha256)
+
+
+@needs_docker
+@pytest.mark.parametrize("threads", [1, 2])
+def test_snap_len_zero_processes_every_1500b_packet(
+    adapter: MmtProbeAdapter, tmp_path: Path, threads: int
+) -> None:
+    """#42 / fork #3: ``snap-len = 0`` no longer overflows the worker ring.
+
+    Upstream sized the pcap SMP ring elements by ``snap-len`` while packets
+    were copied by ``caplen``, so a 1500-B frame at ``snap-len = 0`` crashed
+    or starved the worker path (review B1). On the fork build a C-large
+    capture must be counted whole at ``thread-nb`` 1 and 2 — the config the
+    adapter writes still says 65535, so the test overrides it back to 0.
+    """
+    pcap_path = tmp_path / "large.pcap"
+    corpus.generate(corpus.SETS["c-large"], 0, 2000, 8, pcap_path)
+    stats = pcap.stats(pcap_path)
+    # The R0-style ruleset: with the engine off there is nothing to stage,
+    # so the run exercises only the pcap worker path the bug lived in.
+    empty_rules = tmp_path / "no-rules"
+    empty_rules.mkdir()
+    workdir = tmp_path / "work"
+    adapter.prepare(
+        Ruleset("r0-like", empty_rules, security=False, allow_empty=True),
+        "recommended",
+        workdir,
+    )
+    conf = workdir / "mmt-probe.conf"
+    text = conf.read_text(encoding="utf-8")
+    assert "snap-len    = 65535" in text
+    conf.write_text(text.replace("snap-len    = 65535", "snap-len    = 0"), encoding="utf-8")
+
+    handle = adapter.run_offline(pcap_path, threads=threads, cpuset=[])
+    assert handle.wait(timeout=120) == 0
+
+    counters = adapter.counters()
+    assert counters.packets == stats.packets
+    assert counters.extra["exit_state"] == "clean"
+    assert counters.extra["abnormal_exit"] is False
+
+
+def _wait_for_marker(path: Path, needle: str, timeout_s: float) -> bool:
+    """Whether ``needle`` appears in ``path`` within ``timeout_s`` seconds."""
+    deadline = time.monotonic() + timeout_s
+    while time.monotonic() < deadline:
+        try:
+            if needle in path.read_text(encoding="utf-8", errors="replace"):
+                return True
+        except OSError:
+            pass
+        time.sleep(0.2)
+    return False
+
+
+@needs_docker
+def test_a_crashed_probe_is_never_an_ok_pass(adapter: MmtProbeAdapter, tmp_path: Path) -> None:
+    """#42 / fork #4: an offline crash dies by the signal (128 + signum).
+
+    A ``docker kill -SEGV`` on the running probe gives the docker client a
+    non-zero exit, so the pass is ``error``; the probe's handler still logs
+    ``crash signal received`` before re-raising, so the log markers keep
+    the run abnormal as a backstop — never an ``ok`` measurement.
+    """
+    # A capture big enough that the packet loop lives tens of seconds, so
+    # the signal lands mid-run — the same size the signal tests use.
+    pcap_path = tmp_path / "big.pcap"
+    corpus.generate(corpus.SETS["c-small"], 0, 750_000, 256, pcap_path)
+    rules_dir = _extract(adapter, "mmt-rules", "/opt/mmt/security/rules", tmp_path)
+    workdir = tmp_path / "work"
+    adapter.prepare(Ruleset("mmt-security", rules_dir), "recommended", workdir)
+
+    handle = adapter.run_offline(pcap_path, threads=0, cpuset=[])
+    run = adapter._run
+    assert run is not None
+    # Kill once the probe is inside the packet loop — its signal handlers
+    # are installed by then, and the run cannot have ended at this size.
+    assert _wait_for_marker(run.log_path, "Starting PCAP mode", 300), (
+        "the probe never reached the packet loop"
+    )
+    killed = subprocess.run(
+        ["docker", "kill", "--signal=SIGSEGV", run.container_name],
+        capture_output=True,
+        timeout=30,
+    )
+    assert killed.returncode == 0, killed.stderr.decode("utf-8", "replace")
+
+    # A real signal death: 128 + SIGSEGV, not a masked exit 0.
+    assert handle.wait(timeout=180) == 128 + signal.SIGSEGV
+
+    log = run.log_path.read_text(encoding="utf-8", errors="replace")
+    assert "crash signal received" in log
+    assert "Exit normally MMT-Probe" not in log
+    try:
+        counters = adapter.counters()
+    except RuntimeError:
+        return  # no reports at all: an error pass, still never ok
+    assert counters.extra["abnormal_exit"] is True
+    assert counters.extra["exit_state"] == "abnormal"
