@@ -78,11 +78,12 @@ git-ignored `local/` by `extract-rules.sh`, never committed. One rule keeps
 a pass under a second; the image's full set costs more than the 10-s budget
 of init per pass. The `smoke` corpus entry is deterministic
 (`mbench corpus gen`, seed 0): the same bytes on every host, generated into
-`corpus/data/` and never committed. Its first 4 packets are TCP SYNs
-carrying payload — the trigger of the ruleset's `13.datainSYN.so` — and
-`gen` writes their ground truth as `data/smoke.truth.json` (one attack per
-packet), so every measured pass must report 4 alerts and detection rate 1.0:
-the smoke proves the alert path end to end, not only throughput plumbing.
+`corpus/data/` and never committed. Its first packets (currently 4) are
+TCP SYNs carrying payload — the trigger of the ruleset's `13.datainSYN.so`
+— and `gen` writes their ground truth as `data/smoke.truth.json` (one
+attack per packet), so every measured pass must report one alert per attack
+and detection rate 1.0: the smoke proves the alert path end to end, not
+only throughput plumbing.
 The smoke CI job (`.github/workflows/ci.yml`) runs the same steps on every
 pull request and push to `main` and uploads the results directory as an
 artefact — never a commit.

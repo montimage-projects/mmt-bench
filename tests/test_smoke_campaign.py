@@ -87,6 +87,19 @@ def test_the_corpus_is_the_generated_smoke_entry(doc: dict[str, Any]) -> None:
     assert "--data-in-syn 4" in str(entry["source"])
 
 
+def test_the_alert_count_is_derived_not_restated() -> None:
+    # The expected alert count is stated once — the ``--data-in-syn`` flag
+    # in the gen commands — so the prose derives it ("one alert per
+    # attack", "(currently 4)") instead of restating a bare number that
+    # drifts from the flag (review M3).
+    text = SMOKE.read_text(encoding="utf-8")
+    assert "one alert per attack" in text
+    assert "(currently 4)" in text
+    assert "exactly 4" not in text
+    assert "report 4 alerts" not in text
+    assert "want 4 alerts" not in text
+
+
 def test_the_ruleset_is_one_rule_under_git_ignored_local(doc: dict[str, Any]) -> None:
     (ruleset,) = doc["rulesets"]
     # A {id, path} ruleset: the compiled .so is a build artefact copied out

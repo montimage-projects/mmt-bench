@@ -3,17 +3,18 @@
 # never the private capture and never a capture committed to git.
 #
 # It checks the pipeline end to end, detection included: the capture's first
-# 4 packets are TCP SYNs carrying payload, so the one rule of the ruleset
-# (13.datainSYN) fires exactly 4 times a pass and each pass's `detection`
-# is scored 1.0 against the generated data/smoke.truth.json. It checks the
-# pipeline, not performance: a CI runner is a noisy host, so its numbers
-# are not results (docs/methodology.md).
+# packets (currently 4) are TCP SYNs carrying payload — the trigger of the
+# ruleset's one rule (13.datainSYN) — so each pass raises one alert per
+# attack and its `detection` is scored 1.0 against the generated
+# data/smoke.truth.json. It checks the pipeline, not performance: a CI
+# runner is a noisy host, so its numbers are not results
+# (docs/methodology.md).
 #
 # `smoke-large` is the 1500-B-frame twin — a few hundred large frames —
 # that keeps the snap-len = 65535 regression (review B1: snap-len 0
 # crashed the probe in libpcap on 1500-B frames) inside the same 10-s
 # pipeline check. Each label's own truth file gates its cell, so both
-# still want 4 alerts and detection 1.0.
+# still want one alert per attack and detection 1.0.
 #
 # Before `mbench run campaigns/smoke.yaml`, on each host:
 #   docker build -t mmt-bench/mmt-probe:local tools/docker/mmt-probe
@@ -26,9 +27,9 @@ description: >-
   The smoke campaign checks the pipeline, not performance: a CI runner is a
   noisy host, so its numbers are not results. The corpus entry `smoke` is a
   deterministic `mbench corpus gen` capture (seed 0, 20000 64-B packets);
-  its first 4 packets are TCP SYNs carrying payload — the rule-13 trigger —
-  so a pass must report 4 alerts and detection rate 1.0 against the
-  generated data/smoke.truth.json. The ruleset is one rule of the image's
+  its first packets (currently 4) are TCP SYNs carrying payload — the
+  rule-13 trigger — so a pass must report one alert per attack and
+  detection rate 1.0 against the generated data/smoke.truth.json. The ruleset is one rule of the image's
   mmt-security set, staged under the git-ignored local/ by
   tools/docker/mmt-probe/extract-rules.sh — the .so files are
   architecture-specific build artefacts, so they are never committed. One

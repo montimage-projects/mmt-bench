@@ -496,8 +496,9 @@ def test_threaded_status_lines_sum_every_worker(tmp_path: Path) -> None:
 
 
 def test_an_abort_is_abnormal_even_at_return_code_0(tmp_path: Path) -> None:
-    # B2: the probe's SIGABRT handler _exit(0)s, so the log's markers are
-    # what tell an abort from a clean exit.
+    # B2: the upstream probe's SIGABRT handler _exit(0)s (the fork dies by
+    # the signal), so the log's markers are what tell an abort from a clean
+    # exit.
     adapter, _, workdir = _prepared(tmp_path)
     _run_with_log(adapter, workdir, tmp_path, _ABORTED_LOG)
     counters = adapter.counters()
