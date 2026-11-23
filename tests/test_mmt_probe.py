@@ -396,6 +396,16 @@ def test_the_security_source_repo_is_recorded(tmp_path: Path) -> None:
     )
 
 
+def test_the_probe_source_repo_is_recorded(tmp_path: Path) -> None:
+    # /opt/mmt/VERSIONS's probe_repo= pin reaches the tools record the same
+    # way, so the fork build is visibly different from an upstream one (#42).
+    adapter, _, _ = _prepared(tmp_path)
+    record = adapter.tools_record()
+    assert record["version_strings"]["pin-probe_repo"] == (
+        "https://github.com/montimage-projects/mmt-probe.git"
+    )
+
+
 def test_a_version_less_image_gives_a_marker(tmp_path: Path) -> None:
     class NoVersions(RecordingDocker):
         def run(
@@ -435,8 +445,9 @@ def test_an_incomplete_tools_record_is_rejected(tmp_path: Path) -> None:
 
 
 def test_the_snap_length_is_the_full_frame() -> None:
-    # B1: snap-len 0 crashes pcap_capture_start inside libpcap on a 1500-B
-    # frame (C-large); 65535 keeps the whole packet.
+    # B1: upstream snap-len 0 overflows the pcap worker ring on a 1500-B
+    # frame (C-large); the fork build fixes it (#42) and 65535 stays the
+    # explicit full-frame choice, safe on either source.
     for profile in ("recommended", "tuned"):
         conf = mmt_probe.render_config(profile)
         line = next(ln for ln in conf.splitlines() if ln.strip().startswith("snap-len"))
@@ -493,6 +504,29 @@ def test_an_abort_is_abnormal_even_at_return_code_0(tmp_path: Path) -> None:
     assert counters.extra["exit_state"] == "abnormal"
     assert counters.extra["abnormal_exit"] is True
     assert "signal received" in counters.extra["exit_detail"]
+
+
+#: What the pinned fork build writes on an offline crash (#42, fork #4):
+#: its handler logs ``crash signal received: N`` and a backtrace on stderr,
+#: then dies by the signal (the caller sees 128 + signum, never a masked 0).
+_FORK_CRASH_LOG = """\
+mmt-probe: Starting PCAP mode to analyze '/pcap/x.pcap' using 2 threads
+mmt-probe: Normally reached to the end of pcap file
+mmt-probe: crash signal received: 11
+/opt/mmt/probe/bin/probe(+0x2f8a8) [0xaaaae8ecf8a8]
+/opt/mmt/probe/bin/probe(+0x12430) [0xaaaae8eb2430]
+"""
+
+
+def test_a_fork_crash_line_is_abnormal(tmp_path: Path) -> None:
+    # #42: the fork build still logs a fatal marker before dying by the
+    # signal, so the backstop classification holds on the new crash path.
+    adapter, _, workdir = _prepared(tmp_path)
+    _run_with_log(adapter, workdir, tmp_path, _FORK_CRASH_LOG)
+    counters = adapter.counters()
+    assert counters.extra["exit_state"] == "abnormal"
+    assert counters.extra["abnormal_exit"] is True
+    assert "crash signal received" in counters.extra["exit_detail"]
 
 
 def test_no_status_line_means_no_packet_count_and_no_drops(tmp_path: Path) -> None:

@@ -2,9 +2,10 @@
 # `security.enable = true` with an empty rules dir: mmt-security initialises
 # and verifies every flow against nothing, so R0 - R0b - R-all decompose
 # probe-only, engine overhead and rule-matching cost.
-# BLOCKED: the pinned probe segfaults with zero verified rules — an upstream
-# bug (rulesets/README.md); the cell records `error` until a fixed image
-# ships.
+# Was BLOCKED: the pinned upstream probe segfaulted with zero verified
+# rules — the snap-len upstream bug (rulesets/README.md) the fork's
+# `intact-new-features` @ `7f4710d9` fixes (#42); the generated config's
+# `snap-len = 65535` avoided it on any build.
 schema_version: 1
 kind: ruleset
 tool: mmt-probe

@@ -57,11 +57,13 @@ How fast a tool processes a pcap it reads from memory.
 - Bytes are **captured bytes** — the pcap's `incl_len`, Ethernet header
   included, no wire overhead (no preamble, IFG or FCS).
 - The tool's packet count answers to the corpus manifest's declared count:
-  a mismatch makes the pass `invalid`, as does an abnormal exit the tool
-  masked as return code 0 (mmt-probe's signal handlers `_exit(0)` on
-  SIGABRT/SIGSEGV — the log's clean-exit markers, not the exit status, say
-  a run ended well). A pass reports `drops` only when the tool actually
-  emitted a drop counter; otherwise `null` with the reason.
+  a mismatch makes the pass `invalid`, as does an abnormal exit. Upstream
+  mmt-probe's signal handlers masked a crash as return code 0 (`_exit(0)`
+  on SIGABRT/SIGSEGV), so the log's clean-exit markers, not the exit
+  status, say a run ended well; the pinned fork build dies by the signal
+  (128 + signum), and the markers stay the backstop either way. A pass
+  reports `drops` only when the tool actually emitted a drop counter;
+  otherwise `null` with the reason.
 - Reported as Gbit/s, Mpps, and cycles per packet (`perf stat` on the pinned
   cores).
 
@@ -253,12 +255,13 @@ The campaign is `campaigns/p1-headline.yaml`. Its rule sets are defined in
   (probe only), R0b = engine on with zero rules (the engine's fixed cost),
   R-all = all 94 rules. R0 − R0b − R-all separates probe, engine and
   rule-matching cost. `security.thread-nb = 0`: rules are verified inside
-  the probe threads. **Blocked on the pinned image:** mmt-probe v1.6.5
-  segfaults in `file_output_alloc_init` with `security.enable = false`, and
-  with the engine on but zero verified rules (empty rules dir; the same
-  crash surfaces mid-packet when all rules are `exclude-rules`-ed or
-  `rules-mask`-ed). Upstream bug: the r0/r0b cells record `error` until a
-  fixed image ships; r-all runs.
+  the probe threads. **Was blocked on the pre-#42 image:** upstream
+  mmt-probe v1.6.5 segfaulted in `file_output_alloc_init` with
+  `security.enable = false`, and with the engine on but zero verified
+  rules (empty rules dir; the same crash surfaced mid-packet when all
+  rules were `exclude-rules`-ed or `rules-mask`-ed) — the snap-len
+  upstream bug the fork's `intact-new-features` @ `7f4710d9` fixes
+  (#42), so the r0/r0b cells run; r-all runs.
 - **C-benign** is a 1-h capture of the host's own traffic, anonymised in the
   pinned `mmt-bench/tcpreplay:local` container with `tcprewrite --seed`
   (deterministic, crypto-PAn-style IP rewriting) plus MAC replacement and

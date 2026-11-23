@@ -20,17 +20,20 @@ relative to the repo root), `security.enable`, `allow_empty`, and
 schema is `src/mbench/schemas/ruleset.schema.json`; `mbench validate
 rulesets/<id>.yaml` checks it.
 
-## The pinned image's snap-len crash
+## The upstream snap-len crash, fixed in the fork
 
-mmt-probe v1.6.5 in the pinned image (sha256 c6311ed3…) **segfaults** when
-the generated config sets `snap-len = 0`: `pcap_capture_start` inside
-libpcap crashes the worker path on frames of every size (the review saw it
-as `worker_on_start → dpi_alloc_init → file_output_alloc_init` on r0/r0b
-and as `__fread_chk ← libpcap` on C-large — the same upstream bug at
-different unwind points). The main-thread pipeline (`thread-nb = 0`) does
-not hit it. The adapter writes `snap-len = 65535`, and r0/r0b then run
-cleanly at every thread count; the campaigns keep them at t0 anyway as the
-main-thread baselines.
+Upstream mmt-probe v1.6.5 (`1e00441a`, the commit the image built before
+#42) **segfaults** when the generated config sets `snap-len = 0`: the pcap
+worker ring overflows on frames of every size (the review saw it as
+`worker_on_start → dpi_alloc_init → file_output_alloc_init` on r0/r0b and
+as `__fread_chk ← libpcap` on C-large — the same upstream bug at different
+unwind points). The main-thread pipeline (`thread-nb = 0`) does not hit
+it. The fork the image now builds (`montimage-projects/mmt-probe`
+`intact-new-features` @ `7f4710d9`) fixes it — the ring elements are sized
+by the effective snap length — and the adapter still writes
+`snap-len = 65535`, the explicit full-frame choice that is safe on either
+source. r0/r0b run cleanly at every thread count; the campaigns keep them
+at t0 anyway as the main-thread baselines.
 
 ## R-all is 94 `.so` files, and the engine says 95
 
