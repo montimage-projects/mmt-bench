@@ -6,11 +6,12 @@ Tool-agnostic benchmark harness for network security engines (mmt-probe/mmt-secu
 Python 3.12, managed with [uv](https://docs.astral.sh/uv/).
 
 ```sh
-uv sync                    # create .venv from uv.lock
+uv sync --locked           # create .venv from uv.lock
 uv run mbench --help       # subcommands: sut, corpus, run, sweep, report, validate
 uv run ruff check .        # lint
 uv run ruff format --check .
 uv run mypy                # types (strict)
+python3 tools/ci/check_action_pins.py  # every action pinned to a full SHA
 uv run pytest              # tests
 ```
 
@@ -34,3 +35,7 @@ See [docs/sut-fingerprint.md](docs/sut-fingerprint.md),
 [corpus/README.md](corpus/README.md) and
 [campaigns/README.md](campaigns/README.md). `mbench sweep` is a stub for now:
 it exits with status 3 and `not implemented yet (#17)` (epic #1).
+
+[AGENTS.md](AGENTS.md) is the single copy of the commands CI runs — the
+checks above, the action-pin check and the 10-s smoke campaign — and of the
+repo's operating rules.
