@@ -70,6 +70,13 @@ class CellStats:
     precision: float | None = None
 
 
+def _is_num(value: Json) -> bool:
+    """A real JSON number: a bool is an int in Python, so a bare
+    ``isinstance(_, int | float)`` lets a hand-written ``true`` through as
+    1 or 0 (#40, review M2)."""
+    return isinstance(value, int | float) and not isinstance(value, bool)
+
+
 def _median(values: list[float]) -> float | None:
     return statistics.median(values) if values else None
 
@@ -145,26 +152,22 @@ def cell_stats(run: RunFile) -> CellStats:
     passes = run.record.get("passes") or []
     measured = [p for p in passes if p.get("kind") == "measured"]
     ok = [p for p in measured if p.get("status") == "ok"]
-    gbps = [p["gbps"] for p in ok if isinstance(p.get("gbps"), int | float)]
-    mpps = [p["mpps"] for p in ok if isinstance(p.get("mpps"), int | float)]
+    gbps = [p["gbps"] for p in ok if _is_num(p.get("gbps"))]
+    mpps = [p["mpps"] for p in ok if _is_num(p.get("mpps"))]
     rates = [
         p["detection"]["detection_rate"]
         for p in ok
-        if isinstance(p.get("detection"), dict)
-        and isinstance(p["detection"].get("detection_rate"), int | float)
-        and not isinstance(p["detection"].get("detection_rate"), bool)
+        if isinstance(p.get("detection"), dict) and _is_num(p["detection"].get("detection_rate"))
     ]
     precisions = [
         p["detection"]["precision"]
         for p in ok
-        if isinstance(p.get("detection"), dict)
-        and isinstance(p["detection"].get("precision"), int | float)
+        if isinstance(p.get("detection"), dict) and _is_num(p["detection"].get("precision"))
     ]
     cpps = [
         p["perf"]["cycles_per_packet"]
         for p in ok
-        if isinstance(p.get("perf"), dict)
-        and isinstance(p["perf"].get("cycles_per_packet"), int | float)
+        if isinstance(p.get("perf"), dict) and _is_num(p["perf"].get("cycles_per_packet"))
     ]
     return CellStats(
         run=run,
@@ -253,7 +256,11 @@ def _setup_table(host: dict[str, Json] | None) -> list[str]:
         cpu = ", ".join(parts) if parts else _get(host, "host.cpu.core_types")
     memory = host.get("host", {}).get("memory", {})
     total_kib = memory.get("total_kib") if isinstance(memory, dict) else None
-    mem = f"{total_kib / 1048576:.1f} GiB" if isinstance(total_kib, int) else "—"
+    mem = (
+        f"{total_kib / 1048576:.1f} GiB"
+        if isinstance(total_kib, int) and not isinstance(total_kib, bool)
+        else "—"
+    )
     nics = host.get("nics")
     nic_names = (
         ", ".join(str(n.get("name")) for n in nics if isinstance(n, dict))
@@ -299,8 +306,10 @@ def _verdict_cell_match(stats: CellStats, verdict_cell: dict[str, Json]) -> bool
         return False
     if "corpus" in verdict_cell and cell.get("corpus", {}).get("label") != verdict_cell["corpus"]:
         return False
-    if "threads" in verdict_cell and cell.get("threads") != verdict_cell["threads"]:
-        return False
+    if "threads" in verdict_cell:
+        threads = cell.get("threads")
+        if isinstance(threads, bool) or threads != verdict_cell["threads"]:
+            return False
     return not ("cpuset" in verdict_cell and cell.get("cpuset") != verdict_cell["cpuset"])
 
 
@@ -447,12 +456,14 @@ def _results_table(cells: list[CellStats]) -> list[str]:
 def _cell_key(run: RunFile) -> tuple[str, ...]:
     cell = run.record.get("cell", {})
     corpus = cell.get("corpus", {})
+    # A bool is an int, so ``threads: true`` would sort as one thread.
+    threads = 0 if isinstance(cell.get("threads"), bool) else cell.get("threads", 0)
     return (
         str(corpus.get("label", "")),
         str(cell.get("tool", "")),
         str(cell.get("ruleset", {}).get("id", "")),
         str(cell.get("config_profile", "")),
-        f"{int(cell.get('threads', 0) or 0):04d}",
+        f"{int(threads or 0):04d}",
         str(cell.get("cpuset", "")),
         str(run.name),
     )

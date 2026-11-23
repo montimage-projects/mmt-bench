@@ -93,16 +93,24 @@ def test_a_nonzero_exit_is_an_error(tmp_path: Path, monkeypatch: pytest.MonkeyPa
     assert outcome.returncode == 3
 
 
-def test_a_signal_death_is_an_error(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+@pytest.mark.parametrize(
+    "returncode",
+    [128 + 11, -11],
+    ids=["128-plus-signum", "negative-returncode"],
+)
+def test_a_signal_death_is_an_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, returncode: int
+) -> None:
     # #42: the fork probe dies by the signal on an offline crash — a shell
-    # sees 128 + signum — so a crash is an error pass, never a masked ok.
+    # sees 128 + signum, a Python caller a negative returncode — so a crash
+    # is an error pass, never a masked ok.
     (tmp_path / "rs.so").write_bytes(b"rules")
     make_pcap(tmp_path, "x.pcap")
     adapter = FakeAdapter()
-    monkeypatch.setattr(adapter, "run_offline", lambda *a, **k: FakeProcess(returncode=128 + 11))
+    monkeypatch.setattr(adapter, "run_offline", lambda *a, **k: FakeProcess(returncode=returncode))
     outcome = _pass(adapter, tmp_path)
     assert outcome.status == "error"
-    assert outcome.returncode == 139
+    assert outcome.returncode == returncode
 
 
 def test_a_crashing_start_is_an_error(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

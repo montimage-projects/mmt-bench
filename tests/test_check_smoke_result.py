@@ -185,6 +185,25 @@ def test_a_boolean_detection_rate_fails(
     assert "detection_rate True, not 1.0" in capsys.readouterr().err
 
 
+@pytest.mark.parametrize("alerts,attacks", [(True, 1), (False, 0)])
+def test_a_boolean_alert_count_fails(
+    tmp_path: Path,
+    corpus_dir: Path,
+    capsys: pytest.CaptureFixture[str],
+    alerts: bool,
+    attacks: int,
+) -> None:
+    # A bool is an int in Python: ``alerts: true`` compares equal to a
+    # 1-attack truth's expectation and ``alerts: false`` to a 0-attack
+    # one's, so the count rejects a bool too (#40, review M1).
+    (corpus_dir / "data" / "smoke.truth.json").write_text(
+        json.dumps(_truth(attacks=attacks)), encoding="utf-8"
+    )
+    _run(tmp_path, "20260101T000000Z", "ok", passes=_measured(alerts=alerts))
+    assert main([str(tmp_path)], corpus_dir) == 1
+    assert f"alerts {alerts}, expected {attacks}" in capsys.readouterr().err
+
+
 def test_a_missing_detection_field_fails(
     tmp_path: Path, corpus_dir: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:

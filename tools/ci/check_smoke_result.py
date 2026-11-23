@@ -68,8 +68,9 @@ def _resolve_truth(ref: dict[str, Any], corpus_dir: Path) -> tuple[Path | None, 
     to the corpus directory — the same resolution the runner used — so
     ``data/smoke.truth.json`` resolves to ``corpus/data/smoke.truth.json``.
     Returns ``(path, None)`` on success; ``(None, "escapes")`` when the path
-    resolves outside ``corpus_dir`` and ``(None, "missing")`` when it is not
-    a file there.
+    resolves outside ``corpus_dir``, ``(None, "missing")`` when it is not a
+    file there, and ``(None, None)`` when ``ground_truth`` is absent or not
+    a string — the caller reports that case itself, so no reason is needed.
     """
     rel = ref.get("ground_truth")
     if not isinstance(rel, str) or not rel:
@@ -161,7 +162,7 @@ def record_errors(
             errors.append(f"{where}: status {p.get('status')!r}, not 'ok'")
         if expected is not None and expected >= 0:
             alerts = p.get("alerts")
-            if alerts != expected:
+            if isinstance(alerts, bool) or alerts != expected:
                 errors.append(f"{where}: alerts {alerts!r}, expected {expected}")
         detection = p.get("detection")
         rate = detection.get("detection_rate") if isinstance(detection, dict) else None

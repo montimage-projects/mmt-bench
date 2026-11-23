@@ -149,6 +149,51 @@ def test_a_boolean_detection_rate_is_not_a_rate() -> None:
     assert stats.detection_rate is None
 
 
+@pytest.mark.parametrize(
+    "field,stat",
+    [
+        ("gbps", "gbps_median"),
+        ("mpps", "mpps_median"),
+        ("precision", "precision"),
+        ("cycles_per_packet", "cpp_median"),
+    ],
+)
+def test_a_boolean_is_not_a_number(field: str, stat: str) -> None:
+    # The same quirk on the sibling numeric feeds: ``gbps: true`` etc.
+    # would feed the median as 1.0 (#40, review M2).
+    run = _run("r.json", [1.0])
+    measured = run.record["passes"][1]
+    if field == "precision":
+        measured["detection"]["precision"] = True
+    elif field == "cycles_per_packet":
+        measured["perf"] = {"cycles_per_packet": True}
+    else:
+        measured[field] = True
+    stats = render.cell_stats(run)
+    assert getattr(stats, stat) is None
+
+
+def test_a_boolean_total_kib_is_not_a_memory_size() -> None:
+    host = replay()
+    host["host"]["memory"]["total_kib"] = True
+    md = render.render({}, host, [_run("r.json", [1.0])])
+    line = next(r for r in md.splitlines() if r.startswith("| memory"))
+    assert "GiB" not in line
+
+
+def test_a_boolean_threads_matches_no_verdict_cell() -> None:
+    # ``threads: true`` equals 1, so it used to match a verdict_cell asking
+    # for one thread — a bool is never a thread count (review M2).
+    run = _run("r.json", [1.0], cell_overrides={"threads": True})
+    md = render.render({"verdict_cell": {"threads": 1}}, replay(), [run])
+    assert "no run measured the cell" in md
+
+
+def test_a_boolean_threads_sorts_as_no_thread_count() -> None:
+    run = _run("r.json", [1.0], cell_overrides={"threads": True})
+    assert "0000" in render._cell_key(run)
+
+
 def test_invalid_timeout_and_error_runs_are_listed() -> None:
     ok = _run("ok.json", [1.0])
     invalid = _run("bad.json", [1.0], status="invalid", problems=["sut: missing field: os"])
