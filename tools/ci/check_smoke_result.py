@@ -3,10 +3,10 @@ r"""Fail when a results directory's newest run records are not all ``ok``.
 ``mbench run`` exits 0 when at least one run is valid, but a campaign can
 still have recorded ``partial``, ``timeout``, ``error``, ``interrupted`` or
 ``invalid`` runs. The smoke campaign's CI job needs the stricter gate (#9):
-the run records of the newest batch must have finished ``ok``, with every
-measured pass ``ok`` too — and every measured pass must report the expected
-alert count and a detection rate of 1.0 against the corpus entry's ground
-truth, so a broken alert path cannot pass as an ``alerts: 0`` record.
+the run records of the newest batch must have finished ``ok`` with at least
+one measured pass, every one ``ok`` too — and every one must report the
+expected alert count and a detection rate of 1.0 against the corpus entry's
+ground truth, so a broken alert path cannot pass as an ``alerts: 0`` record.
 Results are append-only, so an earlier batch's failed run stays in the
 directory and is not the gate. The record's schema and its embedded SUT are
 ``mbench validate``'s job; this check is the status and detection gate only.
@@ -61,22 +61,26 @@ def _batch_key(batch: str) -> tuple[str, int]:
     return (base, int(n)) if n.isdigit() else (batch, 1)
 
 
-def _resolve_truth(ref: dict[str, Any], corpus_dir: Path) -> Path | None:
+def _resolve_truth(ref: dict[str, Any], corpus_dir: Path) -> tuple[Path | None, str | None]:
     """The truth file the record's corpus entry names, under ``corpus_dir``.
 
     ``ground_truth`` in a run record is the manifest entry's path, relative
     to the corpus directory — the same resolution the runner used — so
     ``data/smoke.truth.json`` resolves to ``corpus/data/smoke.truth.json``.
-    Anything resolving outside ``corpus_dir`` is rejected.
+    Returns ``(path, None)`` on success; ``(None, "escapes")`` when the path
+    resolves outside ``corpus_dir`` and ``(None, "missing")`` when it is not
+    a file there.
     """
     rel = ref.get("ground_truth")
     if not isinstance(rel, str) or not rel:
-        return None
+        return None, None
     root = corpus_dir.resolve()
     resolved = (root / rel).resolve()
-    if resolved.is_relative_to(root) and resolved.is_file():
-        return resolved
-    return None
+    if not resolved.is_relative_to(root):
+        return None, "escapes"
+    if not resolved.is_file():
+        return None, "missing"
+    return resolved, None
 
 
 def _derived_expected(data: dict[str, Any], corpus_dir: Path, name: str) -> tuple[int, str | None]:
@@ -96,8 +100,13 @@ def _derived_expected(data: dict[str, Any], corpus_dir: Path, name: str) -> tupl
     rel = ref.get("ground_truth")
     if not isinstance(rel, str) or not rel:
         return -1, (f"{name}: the corpus reference names no ground truth; pass EXPECTED_ALERTS")
-    path = _resolve_truth(ref, corpus_dir)
+    path, problem = _resolve_truth(ref, corpus_dir)
     if path is None:
+        if problem == "escapes":
+            return -1, (
+                f"{name}: ground truth {rel!r} escapes the corpus dir "
+                f"{corpus_dir.resolve()}; pass EXPECTED_ALERTS"
+            )
         return -1, (
             f"{name}: ground truth {rel!r} not found under {corpus_dir.resolve()};"
             " pass EXPECTED_ALERTS"
@@ -139,6 +148,8 @@ def record_errors(
         if isinstance(passes, list)
         else []
     )
+    if status == "ok" and not measured:
+        errors.append(f"{path.name}: status 'ok' with no measured pass")
     expected = expected_alerts
     if expected is None and measured:
         expected, err = _derived_expected(data, corpus_dir, path.name)
@@ -154,7 +165,7 @@ def record_errors(
                 errors.append(f"{where}: alerts {alerts!r}, expected {expected}")
         detection = p.get("detection")
         rate = detection.get("detection_rate") if isinstance(detection, dict) else None
-        if rate != 1.0:
+        if isinstance(rate, bool) or rate != 1.0:
             errors.append(f"{where}: detection_rate {rate!r}, not 1.0")
     return errors
 

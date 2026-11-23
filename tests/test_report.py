@@ -140,6 +140,15 @@ def test_detection_sits_next_to_throughput() -> None:
     assert "2" in line and "100%" in line
 
 
+def test_a_boolean_detection_rate_is_not_a_rate() -> None:
+    # A bool is an int in Python, so ``isinstance(_, int | float)`` lets a
+    # hand-written ``detection_rate: true`` through as 1.0 (#40).
+    run = _run("r.json", [1.0])
+    run.record["passes"][1]["detection"]["detection_rate"] = True
+    stats = render.cell_stats(run)
+    assert stats.detection_rate is None
+
+
 def test_invalid_timeout_and_error_runs_are_listed() -> None:
     ok = _run("ok.json", [1.0])
     invalid = _run("bad.json", [1.0], status="invalid", problems=["sut: missing field: os"])

@@ -124,6 +124,22 @@ def test_an_ok_run_with_a_failed_measured_pass_fails(
     assert "measured pass 1" in capsys.readouterr().err
 
 
+def test_an_ok_record_with_no_measured_pass_fails(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # The runner writes 'ok' only when at least one measured pass was ok,
+    # but a foreign or hand-written record can claim 'ok' and hold none:
+    # the gate fails rather than passing on an empty answer (#40).
+    _run(
+        tmp_path,
+        "20260101T000000Z",
+        "ok",
+        passes=[{"kind": "warmup", "n": 0, "status": "ok", "wall_s": 0.5}],
+    )
+    assert main([str(tmp_path), EXPECTED]) == 1
+    assert "no measured pass" in capsys.readouterr().err
+
+
 def test_a_zero_alert_measured_pass_fails(
     tmp_path: Path, corpus_dir: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -153,6 +169,20 @@ def test_a_detection_rate_below_one_fails(
     _run(tmp_path, "20260101T000000Z", "ok", passes=_measured(detection=detection))
     assert main([str(tmp_path)], corpus_dir) == 1
     assert "detection_rate 0.75, not 1.0" in capsys.readouterr().err
+
+
+def test_a_boolean_detection_rate_fails(
+    tmp_path: Path, corpus_dir: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # JSON ``true`` compares equal to 1.0, so ``rate != 1.0`` lets it
+    # through: the gate rejects a bool explicitly (#40).
+    detection = {
+        "rules": {"13": {"expected": 4, "detected": 4, "missed": 0}},
+        "detection_rate": True,
+    }
+    _run(tmp_path, "20260101T000000Z", "ok", passes=_measured(detection=detection))
+    assert main([str(tmp_path)], corpus_dir) == 1
+    assert "detection_rate True, not 1.0" in capsys.readouterr().err
 
 
 def test_a_missing_detection_field_fails(
@@ -276,7 +306,9 @@ def test_a_truth_path_escaping_the_corpus_dir_fails(
     (tmp_path / "outside.truth.json").write_text(json.dumps(_truth()), encoding="utf-8")
     _run(tmp_path, "20260101T000000Z", "ok", corpus_ref=ref)
     assert main([str(tmp_path)], corpus_dir) == 1
-    assert "not found" in capsys.readouterr().err
+    err = capsys.readouterr().err
+    assert "escapes the corpus dir" in err
+    assert "not found" not in err
 
 
 def test_a_record_without_a_corpus_reference_fails(

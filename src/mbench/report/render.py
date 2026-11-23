@@ -152,6 +152,7 @@ def cell_stats(run: RunFile) -> CellStats:
         for p in ok
         if isinstance(p.get("detection"), dict)
         and isinstance(p["detection"].get("detection_rate"), int | float)
+        and not isinstance(p["detection"].get("detection_rate"), bool)
     ]
     precisions = [
         p["detection"]["precision"]

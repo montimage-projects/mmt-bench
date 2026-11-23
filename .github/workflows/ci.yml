@@ -111,8 +111,9 @@ jobs:
 
       # Deterministic: the same bytes on every host (seed fixed, #7); the
       # capture lands in the git-ignored corpus/data/ and is never committed.
-      # Its first 4 packets are TCP SYNs with payload — the rule-13 trigger —
-      # and gen writes their ground truth next to it (#9 review).
+      # Its first packets (currently 4) are TCP SYNs with payload — the
+      # rule-13 trigger — and gen writes their ground truth next to it
+      # (#9 review).
       - name: Generate the smoke pcaps
         run: |
           uv run --locked mbench corpus gen c-small --seed 0 --packets 20000 --flows 64 --label smoke --data-in-syn 4
