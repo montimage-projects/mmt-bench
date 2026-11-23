@@ -30,13 +30,17 @@ uv run mbench --help                   # smoke: the CLI lists its subcommands
 
 # The smoke job (#9): the same steps CI runs on every PR and push to main.
 docker build -t mmt-bench/mmt-probe:local tools/docker/mmt-probe  # pinned image
-tools/docker/mmt-probe/extract-rules.sh  # the image's rules -> local/ (never committed)
-uv run mbench corpus gen c-small --seed 0 --packets 20000 --flows 64 --label smoke --data-in-syn 4
-uv run mbench corpus gen c-large --seed 0 --packets 500 --flows 8 --label smoke-large --data-in-syn 4
+# the image's rules -> local/ (never committed):
+tools/docker/mmt-probe/extract-rules.sh
+uv run mbench corpus gen c-small --seed 0 --packets 20000 --flows 64 \
+  --label smoke --data-in-syn 4
+uv run mbench corpus gen c-large --seed 0 --packets 500 --flows 8 \
+  --label smoke-large --data-in-syn 4
 uv run mbench run campaigns/smoke.yaml   # the 10-s campaign, a pipeline check
 dir=$(ls -dt results/*-smoke | head -1)  # the newest smoke results dir
 uv run mbench validate "$dir"/sut*.json "$dir"/runs/*.json "$dir"/REPORT*.md
-python3 tools/ci/check_smoke_result.py "$dir"  # gate: ok, the truth's alerts, rate 1.0
+# gate: ok, the truth's alerts, rate 1.0:
+python3 tools/ci/check_smoke_result.py "$dir"
 ```
 
 `mbench sut`, `mbench validate`, `mbench corpus`, `mbench run` and

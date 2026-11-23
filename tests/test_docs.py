@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import hashlib
 import re
+import shlex
 from pathlib import Path
 
 import pytest
@@ -13,9 +15,6 @@ CLAUDE = ROOT / "CLAUDE.md"
 DESIGN = ROOT / "docs/design.md"
 METHODOLOGY = ROOT / "docs/methodology.md"
 CI = ROOT / ".github/workflows/ci.yml"
-
-#: How a shell command in ci.yml starts (not a YAML key such as ``python-version:``).
-COMMAND_PREFIXES = ("uv ", "python ", "python3 ", "dir=")
 
 
 def _read(path: Path) -> str:
@@ -29,24 +28,86 @@ def _agents_commands() -> list[str]:
     section = text.split("\n## Commands\n", 1)[1].split("\n## ", 1)[0]
     block = re.search(r"```sh\n(.*?)```", section, re.DOTALL)
     assert block is not None, "no ```sh block under ## Commands"
-    commands = [line.split("#", 1)[0].strip() for line in block.group(1).splitlines()]
-    return [c for c in commands if c]
+    commands: list[str] = []
+    current = ""
+    for raw in block.group(1).splitlines():
+        line = raw.split("#", 1)[0].strip()
+        if not line:
+            continue
+        current = f"{current} {line}" if current else line
+        if current.endswith("\\"):
+            # A ``\`` continuation wraps a long command under 80 columns (N3).
+            current = current[:-1].rstrip()
+            continue
+        commands.append(current)
+        current = ""
+    assert not current, "a `\\` continuation needs a next line"
+    return commands
 
 
-def _without_locked(command: str) -> str:
-    return " ".join(word for word in command.split() if word != "--locked")
+#: The one ``--python`` the normalisation drops: ``uv sync`` pins the
+#: setup-python interpreter on CI where AGENTS.md writes neither. Any other
+#: spelling — a different interpreter on the sync line, or ``--python`` on
+#: another command — stays in the comparable form and fails the checks
+#: below: the review planted ``uv run --locked --python 3.12 pytest`` and a
+#: changed sync interpreter, and both passed unseen.
+UV_SYNC_PYTHON = "$(command -v python)"
+
+
+def _normalize(command: str) -> str:
+    """A command's comparable form: ``--locked`` dropped, and
+    ``--python "$(command -v python)"`` dropped on ``uv sync`` only.
+
+    CI runs ``uv sync --locked --python "$(command -v python)"`` where
+    AGENTS.md writes ``uv sync --locked``; both reduce to ``uv sync``.
+    """
+    words = shlex.split(command)
+    kept: list[str] = []
+    i = 0
+    while i < len(words):
+        on_sync = kept[:2] == ["uv", "sync"]
+        if words[i] == "--locked":
+            i += 1
+        elif on_sync and words[i : i + 2] == ["--python", UV_SYNC_PYTHON]:
+            i += 2
+        elif on_sync and words[i] == f"--python={UV_SYNC_PYTHON}":
+            i += 1
+        else:
+            kept.append(words[i])
+            i += 1
+    return " ".join(kept)
 
 
 def _ci_run_lines() -> list[str]:
-    lines = []
-    for line in _read(CI).splitlines():
-        line = line.strip()
-        if line.startswith("run: "):
-            line = line.removeprefix("run: ")
-        elif not line.startswith(COMMAND_PREFIXES):
+    """Every command a ``run:`` step in ci.yml executes.
+
+    ``run: cmd`` gives one; a ``run: |`` block gives every line in it, less
+    comments and blanks. A line starting with an env assignment or
+    ``cd … &&`` is kept like any other command, so it fails the
+    whole-command comparisons below instead of passing unseen (N1).
+    """
+    lines = _read(CI).splitlines()
+    commands: list[str] = []
+    i = 0
+    while i < len(lines):
+        match = re.match(r"(?:-\s+)?run:\s*(.*)", lines[i].strip())
+        if match is None:
+            i += 1
             continue
-        lines.append(_without_locked(line))
-    return lines
+        indent = len(lines[i]) - len(lines[i].lstrip())
+        words = match.group(1).split()
+        i += 1
+        if words and words[0] in ("|", "|-", "|+", ">", ">-", ">+"):
+            while i < len(lines):
+                body = lines[i]
+                if body.strip() and len(body) - len(body.lstrip()) <= indent:
+                    break
+                if body.strip() and not body.strip().startswith("#"):
+                    commands.append(body.strip())
+                i += 1
+        elif words:
+            commands.append(match.group(1).strip())
+    return commands
 
 
 def test_agents_lists_install_lint_test_and_smoke_commands() -> None:
@@ -62,24 +123,76 @@ def test_agents_lists_install_lint_test_and_smoke_commands() -> None:
         assert any(c.startswith(expected) for c in commands), expected
 
 
-#: CI steps that set up the runner and have no local equivalent in AGENTS.md.
-CI_SETUP_ONLY = ("python -m pip install",)
+def test_agents_lines_stay_within_80_columns() -> None:
+    # N3: the review flagged an unwrapped 94-character line; the file stays
+    # wrapped — a long shell command takes a ``\`` continuation.
+    over = [
+        (n, len(line))
+        for n, line in enumerate(_read(AGENTS).splitlines(), start=1)
+        if len(line) > 80
+    ]
+    assert not over, f"AGENTS.md lines over 80 columns: {over}"
+
+
+#: ``run:`` lines that set the runner up, not checks AGENTS.md must list. An
+#: exact match is the only way one skips the whole-command comparison below:
+#: a changed argument is drift the test reports (N1).
+CI_RUNNER_ONLY = {
+    "set -euo pipefail",
+    "python -m pip install --require-hashes --no-deps -r .github/uv-requirements.txt",
+}
 
 
 def test_agents_commands_are_the_ones_ci_runs() -> None:
-    # Each AGENTS.md command is one CI runs (``--locked`` aside).
-    ci = _ci_run_lines()
+    # Each AGENTS.md command is a whole command CI runs, ``--locked`` and
+    # the ``uv sync`` interpreter pin aside. Prefix-matching let a planted
+    # ``pytest -x tests/unit`` pass unseen, so the match is exact (N1).
+    ci = {_normalize(line) for line in _ci_run_lines()}
     for command in _agents_commands():
-        assert any(line.startswith(_without_locked(command)) for line in ci), command
+        assert _normalize(command) in ci, command
 
 
 def test_every_ci_check_is_listed_in_agents() -> None:
-    # And the reverse: a check CI gains must be added to AGENTS.md too.
-    commands = [_without_locked(c) for c in _agents_commands()]
+    # And the reverse: a check CI gains must be added to AGENTS.md too, again
+    # as a whole command — one starting with an env assignment or
+    # ``cd … &&`` matches nothing and fails here (N1).
+    commands = {_normalize(c) for c in _agents_commands()}
     for line in _ci_run_lines():
-        if not line.startswith(COMMAND_PREFIXES) or line.startswith(CI_SETUP_ONLY):
+        if line in CI_RUNNER_ONLY:
             continue
-        assert any(line.startswith(c) for c in commands), line
+        assert _normalize(line) in commands, line
+
+
+def test_a_python_flag_off_the_sync_line_fails_the_check() -> None:
+    # The review planted ``uv run --locked --python 3.12 pytest`` in ci.yml
+    # and it passed unseen: the normalisation stripped ``--python`` from
+    # every command. Scoped to the sync pin, the drifted line matches
+    # nothing AGENTS.md lists.
+    commands = {_normalize(c) for c in _agents_commands()}
+    assert _normalize("uv run --locked --python 3.12 pytest") not in commands
+
+
+@pytest.mark.parametrize(
+    "line",
+    (
+        'uv sync --locked --python "$(command -v python3)"',
+        "uv sync --locked --python=3.11",
+    ),
+)
+def test_a_changed_sync_interpreter_fails_the_check(line: str) -> None:
+    # Same hole on the sync line itself: ``--python`` survives the
+    # normalisation unless it spells the pinned interpreter exactly.
+    commands = {_normalize(c) for c in _agents_commands()}
+    assert _normalize(line) not in commands
+
+
+def test_the_real_sync_line_still_reduces_to_uv_sync() -> None:
+    # The one ``--python`` the normalisation legitimately drops: CI pins
+    # ``$(command -v python)`` (the setup-python interpreter) where
+    # AGENTS.md writes ``uv sync --locked``.
+    sync = [line for line in _ci_run_lines() if line.startswith("uv sync")]
+    assert sync, "ci.yml has no uv sync line"
+    assert all(_normalize(line) == "uv sync" for line in sync), sync
 
 
 def test_the_results_dir_command_is_a_command_not_a_comment() -> None:
@@ -146,6 +259,24 @@ def test_design_has_track_b_sections_in_order_then_decisions() -> None:
     numbered = [h.split(".", 1)[0] for h in headings if re.match(r"B\d+\.", h)]
     assert numbered == [f"B{i}" for i in range(1, 11)]
     assert headings[-1] == "Decisions"
+
+
+#: sha256 of the ``## B1.`` … ``## Decisions`` block of docs/design.md — a
+#: verbatim copy of the plan, so an edit inside a section must be deliberate
+#: and update this pin with it (N2). The heading-order check above cannot
+#: see such an edit; the digest can.
+DESIGN_B_SECTIONS_SHA256 = "8e7cc8af0da3c2633bfd471995c6d517e524ace4ad735abf8d99175747f8ff00"
+
+
+def test_design_b_sections_are_verbatim() -> None:
+    text = _read(DESIGN)
+    start = text.index("## B1.")
+    end = text.index("## Decisions")
+    digest = hashlib.sha256(text[start:end].encode("utf-8")).hexdigest()
+    assert digest == DESIGN_B_SECTIONS_SHA256, (
+        "docs/design.md's B1-B10 sections changed — they are a verbatim copy "
+        "of the plan; update the pin only when the change is deliberate"
+    )
 
 
 def test_design_decisions_lists_the_five_epic_decisions() -> None:
