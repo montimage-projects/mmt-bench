@@ -45,8 +45,18 @@ def _agents_commands() -> list[str]:
     return commands
 
 
+#: The one ``--python`` the normalisation drops: ``uv sync`` pins the
+#: setup-python interpreter on CI where AGENTS.md writes neither. Any other
+#: spelling — a different interpreter on the sync line, or ``--python`` on
+#: another command — stays in the comparable form and fails the checks
+#: below: the review planted ``uv run --locked --python 3.12 pytest`` and a
+#: changed sync interpreter, and both passed unseen.
+UV_SYNC_PYTHON = "$(command -v python)"
+
+
 def _normalize(command: str) -> str:
-    """A command's comparable form: ``--locked`` and ``--python …`` dropped.
+    """A command's comparable form: ``--locked`` dropped, and
+    ``--python "$(command -v python)"`` dropped on ``uv sync`` only.
 
     CI runs ``uv sync --locked --python "$(command -v python)"`` where
     AGENTS.md writes ``uv sync --locked``; both reduce to ``uv sync``.
@@ -55,9 +65,12 @@ def _normalize(command: str) -> str:
     kept: list[str] = []
     i = 0
     while i < len(words):
-        if words[i] == "--python":
+        on_sync = kept[:2] == ["uv", "sync"]
+        if words[i] == "--locked":
+            i += 1
+        elif on_sync and words[i : i + 2] == ["--python", UV_SYNC_PYTHON]:
             i += 2
-        elif words[i] == "--locked" or words[i].startswith("--python="):
+        elif on_sync and words[i] == f"--python={UV_SYNC_PYTHON}":
             i += 1
         else:
             kept.append(words[i])
@@ -132,7 +145,7 @@ CI_RUNNER_ONLY = {
 
 def test_agents_commands_are_the_ones_ci_runs() -> None:
     # Each AGENTS.md command is a whole command CI runs, ``--locked`` and
-    # ``--python …`` aside. Prefix-matching let a planted
+    # the ``uv sync`` interpreter pin aside. Prefix-matching let a planted
     # ``pytest -x tests/unit`` pass unseen, so the match is exact (N1).
     ci = {_normalize(line) for line in _ci_run_lines()}
     for command in _agents_commands():
@@ -148,6 +161,38 @@ def test_every_ci_check_is_listed_in_agents() -> None:
         if line in CI_RUNNER_ONLY:
             continue
         assert _normalize(line) in commands, line
+
+
+def test_a_python_flag_off_the_sync_line_fails_the_check() -> None:
+    # The review planted ``uv run --locked --python 3.12 pytest`` in ci.yml
+    # and it passed unseen: the normalisation stripped ``--python`` from
+    # every command. Scoped to the sync pin, the drifted line matches
+    # nothing AGENTS.md lists.
+    commands = {_normalize(c) for c in _agents_commands()}
+    assert _normalize("uv run --locked --python 3.12 pytest") not in commands
+
+
+@pytest.mark.parametrize(
+    "line",
+    (
+        'uv sync --locked --python "$(command -v python3)"',
+        "uv sync --locked --python=3.11",
+    ),
+)
+def test_a_changed_sync_interpreter_fails_the_check(line: str) -> None:
+    # Same hole on the sync line itself: ``--python`` survives the
+    # normalisation unless it spells the pinned interpreter exactly.
+    commands = {_normalize(c) for c in _agents_commands()}
+    assert _normalize(line) not in commands
+
+
+def test_the_real_sync_line_still_reduces_to_uv_sync() -> None:
+    # The one ``--python`` the normalisation legitimately drops: CI pins
+    # ``$(command -v python)`` (the setup-python interpreter) where
+    # AGENTS.md writes ``uv sync --locked``.
+    sync = [line for line in _ci_run_lines() if line.startswith("uv sync")]
+    assert sync, "ci.yml has no uv sync line"
+    assert all(_normalize(line) == "uv sync" for line in sync), sync
 
 
 def test_the_results_dir_command_is_a_command_not_a_comment() -> None:
@@ -216,10 +261,10 @@ def test_design_has_track_b_sections_in_order_then_decisions() -> None:
     assert headings[-1] == "Decisions"
 
 
-#: sha256 of the ``## B1.`` … ``## B10.`` lines of docs/design.md — a verbatim
-#: copy of the plan, so an edit inside a section must be deliberate and update
-#: this pin with it (N2). The heading-order check above cannot see such an
-#: edit; the digest can.
+#: sha256 of the ``## B1.`` … ``## Decisions`` block of docs/design.md — a
+#: verbatim copy of the plan, so an edit inside a section must be deliberate
+#: and update this pin with it (N2). The heading-order check above cannot
+#: see such an edit; the digest can.
 DESIGN_B_SECTIONS_SHA256 = "8e7cc8af0da3c2633bfd471995c6d517e524ace4ad735abf8d99175747f8ff00"
 
 
