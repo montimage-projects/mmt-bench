@@ -1,5 +1,5 @@
 dpi=1.10.3
-security=855931a37bd73bd43b26ff03ea108c6745c11b19
+security=3904b83ccf6fee9e91544e0882cea8bdb33c72ee
 security_repo=https://github.com/montimage-projects/mmt-security.git
 probe=7f4710d9846c1654ca3555479394ed720556f340
 probe_repo=https://github.com/montimage-projects/mmt-probe.git
@@ -15,8 +15,8 @@ build_uuid-dev=2.39.3-9ubuntu6.6
 build_apt_pins=exact
 INFO_SEC: update "input.max_message_size" from 3000 to 32824
 Version:
-- MMT-Probe 1.6.5 (7f4710d - Nov 23 2026 11:24:05)
+- MMT-Probe 1.6.5 (7f4710d - Nov 24 2026 00:14:43)
 - MMT-DPI 1.10.3 (6a0afb46)
-- MMT-Security 1.2.20 (855931a - Nov 23 2026 11:23:51)
+- MMT-Security 1.2.21 (3904b83 - Nov 24 2026 00:14:31)
 - Modules: DPI, PCAP, REPORT, SECURITY
 - MMT_BASE: /opt/mmt
