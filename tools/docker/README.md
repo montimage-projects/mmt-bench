@@ -5,6 +5,6 @@ Suricata, Snort 3, tcpreplay/trafgen), each pinned by digest. Packet tools come 
 containers; nothing is installed on the host.
 
 - [mmt-probe/](mmt-probe/) — the mmt-probe image (#6): mmt-dpi 1.10.3,
-  mmt-security (fork `main` @ `3904b83c`) and mmt-probe (fork
+  mmt-security (fork `main` @ `19be37cb`) and mmt-probe (fork
   `intact-new-features` @ `7f4710d9`), all pinned, STIX + security modules.
 - Suricata (#14) and the replayer (#13): filled in by their issues.
