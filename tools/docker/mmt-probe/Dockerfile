@@ -26,7 +26,7 @@ ARG DPI_SHA256SUMS_SHA256=f7f7a80990bdb3c98f48978ff2bf00fa649a5c70633c906bd66654
 # /opt/mmt/VERSIONS either way).
 ARG SECURITY_REPO=https://github.com/montimage-projects/mmt-security.git
 ARG SECURITY_TAG=
-ARG SECURITY_COMMIT=855931a37bd73bd43b26ff03ea108c6745c11b19
+ARG SECURITY_COMMIT=3904b83ccf6fee9e91544e0882cea8bdb33c72ee
 # mmt-probe's source repo and commit: the fork's intact-new-features by
 # default, which fixes the two bugs the P1 review (#10) found upstream —
 # the pcap worker ring overflowing at snap-len = 0 (fork #1) and offline

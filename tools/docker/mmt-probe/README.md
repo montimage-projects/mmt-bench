@@ -10,7 +10,7 @@ the production mmt-stack image.
 |-------|-----|
 | base image | `ubuntu:24.04@sha256:73b999393d07f2bf65a40373778a44dc9a6d54ad7718d29247d8ff9413c4d6a8` |
 | mmt-dpi | v1.10.3 release `.deb`, build `6a0afb46`; the release `SHA256SUMS` is itself pinned by `f7f7a809…ea6ed5`, and the `.deb` is verified against it |
-| mmt-security | fork `main` = commit `855931a37bd73bd43b26ff03ea108c6745c11b19` from `SECURITY_REPO` (default `montimage-projects/mmt-security`; no tag names it, so `SECURITY_TAG` is empty) |
+| mmt-security | fork `main` = commit `3904b83ccf6fee9e91544e0882cea8bdb33c72ee` from `SECURITY_REPO` (default `montimage-projects/mmt-security`; no tag names it, so `SECURITY_TAG` is empty) |
 | mmt-probe | fork `intact-new-features` = commit `7f4710d9846c1654ca3555479394ed720556f340` from `PROBE_REPO` (default `montimage-projects/mmt-probe`; fixes the upstream `snap-len = 0` worker-ring overflow and the exit-0 crash masking the P1 review found — fork PRs #3 and #4) |
 
 The probe is built with `SECURITY_MODULE` and `STIX_FORMAT`; security alerts

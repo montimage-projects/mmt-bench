@@ -246,7 +246,7 @@ The campaign is `campaigns/p1-headline.yaml`. Its rule sets are defined in
 `rulesets/` and its decisions are these:
 
 - **R-all is 94 rules, not 95.** Upstream mmt-security has 95 XML rules, but
-  the pinned image builds the fork at commit `855931a37bd73bd43b26…`, which
+  the pinned image builds the fork at commit `3904b83ccf6fee9e91…`, which
   disabled DICOM rules 206 and 212 (`aeacbe0428`, false positives on benign
   traffic). "All 95 rules" in the question means the 94 `.so` files the
   image loads; `expect_rules: 94` in `rulesets/r-all.yaml` makes the harness

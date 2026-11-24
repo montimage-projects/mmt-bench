@@ -38,7 +38,7 @@ at t0 anyway as the main-thread baselines.
 ## R-all is 94 `.so` files, and the engine says 95
 
 Upstream mmt-security has 95 XML rules. The pinned image builds the fork
-`montimage/mmt-security` at `855931a37bd73bd43b26ff03ea108c6745c11b19`,
+`montimage/mmt-security` at `3904b83ccf6fee9e91544e0882cea8bdb33c72ee`,
 which disabled DICOM rules 206 and 212 in `aeacbe0428` ("false positives on
 benign traffic"). It ships **94** `.so` files. The engine's log still says
 `verifying 95 rules`: its count includes **rule 84** — "SYNful Knock
