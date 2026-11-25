@@ -279,12 +279,12 @@ def test_design_b_sections_are_verbatim() -> None:
     )
 
 
-def test_design_decisions_lists_the_five_epic_decisions() -> None:
+def test_design_decisions_lists_the_six_epic_decisions() -> None:
     text = _read(DESIGN)
     assert "\n## Decisions\n" in text, "design.md has no ## Decisions section"
     decisions = text.split("\n## Decisions\n", 1)[1]
     items = re.findall(r"^(\d+)\. ", decisions, re.MULTILINE)
-    assert items == ["1", "2", "3", "4", "5"]
+    assert items == ["1", "2", "3", "4", "5", "6"]
     for phrase in (
         'Was: "The repo stays private under montimage-projects for now."',
         "the repo is public",
@@ -293,6 +293,7 @@ def test_design_decisions_lists_the_five_epic_decisions() -> None:
         "veth pair only",
         "the harness prints the commands and Luong runs them",
         "A run without it is invalid",
+        "a binary search a run matrix cannot express",
     ):
         assert phrase in " ".join(decisions.split()), phrase
 

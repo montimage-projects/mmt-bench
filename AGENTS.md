@@ -43,9 +43,8 @@ uv run mbench validate "$dir"/sut*.json "$dir"/runs/*.json "$dir"/REPORT*.md
 python3 tools/ci/check_smoke_result.py "$dir"
 ```
 
-`mbench sut`, `mbench validate`, `mbench corpus`, `mbench run` and
-`mbench report` are implemented; `mbench sweep` is a stub until its issue
-lands: it exits with status 3 and `not implemented yet (#17)`. The 10-s
+`mbench sut`, `mbench validate`, `mbench corpus`, `mbench run`, `mbench
+sweep` and `mbench report` are implemented. The 10-s
 smoke campaign (#9) — `mbench run campaigns/smoke.yaml` after
 `tools/docker/mmt-probe/extract-rules.sh` and the two `mbench corpus gen`
 lines above, see `campaigns/README.md` — runs in CI on every PR and push to

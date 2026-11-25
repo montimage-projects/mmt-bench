@@ -1,10 +1,11 @@
 """The ``mbench`` command line.
 
 Each subcommand is filled in by its own issue in the mmt-bench v0 epic (#1).
-``sut`` and ``validate`` are implemented (#4), ``corpus`` too (#7), and
-``run`` and ``report`` (#8). ``sweep`` is still a stub that exits with
-:data:`EXIT_NOT_IMPLEMENTED` and names the issue that implements it, so a
-script or CI job calling one fails loudly instead of silently doing nothing.
+``sut`` and ``validate`` are implemented (#4), ``corpus`` too (#7),
+``run`` and ``report`` (#8), and ``sweep`` (#17). A subcommand that is
+still a stub would exit with :data:`EXIT_NOT_IMPLEMENTED` and name the
+issue that implements it, so a script or CI job calling it fails loudly
+instead of silently doing nothing.
 """
 
 from __future__ import annotations
@@ -521,6 +522,136 @@ def _run_run(ns: argparse.Namespace) -> int:
     return EXIT_OK if outcome.valid else EXIT_INVALID
 
 
+# --- mbench sweep --------------------------------------------------------------
+
+
+def _configure_sweep(p: argparse.ArgumentParser) -> None:
+    from mbench import corpus, runner, sweep
+
+    p.add_argument(
+        "campaign",
+        type=Path,
+        metavar="CAMPAIGN",
+        help="the campaign file (campaigns/<x>.yaml)",
+    )
+    p.add_argument(
+        "--param",
+        required=True,
+        choices=sweep.SWEEPABLE,
+        metavar="P",
+        help="the swept dimension: corpus label, offered rate (the online "
+        "mode's, #13), ruleset id or thread count",
+    )
+    kind = p.add_mutually_exclusive_group(required=True)
+    kind.add_argument(
+        "--values",
+        metavar="V1,V2,...",
+        help="a list sweep: one step per value (a one-axis matrix over "
+        "the campaign's other dimensions)",
+    )
+    kind.add_argument(
+        "--search",
+        metavar="LO:HI",
+        help="a binary search over --param rate: the highest offered rate "
+        "satisfying --until (#13's lossless-rate search)",
+    )
+    p.add_argument(
+        "--until",
+        metavar="COND",
+        help="stop condition <metric><op><value>, e.g. 'loss==0' or "
+        "'loss<=0.001' — required for --search, marks pass/fail on --values",
+    )
+    p.add_argument(
+        "--tolerance",
+        type=float,
+        default=0.0,
+        metavar="T",
+        help="a binary search stops when its bracket narrows to T (default: 0, no early stop)",
+    )
+    p.add_argument(
+        "--max-steps",
+        type=int,
+        default=sweep.DEFAULT_MAX_STEPS,
+        metavar="N",
+        help=f"probes a binary search takes at most (default: {sweep.DEFAULT_MAX_STEPS})",
+    )
+    p.add_argument(
+        "--results",
+        type=Path,
+        default=runner.DEFAULT_RESULTS,
+        metavar="DIR",
+        help=f"results root (default: {runner.DEFAULT_RESULTS}); "
+        "a tool-comparison sweep goes under local/ instead",
+    )
+    p.add_argument(
+        "--manifest",
+        type=Path,
+        default=corpus.DEFAULT_MANIFEST,
+        metavar="PATH",
+        help=f"corpus manifest (default: {corpus.DEFAULT_MANIFEST})",
+    )
+
+
+def _run_sweep(ns: argparse.Namespace) -> int:
+    import yaml
+
+    from mbench import matrix, sweep
+
+    results_dir = ns.results
+    try:
+        doc = yaml.safe_load(ns.campaign.read_text(encoding="utf-8"))
+        listed = doc.get("tools") if isinstance(doc, dict) else None
+    except (OSError, yaml.YAMLError):
+        listed = None
+    if isinstance(listed, list) and len(set(listed)) > 1:
+        # Like mbench run: a tool-comparison sweep stays out of git until
+        # the licence and fairness review — results go under local/.
+        results_dir = Path("local") / "results"
+        print(
+            f"mbench sweep: {len(set(listed))} tools compared — results go under "
+            f"{results_dir}/ (tool-comparison reports are not committed)",
+            file=sys.stderr,
+        )
+    try:
+        outcome = sweep.run_sweep(
+            ns.campaign,
+            param=ns.param,
+            values=ns.values,
+            search=ns.search,
+            until=ns.until,
+            tolerance=ns.tolerance,
+            max_steps=ns.max_steps,
+            results_dir=results_dir,
+            manifest_path=ns.manifest,
+            pin_harness=True,
+        )
+    except (sweep.SweepError, matrix.CampaignError) as exc:
+        print(f"mbench sweep: {exc}", file=sys.stderr)
+        for problem in exc.problems:
+            print(f"  {problem}", file=sys.stderr)
+        # Invalid record -> EXIT_INVALID; unresolved reference or bad
+        # option -> EXIT_USAGE, like mbench run.
+        return EXIT_INVALID if exc.problems else EXIT_USAGE
+    except (OSError, ValueError) as exc:
+        print(f"mbench sweep: {exc}", file=sys.stderr)
+        return EXIT_USAGE
+    steps = outcome.summary.get("steps")
+    n_steps = len(steps) if isinstance(steps, list) else 0
+    print(
+        f"mbench sweep: {outcome.directory}: {n_steps} steps, "
+        f"{len(outcome.run_files)} runs ({outcome.valid} valid, "
+        f"{outcome.invalid} invalid, {outcome.failed} failed); "
+        f"summary: {outcome.summary_json}"
+    )
+    result = outcome.summary.get("result")
+    if isinstance(result, dict):
+        print(
+            f"mbench sweep: best {ns.param} {result['best']} "
+            f"({result['stop']}, {result['steps']} probes)"
+        )
+    return EXIT_OK if outcome.valid else EXIT_INVALID
+
+
 # --- mbench report -------------------------------------------------------------
 
 
@@ -619,7 +750,13 @@ SUBCOMMANDS: tuple[Subcommand, ...] = (
         _configure_run,
         _run_run,
     ),
-    Subcommand("sweep", "run a parameter sweep across a campaign matrix", 17),
+    Subcommand(
+        "sweep",
+        "sweep one campaign dimension (list) or binary-search it (rate)",
+        17,
+        _configure_sweep,
+        _run_sweep,
+    ),
     Subcommand(
         "report",
         "render REPORT.md from a results directory",

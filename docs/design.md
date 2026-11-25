@@ -198,3 +198,9 @@ they differ. Decision 1 was replaced on 2026-11-20.
    not have, so the harness prints the commands and Luong runs them. (B9.)
 5. Every run must carry the full system-under-test record (B4). A run without
    it is invalid. (B1.)
+6. `mbench sweep` (#17) is a one-parameter sweep built on the campaign
+   matrix: a `--values` list sweep, plus a `--search` binary search over
+   the offered rate — not a separate generator of campaign files. (B2.)
+   Why: the plan lists `sweep` as a subcommand; #13's lossless-rate search
+   is a binary search a run matrix cannot express; and one mechanism for
+   #11, #12 and #13 is simpler than matrices plus a separate search helper.
