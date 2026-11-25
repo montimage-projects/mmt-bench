@@ -115,9 +115,7 @@ def test_the_summary_files_validate(tmp_path: Path, fake_tool: None) -> None:
         assert report.ok, report.errors
 
 
-def test_a_rate_list_sweep_records_the_rate_on_each_cell(
-    tmp_path: Path, fake_tool: None
-) -> None:
+def test_a_rate_list_sweep_records_the_rate_on_each_cell(tmp_path: Path, fake_tool: None) -> None:
     parts = layout(tmp_path, campaign_doc([{"label": "x"}], repeats=1))
     outcome, _, _ = _run(
         parts["campaign_path"], parts["manifest"], tmp_path, param="rate", values="500,1000"
@@ -152,9 +150,7 @@ def test_until_marks_each_step_of_a_list_sweep(tmp_path: Path, fake_tool: None) 
     assert losses[1] == pytest.approx(7 / 200)
 
 
-def test_binary_search_converges_to_the_lossless_rate(
-    tmp_path: Path, fake_tool: None
-) -> None:
+def test_binary_search_converges_to_the_lossless_rate(tmp_path: Path, fake_tool: None) -> None:
     parts = layout(tmp_path, campaign_doc([{"label": "x"}], repeats=1))
     # The bisection probes 1000, 500, 250, 375 in that order; the scripted
     # drops answer them: only 250 is lossless.
@@ -198,9 +194,7 @@ def test_binary_search_converges_to_the_lossless_rate(
         assert record["status"] == "ok"
 
 
-def test_the_search_stops_when_the_upper_bound_satisfies(
-    tmp_path: Path, fake_tool: None
-) -> None:
+def test_the_search_stops_when_the_upper_bound_satisfies(tmp_path: Path, fake_tool: None) -> None:
     parts = layout(tmp_path, campaign_doc([{"label": "x"}], repeats=1))
     outcome, _, _ = _run(
         parts["campaign_path"],
@@ -280,9 +274,7 @@ def test_bad_sweep_options_raise_a_clear_error(
     assert not (tmp_path / "results").exists()
 
 
-def test_a_second_sweep_appends_and_never_overwrites(
-    tmp_path: Path, fake_tool: None
-) -> None:
+def test_a_second_sweep_appends_and_never_overwrites(tmp_path: Path, fake_tool: None) -> None:
     parts = layout(tmp_path, campaign_doc([{"label": "x"}], repeats=1))
     first, _, _ = _run(
         parts["campaign_path"], parts["manifest"], tmp_path, param="threads", values="1"
