@@ -82,7 +82,7 @@ def test_the_parser_ignores_not_supported() -> None:
 
 def test_a_missing_perf_binary_is_a_marker(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr("mbench.metrics.perf.shutil.which", lambda name: None)
-    probe = perf.Probe(paranoid_path=tmp_path / "nope")
+    probe = perf.Probe(paranoid_path=tmp_path / "nope", env={}, home=tmp_path)
     marker = probe.unavailable
     assert marker is not None and marker["unavailable"] == "missing_tool"
     assert "perf" in marker["reason"]
@@ -126,6 +126,219 @@ def test_a_passing_canary_leaves_the_probe_available(tmp_path: Path) -> None:
         run=lambda argv: _completed(argv),
     )
     assert probe.unavailable is None
+
+
+# --- binary discovery (issue #50) ----------------------------------------------
+#
+# Order: $MBENCH_PERF, then ~/.local/bin/perf-mbench, then perf on PATH. Each
+# found binary is verified — kernel-match against the fake linux-tools
+# reference under tmp_path, then cap_perfmon via a faked getcap (or the
+# canary when getcap is absent) — and the first candidate passing wins.
+
+RELEASE = "6.17.0-test"
+KERNEL_BLOB = b"fake-perf-binary"
+
+
+def _knob(tmp_path: Path, level: int) -> Path:
+    knob = tmp_path / "perf_event_paranoid"
+    knob.write_text(f"{level}\n", encoding="utf-8")
+    return knob
+
+
+def _tools_dir(tmp_path: Path, blob: bytes = KERNEL_BLOB) -> Path:
+    """A fake ``/usr/lib/linux-tools/<release>/perf`` reference."""
+    ref = tmp_path / "linux-tools" / RELEASE
+    ref.mkdir(parents=True, exist_ok=True)
+    (ref / "perf").write_bytes(blob)
+    return tmp_path / "linux-tools"
+
+
+def _copy(path: Path, blob: bytes) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(blob)
+    return path
+
+
+def _fake_run(
+    caps: dict[str, str] | None = None, canary_rc: int = 0, canary_stderr: bytes = b""
+) -> tuple[list[Sequence[str]], Callable[[Sequence[str]], perf.Completed]]:
+    """A ``run`` fake: getcap answers from ``caps``, anything else is the canary."""
+    calls: list[Sequence[str]] = []
+
+    def run(argv: Sequence[str]) -> perf.Completed:
+        calls.append(list(argv))
+        if Path(str(argv[0])).name == "getcap":
+            out = f"{argv[1]} {(caps or {}).get(str(argv[1]), '')}\n".encode()
+            return subprocess.CompletedProcess(list(argv), 0, out, b"")
+        return _completed(argv, canary_rc, canary_stderr)
+
+    return calls, run
+
+
+def _discover(
+    tmp_path: Path,
+    *,
+    paranoid: int = 1,
+    env: dict[str, str] | None = None,
+    home: Path | None = None,
+    which: Callable[[str], str | None] | None = None,
+    run: Callable[[Sequence[str]], perf.Completed],
+    spawn: Callable[[Sequence[str]], subprocess.Popen[bytes]] | None = None,
+) -> perf.Probe:
+    return perf.Probe(
+        paranoid_path=_knob(tmp_path, paranoid),
+        env={} if env is None else env,
+        home=tmp_path / "nohome" if home is None else home,
+        release=RELEASE,
+        tools_dir=_tools_dir(tmp_path),
+        which=(lambda name: None) if which is None else which,
+        run=run,
+        spawn=perf._default_spawn if spawn is None else spawn,
+    )
+
+
+def test_the_env_override_wins(tmp_path: Path) -> None:
+    env_binary = _copy(tmp_path / "elsewhere" / "my-perf", KERNEL_BLOB)
+    calls, run = _fake_run()
+    probe = _discover(tmp_path, env={perf.ENV_BINARY: str(env_binary)}, run=run)
+    assert probe.unavailable is None
+    assert calls[0][0] == str(env_binary)
+    assert Path(str(calls[0][0])).parent == env_binary.parent
+
+
+def test_the_default_perf_mbench_copy_is_found_and_capped(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    binary = _copy(home / ".local" / "bin" / "perf-mbench", KERNEL_BLOB)
+    calls, run = _fake_run(caps={str(binary): "cap_perfmon=ep"})
+    probe = _discover(
+        tmp_path,
+        paranoid=4,
+        home=home,
+        which=lambda name: "/fake/getcap" if name == "getcap" else None,
+        run=run,
+    )
+    assert probe.unavailable is None
+    assert Path(str(calls[0][0])).name == "getcap"  # the cap check precedes the canary
+    assert calls[0][1] == str(binary)
+    assert calls[1][0] == str(binary)  # then the one-event stat canary
+
+
+def test_path_perf_is_the_last_candidate(tmp_path: Path) -> None:
+    path_perf = _copy(tmp_path / "bin" / "perf", b"#!/bin/sh\nexec real-perf\n")
+    calls, run = _fake_run()
+    probe = _discover(
+        tmp_path, which=lambda name: str(path_perf) if name == "perf" else None, run=run
+    )
+    assert probe.unavailable is None
+    assert calls[0][0] == str(path_perf)
+
+
+def test_a_stale_copy_is_rejected_before_any_subprocess(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    _copy(home / ".local" / "bin" / "perf-mbench", b"old-perf")
+    calls, run = _fake_run()
+    probe = _discover(tmp_path, paranoid=4, home=home, run=run)
+    marker = probe.unavailable
+    assert marker is not None and marker["unavailable"] == "needs_root"
+    assert "stale" in marker["reason"] and "sha256" in marker["reason"]
+    assert "~/.local/bin/perf-mbench" in marker["reason"]  # never the absolute home path
+    assert calls == []
+
+
+def test_a_stale_copy_falls_through_to_path_perf(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    _copy(home / ".local" / "bin" / "perf-mbench", b"old-perf")
+    path_perf = _copy(tmp_path / "bin" / "perf", b"#!/bin/sh\nexec real-perf\n")
+    calls, run = _fake_run()
+    probe = _discover(
+        tmp_path,
+        paranoid=4,
+        home=home,
+        which=lambda name: str(path_perf) if name == "perf" else None,
+        run=run,
+    )
+    assert probe.unavailable is None
+    assert calls[0][0] == str(path_perf)
+
+
+def test_an_uncapped_binary_at_paranoid_4_is_rejected(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    _copy(home / ".local" / "bin" / "perf-mbench", KERNEL_BLOB)
+    calls, run = _fake_run(caps={})  # getcap reports no capabilities
+    probe = _discover(
+        tmp_path,
+        paranoid=4,
+        home=home,
+        which=lambda name: "/fake/getcap" if name == "getcap" else None,
+        run=run,
+    )
+    marker = probe.unavailable
+    assert marker is not None and marker["unavailable"] == "needs_root"
+    assert "cap_perfmon" in marker["reason"]
+    assert len(calls) == 1 and Path(str(calls[0][0])).name == "getcap"  # no canary
+
+
+def test_without_getcap_the_canary_is_the_cap_probe(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    binary = _copy(home / ".local" / "bin" / "perf-mbench", KERNEL_BLOB)
+    calls, run = _fake_run()  # no getcap on this PATH at all
+    probe = _discover(tmp_path, paranoid=4, home=home, run=run)
+    assert probe.unavailable is None
+    assert calls[0][0] == str(binary)
+
+
+def test_an_env_override_to_a_missing_file_is_named(tmp_path: Path) -> None:
+    calls, run = _fake_run()
+    probe = _discover(tmp_path, env={perf.ENV_BINARY: str(tmp_path / "gone")}, run=run)
+    marker = probe.unavailable
+    assert marker is not None and marker["unavailable"] == "missing_tool"
+    assert "gone" in marker["reason"]
+    assert calls == []
+
+
+def test_every_failed_candidate_is_named_in_the_marker(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    _copy(home / ".local" / "bin" / "perf-mbench", b"old-perf")
+    path_perf = _copy(tmp_path / "bin" / "perf", KERNEL_BLOB)
+    calls, run = _fake_run(canary_rc=1, canary_stderr=b"no permission")
+    probe = _discover(
+        tmp_path,
+        paranoid=4,
+        home=home,
+        which=lambda name: str(path_perf) if name == "perf" else None,
+        run=run,
+    )
+    marker = probe.unavailable
+    assert marker is not None and marker["unavailable"] == "needs_root"
+    assert "~/.local/bin/perf-mbench" in marker["reason"]
+    assert str(path_perf) in marker["reason"]
+    # the stale copy is rejected without a subprocess; path perf ran the canary
+    canary = [str(path_perf), "stat", "-a", "-e", "cycles", "-x", ",", "--", "sleep", "0.05"]
+    assert calls == [canary]
+
+
+def test_the_second_pmu_reporting_not_counted_is_not_an_error() -> None:
+    # ``perf stat -a -C 5`` on the mixed X925/A725 cores: events print under
+    # their PMU's name, the PMU owning the pinned core counts, and the other
+    # reports <not counted> for the same event — the count survives.
+    dual_pmu_csv = (
+        "<not counted>,,armv8_pmuv3_0/cycles/,0.00,,,\n"
+        "229555794,,armv8_pmuv3_1/cycles/,1001519808,100.00,,\n"
+        "<not counted>,,armv8_pmuv3_0/instructions/,0.00,,,\n"
+        "271188376,,armv8_pmuv3_1/instructions/,1001518688,100.00,,\n"
+    )
+    want = {"cycles": 229555794.0, "instructions": 271188376.0}
+    assert perf.parse_stat_csv(dual_pmu_csv) == want
+    # the <not counted> row order does not matter either way
+    reversed_csv = "\n".join(reversed(dual_pmu_csv.strip().splitlines())) + "\n"
+    assert perf.parse_stat_csv(reversed_csv) == want
+
+
+def test_two_pmus_counting_the_same_event_sum() -> None:
+    # The cgroup scope counts ``-a`` without a -C filter: both PMUs then
+    # count, and the pass's cycles are their sum — not whichever row was last.
+    csv = "10,,armv8_pmuv3_0/cycles/,100.00,,,\n25,,armv8_pmuv3_1/cycles/,100.00,,,\n"
+    assert perf.parse_stat_csv(csv) == {"cycles": 35.0}
 
 
 # --- a session -----------------------------------------------------------------
@@ -179,8 +392,29 @@ def test_a_session_counts_the_cpuset_and_divides(tmp_path: Path) -> None:
     assert record["cycles"] == 1234567.0
     assert record["cycles_per_packet"] == pytest.approx(1234.567)
     assert record["instructions_per_cycle"] == pytest.approx(2345678 / 1234567)
+    assert record["binary"] == "/usr/bin/perf"  # the record names the binary used
     assert spawned[0].signals == [signal.SIGINT]  # stopped like a Ctrl-C
     assert not session.out.exists()  # the csv never outlives the pass
+
+
+def test_the_record_names_the_discovered_binary(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    binary = _copy(home / ".local" / "bin" / "perf-mbench", KERNEL_BLOB)
+    _spawned_list, spawn = _spawned()
+    _run_calls, run = _fake_run(caps={str(binary): "cap_perfmon=ep"})
+    probe = _discover(
+        tmp_path,
+        paranoid=4,
+        home=home,
+        which=lambda name: "/fake/getcap" if name == "getcap" else None,
+        run=run,
+        spawn=spawn,
+    )
+    session = probe.start([5])
+    assert session is not None
+    session.out.write_text(STAT_CSV, encoding="utf-8")
+    record = probe.record(session, 1000)
+    assert record["binary"] == "~/.local/bin/perf-mbench"
 
 
 def test_the_cgroup_scope_counts_the_passs_own_container(tmp_path: Path) -> None:
@@ -277,6 +511,10 @@ def test_the_enable_note_prints_both_options_and_the_restore(tmp_path: Path) -> 
     lines = perf.enable_note(marker, 4)
     text = "\n".join(lines)
     assert "cap_perfmon=ep" in text  # option A: the narrow capability
+    assert "perf-mbench" in text  # the binary the probe finds second
+    assert (
+        "install -Dm700 /usr/lib/linux-tools/$(uname -r)/perf ~/.local/bin/perf-mbench" in text
+    )  # the exact copy line
     assert "kernel.perf_event_paranoid=1" in text  # option B: the sysctl
     assert "kernel.perf_event_paranoid=4" in text  # the restore value
     assert "never runs these" in text  # the harness only prints them

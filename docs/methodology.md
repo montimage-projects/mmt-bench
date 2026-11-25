@@ -118,10 +118,12 @@ pinned and recorded.
   including anything the host puts there). `perf_event_paranoid = 4`
   refuses either to an unprivileged user, so the run records the pass's
   perf entry as `unavailable` with the reason — never a fabricated number
-  — and prints the root-only fix (`mbench.metrics.perf`). The runbook's
-  CAP_PERFMON path needs the container's binary on an `exec`-able mount —
-  a `nosuid`/`noexec` home directory or tmpfs makes the capability file
-  attribute a no-op, so put it on a root filesystem mount.
+  — and prints the root-only fix (`mbench.metrics.perf`). When perf counts,
+  the pass's `perf.binary` names the binary it used, `~`-relative under the
+  home directory — an absolute home path is never recorded (issue #50).
+  The runbook's CAP_PERFMON path needs the container's binary on an
+  `exec`-able mount — a `nosuid`/`noexec` home directory or tmpfs makes the
+  capability file attribute a no-op, so put it on a root filesystem mount.
 - The performance governor is used only if Luong sets it, because it needs
   sudo.
 
@@ -262,11 +264,13 @@ The campaign is `campaigns/p1-headline.yaml`. Its rule sets are defined in
   rules were `exclude-rules`-ed or `rules-mask`-ed) — the snap-len
   upstream bug the fork's `intact-new-features` @ `7f4710d9` fixes
   (#42), so the r0/r0b cells run; r-all runs.
-- **C-benign** is a 1-h capture of the host's own traffic, anonymised in the
-  pinned `mmt-bench/tcpreplay:local` container with `tcprewrite --seed`
-  (deterministic, crypto-PAn-style IP rewriting) plus MAC replacement and
-  checksum fix (`tools/capture/c-benign.sh` prints the root-only runbook;
-  the capture needs sudo `tcpdump`). IPs, MACs and checksums are covered;
+- **C-benign** is a 1-h capture of the host's own traffic, taken by
+  `tcpdump` inside the pinned `mmt-bench/tcpreplay:local` container —
+  `docker run --net host --cap-add NET_RAW --cap-add NET_ADMIN` as the
+  invoking user, no sudo (#50) — and anonymised in the same image with
+  `tcprewrite --seed` (deterministic, crypto-PAn-style IP rewriting) plus
+  MAC replacement and checksum fix (`tools/capture/c-benign.sh` prints the
+  runbook). IPs, MACs and checksums are covered;
   **payloads are not** — DNS names, HTTP hosts and TLS SNI stay readable.
   Truncating them would hide the names but break the payload rules the
   benchmark exists to measure, so the capture is registered `local_only`
@@ -279,11 +283,22 @@ The campaign is `campaigns/p1-headline.yaml`. Its rule sets are defined in
   No public mix is added to the manifest until one resolves to a pinned
   URL + sha256 with a clear licence (decision for Luong).
 - **Perf access**: `kernel.perf_event_paranoid = 4` on this host, so an
-  unprivileged `perf stat` is refused. The narrowest fix is a private perf
-  copy with `CAP_PERFMON` (`setcap
-  cap_perfmon+ep ~/.local/bin/perf-mbench`), the fallback
-  `sysctl kernel.perf_event_paranoid=1`; the harness prints both and Luong
-  runs one (perf, `enable_note`).
+  unprivileged `perf stat` is refused. Luong keeps a private copy of the
+  running kernel's perf with `cap_perfmon=ep` at
+  `~/.local/bin/perf-mbench` (#50). `perf.Probe` picks its binary in the
+  order `$MBENCH_PERF` → `~/.local/bin/perf-mbench` → `perf` on `PATH`,
+  and verifies each candidate before use: it must match the running
+  kernel's perf — byte-identical to
+  `/usr/lib/linux-tools/$(uname -r)/perf` (sha256; `perf --version` prints
+  the package version, not `uname -r`, so it cannot spot a stale copy) —
+  and, at paranoid ≥ 2, carry `cap_perfmon` (`getcap` when it is on
+  `PATH`; without it the one-event `perf stat` canary is the check). A
+  stale or uncapped candidate is skipped for the next one; when nothing
+  works the pass records `unavailable` with every reason it met, and the
+  harness prints the exact `install -Dm700 … && sudo setcap
+  cap_perfmon=ep` lines naming `perf-mbench` for Luong — it never runs
+  them. The fallback remains `sysctl kernel.perf_event_paranoid=1`
+  (perf, `enable_note`).
 - **Dry-run output is not a result.** The PR's dry run ran on a noisy host
   (vLLM active, `quiet_host` off) purely to prove the pipeline.
 

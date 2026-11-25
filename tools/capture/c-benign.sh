@@ -1,9 +1,11 @@
 #!/bin/sh
-# c-benign — the root-only runbook for the anonymised 1-h capture (#10).
+# c-benign — the no-sudo runbook for the anonymised 1-h capture (#10, #50).
 #
-# This script ONLY PRINTS the commands. Nothing here runs them: the tcpdump
-# step needs root, and agents never use sudo (AGENTS.md). Paste each step
-# into a root-capable shell.
+# This script ONLY PRINTS the commands. Nothing here runs them, but nothing
+# in them needs root either: the capture runs tcpdump inside the pinned
+# mmt-bench/tcpreplay:local image on the host network, with only the
+# capabilities a capture needs and as the invoking user. Paste each step
+# into a shell at the repo root.
 #
 # What it produces, under local/ and corpus/data/ (both git-ignored, never
 # committed):
@@ -11,10 +13,9 @@
 #   corpus/data/c-benign.pcap         the anonymised capture, registered as
 #                                     corpus entry `c-benign` (local_only)
 #
-# Anonymisation is `tcprewrite` in the pinned mmt-bench/tcpreplay:local
-# image (built by tools/docker/tcpreplay/Dockerfile, image id
-# sha256:8937ab7907f152b43ab40c971d5289c226625a9362910b28c70dc7c88eda118c
-# at authoring; `docker inspect` prints the digest of the local build):
+# Anonymisation is `tcprewrite` in the same pinned image (built by
+# tools/docker/tcpreplay/Dockerfile; `docker inspect` prints the digest of
+# the local build):
 #   --seed        deterministic IP rewriting (tcprewrite's crypto-PAn-style
 #                 seeded anonymisation: the same address always maps to the
 #                 same address, preserving prefix, so flows and client/server
@@ -42,21 +43,28 @@ IFACE=$(ip -o -4 route show to default 2>/dev/null | awk 'NR==1 {print $5}')
 : "${IFACE:=CHANGE-ME}"   # no default route: pick the interface yourself
 
 cat <<EOF
-# 1. Build the anonymiser image (user, once):
+# 1. Build the capture + anonymiser image (user, once):
 docker build -t mmt-bench/tcpreplay:local tools/docker/tcpreplay
 docker inspect -f '{{.Id}}' mmt-bench/tcpreplay:local   # record this digest
 
-# 2. Capture one hour of the host's real traffic (ROOT). Full packets
-#    (snaplen 0): payloads are not anonymised and the rules need them —
-#    that is why the capture stays local_only and is never published.
-sudo mkdir -p local/capture
-sudo tcpdump -i $IFACE -s 0 -w local/capture/c-benign-raw.pcap -G 3600 -W 1
-sudo chown \$USER:\$USER local/capture/c-benign-raw.pcap
+# 2. Capture one hour of the host's real traffic (user, no sudo). tcpdump
+#    runs in the pinned image on the host network: NET_RAW opens the
+#    packet socket, NET_ADMIN sets promiscuous mode; --user makes the
+#    pcap owned by you, not root. Full packets (snaplen 0): payloads are
+#    not anonymised and the rules need them — that is why the capture
+#    stays local_only and is never published. Run from the repo root so
+#    \$PWD lands the mount where expected.
+mkdir -p local/capture
+docker run --rm --net host --cap-add NET_RAW --cap-add NET_ADMIN \\
+    --user "\$(id -u):\$(id -g)" --entrypoint tcpdump \\
+    -v "\$PWD/local/capture:/work" mmt-bench/tcpreplay:local \\
+    -i $IFACE -s 0 -G 3600 -W 1 -w /work/c-benign-raw.pcap
 
 # 3. Anonymise in the pinned container (user). SEED is the crypto key:
 #    choose it, keep it local, never commit it.
 SEED=\$(od -An -N4 -tu4 /dev/urandom | tr -d ' ')
-docker run --rm -v "\$PWD/local/capture:/work" mmt-bench/tcpreplay:local \\
+docker run --rm --user "\$(id -u):\$(id -g)" \\
+    -v "\$PWD/local/capture:/work" mmt-bench/tcpreplay:local \\
     --infile=/work/c-benign-raw.pcap --outfile=/work/c-benign.pcap \\
     --seed=\$SEED \\
     --enet-smac=02:00:00:00:00:01 --enet-dmac=02:00:00:00:00:02 \\
