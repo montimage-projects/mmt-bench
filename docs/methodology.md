@@ -294,14 +294,14 @@ The campaign is `campaigns/p1-headline.yaml`. Its rule sets are defined in
   kernel's perf — byte-identical to
   `/usr/lib/linux-tools/$(uname -r)/perf` (sha256; `perf --version` prints
   the package version, not `uname -r`, so it cannot spot a stale copy) —
-  and, at paranoid ≥ 2, carry `cap_perfmon` (`getcap` when it is on
+  and, at paranoid ≥ 1, carry `cap_perfmon` (`getcap` when it is on
   `PATH`; without it the one-event `perf stat` canary is the check). A
   stale or uncapped candidate is skipped for the next one; when nothing
   works the pass records `unavailable` with every reason it met, and the
   harness prints the exact `install -Dm700 … && sudo setcap
   cap_perfmon=ep` lines naming `perf-mbench` for Luong — it never runs
-  them. The fallback remains `sysctl kernel.perf_event_paranoid=1`
-  (perf, `enable_note`).
+  them. The fallback remains `sysctl kernel.perf_event_paranoid=0` —
+  CPU events need `<= 0` or CAP_PERFMON (perf, `enable_note`).
 - **Dry-run output is not a result.** The PR's dry run ran on a noisy host
   (vLLM active, `quiet_host` off) purely to prove the pipeline.
 

@@ -88,10 +88,11 @@ def _default_spawn(argv: Sequence[str]) -> subprocess.Popen[bytes]:
     """Start ``argv`` as a session leader without waiting.
 
     ``start_new_session`` gives perf and its ``sleep`` workload their own
-    process group, so :meth:`Probe.stop`'s SIGINT reaches both — exactly
-    what a terminal Ctrl-C delivers, and what makes every perf build
-    finalise its counts (a lone SIGINT to the perf process alone does
-    not always do it).
+    process group — the contract ``spawn`` must keep for
+    :meth:`Probe.stop`: its SIGINT reaches both, exactly what a terminal
+    Ctrl-C delivers and what makes every perf build finalise its counts
+    (a lone SIGINT to the perf process alone does not always do it),
+    while never touching the caller's own group.
     """
     return subprocess.Popen(
         argv, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True
@@ -163,8 +164,10 @@ def enable_note(marker: dict[str, Any] | None, paranoid: int | None = None) -> l
     user and removed afterwards, no host-wide change at all. The copy is
     the binary the probe finds second (``perf-mbench``), and a kernel
     update invalidates it, so these lines reappear then. Option B lowers
-    ``kernel.perf_event_paranoid`` to 1 (CPU-wide counting) for every user
-    of the host, restored to its recorded value after the campaign.
+    ``kernel.perf_event_paranoid`` to 0 — ``>= 1`` refuses CPU events to
+    users without CAP_PERFMON, so 0 is the least permissive value that
+    still counts CPU-wide — for every user of the host, restored to its
+    recorded value after the campaign.
     """
     reason = (marker or {}).get("reason", "perf is unavailable")
     restore = str(paranoid if paranoid is not None else "<current value>")
@@ -179,8 +182,8 @@ def enable_note(marker: dict[str, Any] | None, paranoid: int | None = None) -> l
         "   # restore: rm ~/.local/bin/perf-mbench",
         "  # caveat: a nosuid/noexec home mount drops the capability — put the",
         "  # copy somewhere executables keep file caps (e.g. /usr/local/bin)",
-        "  # option B (broader, host-wide):",
-        "  sudo sysctl kernel.perf_event_paranoid=1",
+        "  # option B (broader, host-wide — CPU events need <= 0):",
+        "  sudo sysctl kernel.perf_event_paranoid=0",
         f"  sudo sysctl kernel.perf_event_paranoid={restore}   # restore",
     ]
 
@@ -190,14 +193,20 @@ class Probe:
 
     ``run`` executes a command to completion (the ``getcap`` check and the
     canary), ``spawn`` starts a long-running one (the session); both
-    default to subprocesses. Tests inject fakes so nothing touches the
-    host's perf. ``binary`` pins the binary by hand — the test seam: a
-    pinned binary keeps the cheap path (the paranoid knob answers, else
-    the canary) because the caller asserted it. Without ``binary`` the
-    binary is discovered in the module docstring's order, and each
-    candidate is verified against the running kernel and the paranoid
-    level; ``env``, ``home``, ``release``, ``tools_dir`` and ``which``
-    parameterise those lookups for the tests. ``paranoid`` is read from
+    default to subprocesses. The ``spawn`` contract: the returned process
+    must lead its own process group, like the default's
+    ``start_new_session`` — :meth:`stop` signals that whole group, and a
+    ``spawn`` that left perf in the caller's group would interrupt mbench
+    itself (``stop`` refuses to signal the caller's group either way).
+    Tests inject fakes so nothing touches the host's perf. ``binary``
+    pins the binary by hand — the test seam: a pinned binary skips only
+    the kernel-match check because the caller asserted it; the capability
+    check and the canary still run, so a pinned binary the kernel would
+    refuse is marked like a discovered one. Without ``binary`` the binary
+    is discovered in the module docstring's order, and each candidate is
+    verified against the running kernel and the paranoid level; ``env``,
+    ``home``, ``release``, ``tools_dir`` and ``which`` parameterise those
+    lookups for the tests. ``paranoid`` is read from
     :data:`PARANOID_PATH` by :meth:`_detect` to name the reason and the
     value to restore.
     """
@@ -252,15 +261,22 @@ class Probe:
         self._probed = True
 
     def _detect_pinned(self, binary: str) -> None:
-        """Availability of a binary the caller pinned: the knob, else the canary."""
-        if self._paranoid is not None and self._paranoid >= 4:
+        """Availability of a caller-pinned binary: the access checks.
+
+        The caller asserted the binary, so the kernel-match check is
+        skipped — the rest is the discovered path's: a readable binary,
+        ``cap_perfmon`` when the paranoid level demands it, then the
+        canary. The knob alone is never the verdict: CAP_PERFMON lifts
+        it, so a working capped copy must not be rejected at paranoid 4.
+        """
+        try:
+            Path(binary).read_bytes()
+        except OSError as exc:
             self._marker = sut.unavailable(
-                "needs_root",
-                f"kernel.perf_event_paranoid={self._paranoid} refuses unprivileged perf "
-                "(CPU-wide counting needs <= 1 or CAP_PERFMON)",
+                "missing_tool", f"{self._name(binary)}: not readable ({exc.strerror or exc})"
             )
             return
-        failure = self._canary(binary)
+        failure = self._cap_check(binary) or self._canary(binary)
         if failure is not None:
             self._marker = sut.unavailable(*failure)
 
@@ -348,12 +364,12 @@ class Probe:
         """``cap_perfmon`` on the binary when the paranoid level needs it.
 
         CPU-wide counting (``perf stat -a``) is refused to an unprivileged
-        user at ``kernel.perf_event_paranoid >= 2``; only CAP_PERFMON lifts
+        user at ``kernel.perf_event_paranoid >= 1``; only CAP_PERFMON lifts
         that. ``getcap`` reads the file's capabilities — absent or failing,
         the check defers to the canary, which is itself the real one-event
         stat probe the capability would exist to pass.
         """
-        if self._paranoid is None or self._paranoid < 2:
+        if self._paranoid is None or self._paranoid < 1:
             return None
         getcap = self._which("getcap")
         if getcap is None:
@@ -362,12 +378,14 @@ class Probe:
             proc = self._run([getcap, binary])
         except (OSError, subprocess.SubprocessError):
             return None
-        if proc.returncode == 0 and "cap_perfmon" in proc.stdout.decode("utf-8", "replace"):
+        if proc.returncode != 0:
+            return None  # getcap could not assess it — the canary decides
+        if "cap_perfmon" in proc.stdout.decode("utf-8", "replace"):
             return None
         return (
             "needs_root",
             f"{self._name(binary)} lacks cap_perfmon and "
-            f"kernel.perf_event_paranoid={self._paranoid} needs <= 1 or "
+            f"kernel.perf_event_paranoid={self._paranoid} needs <= 0 or "
             "CAP_PERFMON — setcap it with the commands below",
         )
 
@@ -392,11 +410,17 @@ class Probe:
             return "error", f"{self._name(binary)}: the perf canary failed: {exc}"
         if proc.returncode != 0:
             detail = proc.stderr.decode("utf-8", "replace").strip().splitlines()
-            kind = "needs_root" if (self._paranoid or 0) > 1 else "error"
+            kind = "needs_root" if (self._paranoid or 0) >= 1 else "error"
+            hint = (
+                f" — kernel.perf_event_paranoid={self._paranoid} refuses "
+                "CPU-wide counting without CAP_PERFMON"
+                if kind == "needs_root"
+                else ""
+            )
             return (
                 kind,
                 f"{self._name(binary)}: perf stat refused (rc={proc.returncode}): "
-                f"{detail[0] if detail else 'no stderr'}",
+                f"{detail[0] if detail else 'no stderr'}{hint}",
             )
         return None
 
@@ -487,23 +511,34 @@ class Probe:
     def stop(self, session: _Session) -> dict[str, Any]:
         """Stop a session and return its ``{cycles, instructions}`` counts."""
         # Ctrl-C on the whole session's process group: perf and its
-        # workload share one (the spawn's start_new_session), so both take
-        # the signal — the semantics a terminal Ctrl-C has, which a lone
-        # SIGINT to the perf process does not always reproduce. A session
-        # without a real pid (the tests' fake) gets the per-process send.
+        # workload share one (the spawn contract, like the default's
+        # start_new_session), so both take the signal — the semantics a
+        # terminal Ctrl-C has, which a lone SIGINT to the perf process
+        # does not always reproduce. The group signal is used only when
+        # the session's pgid is not this process's own — a spawn that did
+        # not detach perf would put it in our group, and signalling that
+        # group would interrupt mbench itself. A session without a real
+        # pid (the tests' fake) or a detached-group failure gets the
+        # per-process send.
         pid = getattr(session.proc, "pid", None)
+        pgid: int | None = None
         if pid is not None:
             with _suppress():
-                os.killpg(os.getpgid(pid), _STOP_SIGNAL)
+                pgid = os.getpgid(pid)
+            if pgid == os.getpgid(0):
+                pgid = None
+        if pgid is not None:
+            with _suppress():
+                os.killpg(pgid, _STOP_SIGNAL)
         else:
             with _suppress():
                 session.proc.send_signal(_STOP_SIGNAL)
         try:
             session.proc.wait(timeout=10)
         except (OSError, subprocess.SubprocessError):
-            if pid is not None:
+            if pgid is not None:
                 with _suppress():
-                    os.killpg(os.getpgid(pid), signal.SIGKILL)
+                    os.killpg(pgid, signal.SIGKILL)
             with _suppress():
                 session.proc.kill()
         try:

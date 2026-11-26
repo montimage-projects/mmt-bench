@@ -88,21 +88,53 @@ def test_a_missing_perf_binary_is_a_marker(tmp_path: Path, monkeypatch: pytest.M
     assert "perf" in marker["reason"]
 
 
-def test_paranoid_4_is_needs_root_with_the_value(tmp_path: Path) -> None:
+def test_a_pinned_uncapped_binary_at_paranoid_4_is_needs_root(tmp_path: Path) -> None:
+    # A pinned binary gets the same access checks as a discovered one:
+    # no getcap, so the refused canary answers — and names the knob.
     knob = tmp_path / "perf_event_paranoid"
     knob.write_text("4\n", encoding="utf-8")
     calls: list[Sequence[str]] = []
 
     def canary(argv: Sequence[str]) -> perf.Completed:
-        calls.append(argv)
+        calls.append(list(argv))
         return _completed(argv, 1, b"no permission")
 
-    probe = perf.Probe(binary="/usr/bin/perf", paranoid_path=knob, run=canary)
+    probe = perf.Probe(
+        binary="/usr/bin/perf",
+        paranoid_path=knob,
+        which=lambda name: None,
+        run=canary,
+    )
     marker = probe.unavailable
     assert marker is not None and marker["unavailable"] == "needs_root"
     assert "perf_event_paranoid=4" in marker["reason"]
     assert probe.paranoid == 4
-    assert calls == []  # the canary never runs: the knob already answers
+    assert len(calls) == 1  # the canary ran: the knob alone is not the verdict
+
+
+def test_a_pinned_capped_binary_at_paranoid_4_is_available(tmp_path: Path) -> None:
+    # The review finding: a working pinned binary must not be rejected on
+    # the paranoid knob alone — CAP_PERFMON lifts it, and getcap says so.
+    knob = tmp_path / "perf_event_paranoid"
+    knob.write_text("4\n", encoding="utf-8")
+    calls, run = _fake_run(caps={"/usr/bin/perf": "cap_perfmon=ep"})
+    probe = perf.Probe(
+        binary="/usr/bin/perf",
+        paranoid_path=knob,
+        which=lambda name: "/fake/getcap" if name == "getcap" else None,
+        run=run,
+    )
+    assert probe.unavailable is None
+    assert [Path(str(c[0])).name for c in calls] == ["getcap", "perf"]
+
+
+def test_a_pinned_missing_binary_is_missing_tool(tmp_path: Path) -> None:
+    knob = tmp_path / "perf_event_paranoid"
+    knob.write_text("4\n", encoding="utf-8")
+    probe = perf.Probe(binary=str(tmp_path / "gone"), paranoid_path=knob, which=lambda name: None)
+    marker = probe.unavailable
+    assert marker is not None and marker["unavailable"] == "missing_tool"
+    assert "gone" in marker["reason"]
 
 
 def test_a_refused_canary_is_the_marker(tmp_path: Path) -> None:
@@ -111,10 +143,30 @@ def test_a_refused_canary_is_the_marker(tmp_path: Path) -> None:
     probe = perf.Probe(
         binary="/usr/bin/perf",
         paranoid_path=knob,
+        which=lambda name: None,
         run=lambda argv: _completed(argv, 129, b"event syntax error"),
     )
     marker = probe.unavailable
-    assert marker is not None and "perf stat refused" in marker["reason"]
+    assert marker is not None and marker["unavailable"] == "needs_root"
+    assert "perf stat refused" in marker["reason"]
+    assert "perf_event_paranoid=1" in marker["reason"]  # the hint names the knob
+
+
+def test_a_refused_canary_below_paranoid_1_is_an_error(tmp_path: Path) -> None:
+    # At 0 the kernel allows CPU-wide counting to anyone, so a refusal is
+    # a real error, not an access marker.
+    knob = tmp_path / "perf_event_paranoid"
+    knob.write_text("0\n", encoding="utf-8")
+    probe = perf.Probe(
+        binary="/usr/bin/perf",
+        paranoid_path=knob,
+        which=lambda name: None,
+        run=lambda argv: _completed(argv, 129, b"event syntax error"),
+    )
+    marker = probe.unavailable
+    assert marker is not None and marker["unavailable"] == "error"
+    assert "perf stat refused" in marker["reason"]
+    assert "perf_event_paranoid" not in marker["reason"]  # no knob hint at 0
 
 
 def test_a_passing_canary_leaves_the_probe_available(tmp_path: Path) -> None:
@@ -123,6 +175,7 @@ def test_a_passing_canary_leaves_the_probe_available(tmp_path: Path) -> None:
     probe = perf.Probe(
         binary="/usr/bin/perf",
         paranoid_path=knob,
+        which=lambda name: None,
         run=lambda argv: _completed(argv),
     )
     assert probe.unavailable is None
@@ -198,12 +251,66 @@ def _discover(
 
 
 def test_the_env_override_wins(tmp_path: Path) -> None:
+    # $MBENCH_PERF beats two other *working* candidates — the order the
+    # issue pins, not just fall-through on failure.
     env_binary = _copy(tmp_path / "elsewhere" / "my-perf", KERNEL_BLOB)
+    home = tmp_path / "home"
+    _copy(home / ".local" / "bin" / "perf-mbench", KERNEL_BLOB)
+    path_binary = _copy(tmp_path / "bin" / "perf", KERNEL_BLOB)
     calls, run = _fake_run()
-    probe = _discover(tmp_path, env={perf.ENV_BINARY: str(env_binary)}, run=run)
+    spawned, spawn = _spawned()
+    probe = _discover(
+        tmp_path,
+        env={perf.ENV_BINARY: str(env_binary)},
+        home=home,
+        which=lambda name: str(path_binary) if name == "perf" else None,
+        run=run,
+        spawn=spawn,
+    )
     assert probe.unavailable is None
-    assert calls[0][0] == str(env_binary)
-    assert Path(str(calls[0][0])).parent == env_binary.parent
+    # The env binary was verified and the other two were never even tried.
+    assert calls == [
+        [
+            str(env_binary),
+            "stat",
+            "-a",
+            "-e",
+            "cycles",
+            "-x",
+            ",",
+            "--",
+            "sleep",
+            "0.05",
+        ]
+    ]
+    session = probe.start([5])
+    assert session is not None
+    session.out.write_text(STAT_CSV, encoding="utf-8")
+    assert probe.record(session, 10)["binary"] == str(env_binary)
+    assert spawned[0].argv[0] == str(env_binary)
+
+
+def test_the_default_copy_beats_path_perf(tmp_path: Path) -> None:
+    # Second in the order: a working perf-mbench is selected over a
+    # working PATH perf — the priority among successes, #50.
+    home = tmp_path / "home"
+    binary = _copy(home / ".local" / "bin" / "perf-mbench", KERNEL_BLOB)
+    path_binary = _copy(tmp_path / "bin" / "perf", KERNEL_BLOB)
+    calls, run = _fake_run()
+    _spawned_list, spawn = _spawned()
+    probe = _discover(
+        tmp_path,
+        home=home,
+        which=lambda name: str(path_binary) if name == "perf" else None,
+        run=run,
+        spawn=spawn,
+    )
+    assert probe.unavailable is None
+    assert calls == [[str(binary), "stat", "-a", "-e", "cycles", "-x", ",", "--", "sleep", "0.05"]]
+    session = probe.start([5])
+    assert session is not None
+    session.out.write_text(STAT_CSV, encoding="utf-8")
+    assert probe.record(session, 10)["binary"] == "~/.local/bin/perf-mbench"
 
 
 def test_the_default_perf_mbench_copy_is_found_and_capped(tmp_path: Path) -> None:
@@ -261,13 +368,16 @@ def test_a_stale_copy_falls_through_to_path_perf(tmp_path: Path) -> None:
     assert calls[0][0] == str(path_perf)
 
 
-def test_an_uncapped_binary_at_paranoid_4_is_rejected(tmp_path: Path) -> None:
+@pytest.mark.parametrize("paranoid", (1, 4))
+def test_an_uncapped_binary_is_rejected(tmp_path: Path, paranoid: int) -> None:
+    # CPU-wide counting already needs CAP_PERFMON at paranoid 1 — getcap
+    # reports no capabilities, so the candidate is rejected with no canary.
     home = tmp_path / "home"
     _copy(home / ".local" / "bin" / "perf-mbench", KERNEL_BLOB)
     calls, run = _fake_run(caps={})  # getcap reports no capabilities
     probe = _discover(
         tmp_path,
-        paranoid=4,
+        paranoid=paranoid,
         home=home,
         which=lambda name: "/fake/getcap" if name == "getcap" else None,
         run=run,
@@ -276,6 +386,39 @@ def test_an_uncapped_binary_at_paranoid_4_is_rejected(tmp_path: Path) -> None:
     assert marker is not None and marker["unavailable"] == "needs_root"
     assert "cap_perfmon" in marker["reason"]
     assert len(calls) == 1 and Path(str(calls[0][0])).name == "getcap"  # no canary
+
+
+@pytest.mark.parametrize("paranoid", (1, 4))
+def test_a_capped_binary_is_accepted(tmp_path: Path, paranoid: int) -> None:
+    home = tmp_path / "home"
+    binary = _copy(home / ".local" / "bin" / "perf-mbench", KERNEL_BLOB)
+    calls, run = _fake_run(caps={str(binary): "cap_perfmon=ep"})
+    probe = _discover(
+        tmp_path,
+        paranoid=paranoid,
+        home=home,
+        which=lambda name: "/fake/getcap" if name == "getcap" else None,
+        run=run,
+    )
+    assert probe.unavailable is None
+    assert [Path(str(c[0])).name for c in calls] == ["getcap", "perf-mbench"]
+
+
+def test_an_uncapped_binary_at_paranoid_0_skips_the_cap_check(tmp_path: Path) -> None:
+    # At 0 the kernel refuses nothing: no getcap call, the canary decides.
+    home = tmp_path / "home"
+    binary = _copy(home / ".local" / "bin" / "perf-mbench", KERNEL_BLOB)
+    calls, run = _fake_run()
+    probe = _discover(
+        tmp_path,
+        paranoid=0,
+        home=home,
+        which=lambda name: "/fake/getcap" if name == "getcap" else None,
+        run=run,
+    )
+    assert probe.unavailable is None
+    assert [Path(str(c[0])).name for c in calls] == ["perf-mbench"]
+    assert calls[0][0] == str(binary)
 
 
 def test_without_getcap_the_canary_is_the_cap_probe(tmp_path: Path) -> None:
@@ -362,6 +505,7 @@ def test_a_session_counts_the_cpuset_and_divides(tmp_path: Path) -> None:
     probe = perf.Probe(
         binary="/usr/bin/perf",
         paranoid_path=knob,
+        which=lambda name: None,
         run=lambda argv: _completed(argv),
         spawn=spawn,
     )
@@ -427,6 +571,7 @@ def test_the_cgroup_scope_counts_the_passs_own_container(tmp_path: Path) -> None
     probe = perf.Probe(
         binary="/usr/bin/perf",
         paranoid_path=knob,
+        which=lambda name: None,
         run=lambda argv: _completed(argv),
         spawn=spawn,
     )
@@ -472,7 +617,10 @@ def test_an_unpinned_pass_is_not_applicable(tmp_path: Path) -> None:
     knob = tmp_path / "perf_event_paranoid"
     knob.write_text("1\n", encoding="utf-8")
     probe = perf.Probe(
-        binary="/usr/bin/perf", paranoid_path=knob, run=lambda argv: _completed(argv)
+        binary="/usr/bin/perf",
+        paranoid_path=knob,
+        which=lambda name: None,
+        run=lambda argv: _completed(argv),
     )
     assert probe.start([]) is None
     record = probe.record(None, None)
@@ -482,7 +630,12 @@ def test_an_unpinned_pass_is_not_applicable(tmp_path: Path) -> None:
 def test_an_unavailable_probe_marks_every_pass(tmp_path: Path) -> None:
     knob = tmp_path / "perf_event_paranoid"
     knob.write_text("4\n", encoding="utf-8")
-    probe = perf.Probe(binary="/usr/bin/perf", paranoid_path=knob)
+    probe = perf.Probe(
+        binary="/usr/bin/perf",
+        paranoid_path=knob,
+        which=lambda name: None,
+        run=lambda argv: _completed(argv, 1, b"no permission"),
+    )
     record = probe.record(None, 100)
     assert record["unavailable"] == "needs_root"
 
@@ -493,6 +646,7 @@ def test_an_empty_count_file_is_an_error_marker(tmp_path: Path) -> None:
     probe = perf.Probe(
         binary="/usr/bin/perf",
         paranoid_path=knob,
+        which=lambda name: None,
         run=lambda argv: _completed(argv),
         spawn=lambda argv: FakePopen(argv, {}),  # type: ignore[arg-type,return-value]
     )
@@ -515,6 +669,6 @@ def test_the_enable_note_prints_both_options_and_the_restore(tmp_path: Path) -> 
     assert (
         "install -Dm700 /usr/lib/linux-tools/$(uname -r)/perf ~/.local/bin/perf-mbench" in text
     )  # the exact copy line
-    assert "kernel.perf_event_paranoid=1" in text  # option B: the sysctl
+    assert "kernel.perf_event_paranoid=0" in text  # option B: the sysctl
     assert "kernel.perf_event_paranoid=4" in text  # the restore value
     assert "never runs these" in text  # the harness only prints them
