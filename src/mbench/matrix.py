@@ -14,8 +14,8 @@ directory.
 from __future__ import annotations
 
 import itertools
-from collections.abc import Sequence
-from dataclasses import dataclass
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -64,6 +64,11 @@ class Cell:
     threads: int
     cpuset: tuple[int, ...]
     cpuset_str: str
+    #: Mode-specific dimensions that are not campaign-file fields and so
+    #: cannot be swept through the matrix dimensions: the online mode's
+    #: offered rate (#13) is pinned here by ``mbench sweep`` and recorded
+    #: in the run's ``cell``.
+    extra: Mapping[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -288,6 +293,17 @@ def _resolve_cpusets(
     return resolved
 
 
+def anchor(path: str | Path) -> Path:
+    """The directory a campaign file's relative paths resolve against.
+
+    The directory holding ``campaigns/`` when there is one (the repo root,
+    so ``rulesets/<id>`` names the committed rule sets), else the file's
+    own directory.
+    """
+    resolved = Path(path).resolve()
+    return resolved.parent.parent if resolved.parent.name == "campaigns" else resolved.parent
+
+
 def load(
     path: str | Path,
     *,
@@ -298,21 +314,44 @@ def load(
 
     Raises :class:`CampaignError` with every problem found.
     """
-    from mbench import validate
-
     p = Path(path)
-    resolved = p.resolve()
-    # The anchor every relative path in the file resolves against: the
-    # directory holding campaigns/ when there is one (the repo root, so
-    # `rulesets/<id>` names the committed rule sets), else the file's parent.
-    base = resolved.parent.parent if resolved.parent.name == "campaigns" else resolved.parent
     try:
         data = yaml.safe_load(p.read_text(encoding="utf-8"))
     except (OSError, yaml.YAMLError) as exc:
         raise CampaignError(f"{p}: cannot be read as YAML: {exc}") from None
+    name = data.get("name") if isinstance(data, dict) else None
+    return expand(
+        data,
+        base=anchor(p),
+        manifest_path=manifest_path,
+        topology=topology,
+        name=name or p.stem,
+        path=p,
+    )
+
+
+def expand(
+    data: Any,
+    *,
+    base: Path,
+    manifest_path: Path = corpus.DEFAULT_MANIFEST,
+    topology: dict[str, tuple[int, ...]] | None = None,
+    name: str | None = None,
+    path: Path | None = None,
+) -> Campaign:
+    """The resolved campaign of an already-parsed campaign document.
+
+    ``load`` reads the file and calls this; ``mbench sweep`` calls it on a
+    campaign document it edited in memory, so the matrix logic — schema,
+    reference resolution and the cell product — is not written twice.
+    ``base`` is the anchor the document's relative paths resolve against
+    (:func:`anchor`).
+    """
+    from mbench import validate
+
     problems = validate.campaign_errors(data, manifest_path=manifest_path)
     if problems:
-        raise CampaignError(f"{p}: INVALID ({len(problems)} problems)", problems)
+        raise CampaignError(f"{path or 'campaign'}: INVALID ({len(problems)} problems)", problems)
     assert isinstance(data, dict)
     manifest: dict[str, Any] = {"entries": []}
     if any("label" in item for item in data["corpus"]):
@@ -372,12 +411,13 @@ def load(
             threads=c.threads,
             cpuset=c.cpuset,
             cpuset_str=c.cpuset_str,
+            extra=c.extra,
         )
         for i, c in enumerate(cells)
     ]
     verdict_cell = _resolve_verdict(data.get("verdict_cell"), cells, topology)
     return Campaign(
-        name=data.get("name") or p.stem,
+        name=name or data.get("name") or "campaign",
         question=data["question"],
         description=data.get("description") or "",
         mode=data.get("mode") or "offline",
@@ -385,7 +425,7 @@ def load(
         perf=bool(data.get("perf", False)),
         repeats=data["repeats"],
         timeout_s=float(data["timeout_s"]),
-        path=p,
+        path=path if path is not None else Path("."),
         cells=tuple(cells),
         verdict_cell=verdict_cell,
     )

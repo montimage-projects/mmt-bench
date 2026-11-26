@@ -10,7 +10,9 @@ file (#26, ``<pcap>.truth.json``) against
 ``campaigns/<name>.yaml``) against ``src/mbench/schemas/campaign.schema.json``
 plus checks a schema cannot express (known tools, resolved corpus labels),
 and a results directory's ``REPORT.md`` or ``REPORT-<batch>.md`` (#9) against
-a fresh render over its own batch's run files.
+a fresh render over its own batch's run files. A ``SWEEP.json`` summary of
+``mbench sweep`` (#17) is checked against ``src/mbench/schemas/sweep.schema.json``,
+and ``SWEEP.md`` against a fresh render of its sibling ``SWEEP*.json``.
 
 Every problem is reported by the dotted path of the field, for example
 ``missing field: host.cpu.core_types[0].governor``.
@@ -37,6 +39,7 @@ SUT_SCHEMA = "sut.schema.json"
 MANIFEST_SCHEMA = "corpus-manifest.schema.json"
 CAMPAIGN_SCHEMA = "campaign.schema.json"
 RULESET_SCHEMA = "ruleset.schema.json"
+SWEEP_SCHEMA = "sweep.schema.json"
 
 
 @cache
@@ -197,6 +200,8 @@ def validate_file(path: str | Path) -> Report:
         return _validate_yaml(p, text)
     if is_report(p):
         return _validate_report(p, text)
+    if is_sweep_report(p):
+        return _validate_sweep_md(p, text)
     try:
         record = json.loads(text)
     except ValueError as exc:
@@ -205,11 +210,14 @@ def validate_file(path: str | Path) -> Report:
         return _validate_truth(p, record)
     if is_run(record):
         return _validate_run(p, record)
+    if is_sweep(p, record):
+        return _validate_sweep(p, record)
     if not (isinstance(record, dict) and ("sut_hash" in record or "schema_version" in record)):
         raise UnsupportedRecord(
             f"{p}: not a record mbench validate checks (no schema_version or "
             "sut_hash, and not a truth file); it checks sut.json, runs/*.json, "
-            "corpus/manifest.yaml, <pcap>.truth.json and campaigns/<x>.yaml"
+            "corpus/manifest.yaml, <pcap>.truth.json, campaigns/<x>.yaml "
+            "and SWEEP*.json"
         )
     report = Report(str(p), "sut", sut_errors(record), scope=str(record.get("scope", "")))
     report.fields = sut.field_count(record)
@@ -413,6 +421,91 @@ def _validate_report(p: Path, text: str) -> Report:
     else:
         report.errors = [
             f"stale report: {len(have_lines)} lines where a fresh render has {len(want_lines)}"
+        ]
+    return report
+
+
+def is_sweep(path: Path, data: Any) -> bool:
+    """A ``SWEEP*.json`` summary, or a JSON object marked ``kind: sweep``."""
+    return path.name.startswith("SWEEP") or (isinstance(data, dict) and data.get("kind") == "sweep")
+
+
+def sweep_errors(record: Any) -> list[str]:
+    """Every reason ``record`` is not a valid SWEEP.json summary; empty if it is."""
+    validator = Draft202012Validator(schema(SWEEP_SCHEMA))
+    return sorted(
+        {describe(leaf) for error in validator.iter_errors(record) for leaf in _leaf_errors(error)}
+    )
+
+
+def _validate_sweep(p: Path, data: Any) -> Report:
+    """Check a SWEEP.json summary against the sweep schema."""
+    report = Report(str(p), "sweep", sweep_errors(data))
+    if report.ok and isinstance(data, dict):
+        n = len(data["steps"])
+        if data["mode"] == "search":
+            result = data["result"] or {}
+            report.summary = (
+                f"binary search over {data['param']}, {n} probe{'s' * (n != 1)},"
+                f" best {result.get('best')}"
+            )
+        else:
+            report.summary = f"{n} step{'s' * (n != 1)} over {data['param']}"
+    return report
+
+
+#: ``SWEEP.md`` (the first sweep's summary) and ``SWEEP-<batch>.md`` /
+#: ``SWEEP-<batch>-N.md`` — the same suffixing ``runner._unique`` gives.
+SWEEP_NAME = re.compile(r"^SWEEP(?:-\d{8}T\d{6}Z)?(?:-\d+){0,2}\.md$")
+
+
+def is_sweep_report(path: Path) -> bool:
+    """A sweep summary's markdown form: ``SWEEP.md`` or ``SWEEP-<batch>.md``."""
+    return path.suffix.lower() == ".md" and path.name.startswith("SWEEP")
+
+
+def _validate_sweep_md(p: Path, text: str) -> Report:
+    """Check a SWEEP.md: it must be a fresh render of its sibling SWEEP*.json.
+
+    The summary markdown carries the same stem as its JSON: ``SWEEP.md``
+    renders ``SWEEP.json``, ``SWEEP-<batch>.md`` renders
+    ``SWEEP-<batch>.json``.
+    """
+    from mbench import sweep
+
+    report = Report(str(p), "sweep report")
+    if SWEEP_NAME.fullmatch(p.name) is None:
+        report.errors = [
+            f"{p.name}: sweep summaries are SWEEP.md or SWEEP-<batch>.md "
+            "(a batch like 20260101T000000Z)"
+        ]
+        return report
+    sibling = p.with_suffix(".json")
+    try:
+        data = json.loads(sibling.read_text(encoding="utf-8"))
+    except OSError:
+        report.errors = [f"{p.name}: no sibling {sibling.name} to re-render from"]
+        return report
+    except ValueError as exc:
+        report.errors = [f"{sibling.name}: not valid JSON: {exc}"]
+        return report
+    errors = sweep_errors(data)
+    if errors:
+        report.errors = [f"{sibling.name}: {e}" for e in errors]
+        return report
+    expected = sweep.render_summary_md(data)
+    if expected == text:
+        n = len(data["steps"])
+        report.summary = f"a faithful render over {n} step{'s' * (n != 1)}"
+        return report
+    have_lines, want_lines = text.splitlines(), expected.splitlines()
+    for i, (have, want) in enumerate(zip(have_lines, want_lines, strict=False), 1):
+        if have != want:
+            report.errors = [f"line {i}: {have!r} differs from a fresh render's {want!r}"]
+            break
+    else:
+        report.errors = [
+            f"stale summary: {len(have_lines)} lines where a fresh render has {len(want_lines)}"
         ]
     return report
 

@@ -1,9 +1,9 @@
-"""The ``mbench`` entry point and its not-implemented subcommand stubs.
+"""The ``mbench`` entry point and its subcommands.
 
 ``sut`` and ``validate`` are implemented (#4): see test_sut_cli.py.
 ``corpus`` is implemented (#7): see test_corpus.py.
 ``run`` and ``report`` are implemented (#8): see test_runner.py and
-test_report.py.
+test_report.py. ``sweep`` is implemented (#17): see test_sweep.py.
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ from mbench.cli import EXIT_NOT_IMPLEMENTED, SUBCOMMANDS, Subcommand, main
 
 EXPECTED = {"sut", "corpus", "run", "sweep", "report", "validate"}
 EXPECTED_ISSUES = {"sut": 4, "corpus": 7, "run": 8, "sweep": 17, "report": 8, "validate": 4}
-IMPLEMENTED = {"sut", "corpus", "run", "report", "validate"}
+IMPLEMENTED = {"sut", "corpus", "run", "sweep", "report", "validate"}
 STUBS = [s for s in SUBCOMMANDS if s.name not in IMPLEMENTED]
 
 
@@ -46,24 +46,6 @@ def test_stub_exits_non_zero_naming_its_issue(
     assert EXIT_NOT_IMPLEMENTED != 0
     err = capsys.readouterr().err
     assert f"mbench {sub.name}: not implemented yet (#{sub.issue})" in err
-
-
-@pytest.mark.parametrize(
-    ("argv", "issue"),
-    [
-        (["sweep", "campaigns/smoke.yaml", "--repeats", "5"], 17),  # positional first
-        (["sweep", "--rate", "5", "x"], 17),  # option first
-        (["sweep", "--rate"], 17),  # option missing its value
-        (["sweep", "--", "-weird-name"], 17),
-    ],
-)
-def test_stub_accepts_the_arguments_of_the_finished_command(
-    argv: list[str], issue: int, capsys: pytest.CaptureFixture[str]
-) -> None:
-    # A call written for the real subcommand still gets the not-implemented
-    # message, not an argparse usage error (exit 2).
-    assert main(argv) == EXIT_NOT_IMPLEMENTED
-    assert f"not implemented yet (#{issue})" in capsys.readouterr().err
 
 
 def test_unknown_option_without_subcommand_is_a_usage_error() -> None:
@@ -112,8 +94,9 @@ def test_module_entry_point() -> None:
     proc = subprocess.run(
         [sys.executable, "-m", "mbench", "sweep"], capture_output=True, text=True, check=False
     )
-    assert proc.returncode == EXIT_NOT_IMPLEMENTED
-    assert "mbench sweep: not implemented yet (#17)" in proc.stderr
+    # Implemented: no arguments is an argparse usage error, not the stub.
+    assert proc.returncode == 2
+    assert "--param" in proc.stderr
 
 
 def test_console_script_installed_by_uv_sync() -> None:

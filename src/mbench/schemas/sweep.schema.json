@@ -1,0 +1,380 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/montimage-projects/mmt-bench/schemas/sweep.schema.json",
+  "title": "mmt-bench sweep summary",
+  "description": "The SWEEP.json summary of `mbench sweep` (#17): one step per probed value of the swept parameter, each step a full run batch under the results directory. Checked by `mbench validate`.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "kind",
+    "campaign",
+    "name",
+    "param",
+    "mode",
+    "values",
+    "search",
+    "until",
+    "started_at",
+    "ended_at",
+    "interrupted",
+    "steps",
+    "result"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "kind": {
+      "const": "sweep"
+    },
+    "campaign": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The campaign file the sweep derives its runs from."
+    },
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
+      "description": "The sweep's own name — <campaign>-sweep-<param> — of results/<date>-<name>/."
+    },
+    "param": {
+      "enum": [
+        "corpus",
+        "rate",
+        "ruleset",
+        "threads"
+      ],
+      "description": "The swept dimension. rate is the offered rate of the online mode (#13), pinned on the cells' extra and recorded as cell.rate."
+    },
+    "mode": {
+      "enum": [
+        "list",
+        "search"
+      ]
+    },
+    "values": {
+      "anyOf": [
+        {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "description": "The value the step pinned — a thread count, ruleset id, corpus label or offered rate."
+          }
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The list sweep's values, in step order; null on a search."
+    },
+    "search": {
+      "anyOf": [
+        {
+          "type": "object",
+          "required": [
+            "lo",
+            "hi",
+            "tolerance",
+            "max_steps"
+          ],
+          "properties": {
+            "lo": {
+              "type": "number",
+              "description": "The bracket's lower bound — the highest value known feasible once the search ran."
+            },
+            "hi": {
+              "type": "number",
+              "description": "The bracket's upper bound, probed first."
+            },
+            "tolerance": {
+              "type": "number",
+              "minimum": 0
+            },
+            "max_steps": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The binary search's parameters; null on a list sweep."
+    },
+    "until": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The stop condition, e.g. loss==0 — <metric><op><value> over a step's metrics. Required for a search, optional for a list sweep (it only marks each step's pass then)."
+    },
+    "started_at": {
+      "type": "string",
+      "description": "ISO-8601 UTC of the first step."
+    },
+    "ended_at": {
+      "type": "string",
+      "description": "ISO-8601 UTC the summary was written."
+    },
+    "interrupted": {
+      "type": "boolean",
+      "description": "True when the sweep was cut short — the listed steps are complete results."
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "n",
+          "value",
+          "runs",
+          "status",
+          "metrics",
+          "pass"
+        ],
+        "properties": {
+          "n": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "The step's position in the sweep's order (list order or bisection order)."
+          },
+          "value": {
+            "description": "The parameter value the step pinned."
+          },
+          "runs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The runs/*.json file names the step wrote — every step is a full result."
+          },
+          "status": {
+            "enum": [
+              "empty",
+              "ok",
+              "partial",
+              "invalid",
+              "timeout",
+              "error",
+              "interrupted"
+            ],
+            "description": "The step's runs' worst status; empty when a swept value produced no cells."
+          },
+          "metrics": {
+            "type": "object",
+            "required": [
+              "loss",
+              "gbps",
+              "mpps",
+              "packets",
+              "bytes",
+              "drops",
+              "alerts",
+              "detection_rate",
+              "precision"
+            ],
+            "properties": {
+              "loss": {
+                "anyOf": [
+                  {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "drops/packets over the step's ok measured passes; null when a pass recorded no drop counter or no packets."
+              },
+              "gbps": {
+                "anyOf": [
+                  {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Median goodput of the ok measured passes."
+              },
+              "mpps": {
+                "anyOf": [
+                  {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Median packet rate of the ok measured passes."
+              },
+              "packets": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "bytes": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "drops": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Sum of the drop counters — null when any ok pass recorded none (a run without a drop counter cannot claim zero loss)."
+              },
+              "alerts": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "detection_rate": {
+                "anyOf": [
+                  {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Median of the scored passes' detection rate; null when no pass was scored."
+              },
+              "precision": {
+                "anyOf": [
+                  {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Median of the scored passes' precision; null when no pass was scored."
+              }
+            },
+            "additionalProperties": false,
+            "description": "The step's metrics over its runs' ok measured passes. A metric the step did not record is null and satisfies no --until condition."
+          },
+          "pass": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Whether the step satisfied --until; null when no condition was given."
+          }
+        },
+        "additionalProperties": false
+      },
+      "description": "One entry per probed value, in probe order."
+    },
+    "result": {
+      "anyOf": [
+        {
+          "type": "object",
+          "required": [
+            "best",
+            "satisfied",
+            "stop",
+            "steps",
+            "bracket"
+          ],
+          "properties": {
+            "best": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The highest probed value that satisfied the condition; null when none did."
+            },
+            "satisfied": {
+              "type": "boolean",
+              "description": "Whether any probed value satisfied the condition."
+            },
+            "stop": {
+              "enum": [
+                "hi_satisfied",
+                "tolerance",
+                "bracket_collapsed",
+                "max_steps"
+              ],
+              "description": "Why the search stopped."
+            },
+            "steps": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "How many values were probed."
+            },
+            "bracket": {
+              "type": "object",
+              "required": [
+                "lo",
+                "hi"
+              ],
+              "properties": {
+                "lo": {
+                  "type": "number"
+                },
+                "hi": {
+                  "type": "number"
+                }
+              },
+              "additionalProperties": false,
+              "description": "The final bracket: lo feasible, hi infeasible."
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The binary search's outcome; null on a list sweep."
+    }
+  },
+  "additionalProperties": false
+}

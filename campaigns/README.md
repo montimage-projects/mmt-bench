@@ -52,6 +52,20 @@ systemctl --user start vllm-qwen.service vllm-health-watchdog.timer
 `mbench report <results-dir>` re-renders `REPORT.md` (append-only, or `-o -`
 to stdout).
 
+`mbench sweep <campaign> --param <p> --values v1,v2,...` (#17) re-runs the
+campaign as a one-axis matrix with the `p` dimension set to the listed
+values — `threads` (counts), `ruleset` (ids under `rulesets/`), `corpus`
+(manifest labels) or `rate` (the offered replay rate of the online mode,
+recorded as `cell.rate`). `--search lo:hi --until <metric><op><value>`
+instead probes `rate` in a binary search — hi first, then the bracket's
+midpoint — for the highest offered rate satisfying the condition, until
+`--tolerance` (default 0) or `--max-steps` (default 16) stops it; the
+metrics are a step's ok measured passes: `loss` (drops/packets), `gbps`,
+`mpps`, `packets`, `bytes`, `drops`, `alerts`, `detection_rate`,
+`precision`. Results go under `results/<date>-<campaign>-sweep-<param>/`:
+every step is a full run batch (sut, runs, report, append-only), and
+`SWEEP.json`/`SWEEP.md` summarise the steps — checked by `mbench validate`.
+
 ## smoke.yaml (#9)
 
 The 10-s smoke campaign: two offline cells, mmt-probe on the generated

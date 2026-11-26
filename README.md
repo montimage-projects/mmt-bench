@@ -15,8 +15,8 @@ python3 tools/ci/check_action_pins.py  # every action pinned to a full SHA
 uv run pytest              # tests
 ```
 
-`mbench sut`, `mbench validate`, `mbench corpus`, `mbench run` and
-`mbench report` are implemented (#4, #7, #8):
+`mbench sut`, `mbench validate`, `mbench corpus`, `mbench run`, `mbench
+sweep` and `mbench report` are implemented (#4, #7, #8, #17):
 
 ```sh
 uv run mbench sut -o sut.json              # system-under-test fingerprint, no sudo
@@ -29,12 +29,22 @@ uv run mbench corpus check                 # every capture present vs its sha256
 uv run mbench run campaigns/x.yaml         # a campaign -> results/<date>-x/
 uv run mbench report results/<date>-x/     # re-render REPORT.md (append-only)
 uv run mbench validate results/<date>-x/REPORT.md   # the report too (#9)
+uv run mbench sweep campaigns/x.yaml --param threads --values 0,1,2,4
+uv run mbench sweep campaigns/x.yaml --param rate --search 0:2000 --until loss==0
+uv run mbench validate results/<date>-x-sweep-*/SWEEP*  # the summary too (#17)
 ```
+
+`mbench sweep` runs one dimension of a campaign: a `--values` list sweep
+(a one-axis matrix: thread counts, ruleset ids, corpus labels or the
+offered rate), or a `--search` binary search over the offered rate for the
+highest value satisfying `--until` — a condition like `loss==0` or
+`loss<=0.001` over the metrics a run records. Every step is a full run
+under `results/<date>-<campaign>-sweep-<param>/`, plus a `SWEEP.json` /
+`SWEEP.md` summary `mbench validate` checks.
 
 See [docs/sut-fingerprint.md](docs/sut-fingerprint.md),
 [corpus/README.md](corpus/README.md) and
-[campaigns/README.md](campaigns/README.md). `mbench sweep` is a stub for now:
-it exits with status 3 and `not implemented yet (#17)` (epic #1).
+[campaigns/README.md](campaigns/README.md).
 
 [AGENTS.md](AGENTS.md) is the single copy of the commands CI runs — the
 checks above, the action-pin check and the 10-s smoke campaign — and of the

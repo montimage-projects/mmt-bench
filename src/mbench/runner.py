@@ -225,9 +225,12 @@ def run_scope_sut(
 
 def _slug(cell: Cell) -> str:
     """A short filename-safe summary of the cell."""
+    extra = "".join(
+        f"-{k}{v:g}" if isinstance(v, float) else f"-{k}{v}" for k, v in sorted(cell.extra.items())
+    )
     raw = (
         f"{cell.tool}-{cell.corpus.label}-{cell.ruleset.id}-"
-        f"{cell.config_profile}-t{cell.threads}-c{cell.cpuset_str or 'all'}"
+        f"{cell.config_profile}-t{cell.threads}-c{cell.cpuset_str or 'all'}{extra}"
     )
     return re.sub(r"[^a-z0-9._-]+", "_", raw.lower())[:80]
 
@@ -406,6 +409,12 @@ def run_cell(
         # not pinned): the "harness on other cores" half of the pinning rule
         "harness_cpuset": sut.format_cpulist(harness_cpuset) if harness_cpuset else "",
     }
+    # Mode-specific dimensions a sweep pinned on the cell (``rate`` for the
+    # online mode, #13) are recorded beside the campaign dimensions.
+    for key in cell.extra:
+        if key in cell_desc:
+            raise ValueError(f"cell extra key {key!r} shadows a cell field")
+    cell_desc.update(dict(cell.extra))
     return {
         "schema_version": 1,
         "batch": batch,
@@ -601,6 +610,7 @@ def run_campaign(
     campaign: Campaign,
     *,
     results_dir: Path = DEFAULT_RESULTS,
+    directory: Path | None = None,
     adapters: Mapping[str, Callable[[], Adapter]] | None = None,
     collect: Callable[[], dict[str, Json]] | None = None,
     batch: str | None = None,
@@ -616,7 +626,10 @@ def run_campaign(
     """Run ``campaign`` and write its results directory.
 
     ``collect`` returns the campaign's host-scope SUT record (default: a live
-    collection as the invoking user, anonymised). ``adapters`` maps tool
+    collection as the invoking user, anonymised). ``directory`` overrides
+    where results go (default: ``results_dir/<date>-<campaign.name>`` —
+    ``mbench sweep`` pins it so every step of one sweep lands in the same
+    directory even across a date change). ``adapters`` maps tool
     names to adapter factories (default: ``mbench.adapters.ADAPTERS``).
     ``tmpfs`` selects the staging directory: ``None`` or ``True``
     auto-detects, a :class:`Path` forces one, ``False`` disables tmpfs
@@ -636,7 +649,8 @@ def run_campaign(
     factories = dict(ADAPTERS) if adapters is None else dict(adapters)
     collect_sut = _collect_sut if collect is None else collect
     now = clock()
-    directory = results_dir / f"{now.strftime('%Y-%m-%d')}-{campaign.name}"
+    if directory is None:
+        directory = results_dir / f"{now.strftime('%Y-%m-%d')}-{campaign.name}"
     batch_id = _free_batch(directory, batch or _batch_id(now))
     runs_dir = directory / "runs"
     runs_dir.mkdir(parents=True, exist_ok=True)
