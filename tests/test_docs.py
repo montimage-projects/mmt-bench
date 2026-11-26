@@ -265,7 +265,7 @@ def test_design_has_track_b_sections_in_order_then_decisions() -> None:
 #: verbatim copy of the plan, so an edit inside a section must be deliberate
 #: and update this pin with it (N2). The heading-order check above cannot
 #: see such an edit; the digest can.
-DESIGN_B_SECTIONS_SHA256 = "8e7cc8af0da3c2633bfd471995c6d517e524ace4ad735abf8d99175747f8ff00"
+DESIGN_B_SECTIONS_SHA256 = "d605c1a886054302f296d7912ec494f610192b877d33479c1706bed7186b74fd"
 
 
 def test_design_b_sections_are_verbatim() -> None:

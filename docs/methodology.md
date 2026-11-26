@@ -268,9 +268,12 @@ The campaign is `campaigns/p1-headline.yaml`. Its rule sets are defined in
   `tcpdump` inside the pinned `mmt-bench/tcpreplay:local` container —
   `docker run --net host --cap-add NET_RAW --cap-add NET_ADMIN` as the
   invoking user, no sudo (#50) — and anonymised in the same image with
-  `tcprewrite --seed` (deterministic, crypto-PAn-style IP rewriting) plus
-  MAC replacement and checksum fix (`tools/capture/c-benign.sh` prints the
-  runbook). IPs, MACs and checksums are covered;
+  `tcprewrite --seed`, a seeded, deterministic IP rewrite that is not
+  prefix-preserving (not crypto-PAn), plus MAC replacement by
+  `--enet-smac`/`--enet-dmac` and a checksum fix
+  (`tools/capture/c-benign.sh` prints the runbook). The seed is a
+  secret: never in git, the manifest, `results/` or `REPORT.md`.
+  IPs, MACs and checksums are covered;
   **payloads are not** — DNS names, HTTP hosts and TLS SNI stay readable.
   Truncating them would hide the names but break the payload rules the
   benchmark exists to measure, so the capture is registered `local_only`

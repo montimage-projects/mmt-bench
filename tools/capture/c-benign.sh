@@ -9,18 +9,20 @@
 #
 # What it produces, under local/ and corpus/data/ (both git-ignored, never
 # committed):
-#   local/capture/c-benign-raw.pcap   the raw 1-h capture — DELETE in step 4
+#   local/capture/c-benign-raw.pcap   the raw 1-h capture — stays local
+#                                     only (see step 4)
 #   corpus/data/c-benign.pcap         the anonymised capture, registered as
 #                                     corpus entry `c-benign` (local_only)
 #
 # Anonymisation is `tcprewrite` in the same pinned image (built by
 # tools/docker/tcpreplay/Dockerfile; `docker inspect` prints the digest of
 # the local build):
-#   --seed        deterministic IP rewriting (tcprewrite's crypto-PAn-style
-#                 seeded anonymisation: the same address always maps to the
-#                 same address, preserving prefix, so flows and client/server
-#                 roles survive; the seed is the secret — keep it local, do
-#                 not commit it)
+#   --seed        deterministic IP rewriting — tcprewrite --seed, not
+#                 prefix-preserving (not crypto-PAn): the same address
+#                 always maps to the same address, so flows and
+#                 client/server roles survive, but address prefixes do
+#                 not. The seed is the secret — keep it local, never in
+#                 git, the manifest, results/ or REPORT.md
 #   --enet-smac/--enet-dmac   MAC addresses replaced
 #   --fixcsum     IP/TCP/UDP checksums recomputed
 #
@@ -60,8 +62,9 @@ docker run --rm --net host --cap-add NET_RAW --cap-add NET_ADMIN \\
     -v "\$PWD/local/capture:/work" mmt-bench/tcpreplay:local \\
     -i $IFACE -s 0 -G 3600 -W 1 -w /work/c-benign-raw.pcap
 
-# 3. Anonymise in the pinned container (user). SEED is the crypto key:
-#    choose it, keep it local, never commit it.
+# 3. Anonymise in the pinned container (user). SEED is the anonymisation
+#    secret: choose it, keep it local — never in git, the manifest,
+#    results/ or REPORT.md.
 SEED=\$(od -An -N4 -tu4 /dev/urandom | tr -d ' ')
 docker run --rm --user "\$(id -u):\$(id -g)" \\
     -v "\$PWD/local/capture:/work" mmt-bench/tcpreplay:local \\
@@ -70,11 +73,12 @@ docker run --rm --user "\$(id -u):\$(id -g)" \\
     --enet-smac=02:00:00:00:00:01 --enet-dmac=02:00:00:00:00:02 \\
     --fixcsum
 
-# 4. Delete the raw capture and register the anonymised one (user):
-rm local/capture/c-benign-raw.pcap
+# 4. Register the anonymised capture (user). The raw capture stays local
+#    only, in local/capture/ — not in git, not in any shared or synced
+#    path — and is deleted only after asking Luong.
 mv local/capture/c-benign.pcap corpus/data/c-benign.pcap
 uv run mbench corpus add corpus/data/c-benign.pcap --label c-benign \\
-    --source 'dgx-spark own traffic, 1 h, tcprewrite --seed (local)' \\
+    --source 'dgx-spark own traffic, 1 h, tcprewrite --seed, not prefix-preserving (local)' \\
     --licence 'local only — anonymised private capture' --local-only
 sha256sum corpus/data/c-benign.pcap   # the sha256 results and reports name
 EOF
