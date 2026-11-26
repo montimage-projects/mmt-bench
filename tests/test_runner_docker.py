@@ -24,7 +24,7 @@ from pathlib import Path
 import pytest
 import yaml
 from sutfixtures import replay
-from test_mmt_probe_docker import _docker_usable, _extract
+from test_mmt_probe_docker import RUN_PREFIX, _docker_usable, _extract
 
 from mbench import corpus, matrix, pcap, runner, validate
 from mbench.adapters.base import Ruleset
@@ -134,20 +134,18 @@ def test_a_tiny_campaign_runs_end_to_end(adapter: MmtProbeAdapter, tmp_path: Pat
         if result.is_file():
             assert "mmt-security-fork" not in result.read_text(encoding="utf-8", errors="replace")
 
-    # No mbench- container is left running.
-    left = subprocess.run(
-        ["docker", "ps", "-q", "--filter", "name=mbench-"],
-        capture_output=True,
-        text=True,
-        timeout=30,
-    ).stdout.strip()
-    assert left == "", f"mbench containers left running: {left}"
+    # No run container is left running.
+    assert _run_containers() == "", f"run containers left running: {_run_containers()}"
 
 
-def _mbench_containers(name: str = "mbench-") -> str:
-    """Every running container id whose name matches ``name``, or ""."""
+def _run_containers() -> str:
+    """Every running ``mbench-mmt-probe-run-*`` container id, or "".
+
+    Filtered on the run containers' own prefix, so a long-lived
+    ``mbench-capture-*`` container elsewhere on the host is not counted.
+    """
     return subprocess.run(
-        ["docker", "ps", "-q", "--filter", f"name={name}"],
+        ["docker", "ps", "-q", "--filter", f"name={RUN_PREFIX}"],
         capture_output=True,
         text=True,
         timeout=30,
@@ -192,7 +190,7 @@ def _interrupt_the_pass(proc: subprocess.Popen[bytes], signum: int) -> bool:
     deadline = time.monotonic() + 180
     try:
         while time.monotonic() < deadline and proc.poll() is None:
-            if _mbench_containers("mbench-mmt-probe-run-"):
+            if _run_containers():
                 proc.send_signal(signum)
                 proc.wait(timeout=120)
                 return True
@@ -209,14 +207,14 @@ def _interrupt_the_pass(proc: subprocess.Popen[bytes], signum: int) -> bool:
 
 
 def _no_mbench_container() -> None:
-    """Assert no ``mbench-`` container is left, giving the daemon's --rm a grace."""
-    left = _mbench_containers()
+    """Assert no run container is left, giving the daemon's --rm a grace."""
+    left = _run_containers()
     for _ in range(50):
         if not left:
             break
         time.sleep(0.2)
-        left = _mbench_containers()
-    assert left == "", f"mbench containers left running: {left}"
+        left = _run_containers()
+    assert left == "", f"run containers left running: {left}"
 
 
 @needs_docker
