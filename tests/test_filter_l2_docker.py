@@ -138,3 +138,19 @@ def test_filter_keeps_ip_ipv6_arp_and_drops_l2_control_frames(tmp_path: Path) ->
     # Byte-for-byte reproducible, as the runbook states: a second run of
     # the same filter gives the same sha256.
     assert pcap.sha256_file(again_pcap) == pcap.sha256_file(out_pcap)
+
+
+@needs_image
+@needs_docker
+def test_filter_creates_a_missing_output_directory(tmp_path: Path) -> None:
+    in_pcap = tmp_path / "c-benign-all.pcap"
+    out_pcap = tmp_path / "new" / "nested" / "c-benign.pcap"
+    _write(in_pcap, FRAMES)
+
+    proc = subprocess.run(
+        [str(SCRIPT), str(in_pcap), str(out_pcap)],
+        capture_output=True,
+        timeout=120,
+    )
+    assert proc.returncode == 0, proc.stderr.decode("utf-8", "replace")
+    assert _frames(out_pcap) == KEPT
