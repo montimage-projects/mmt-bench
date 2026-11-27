@@ -20,7 +20,8 @@ fi
 [ -f "$1" ] || { echo "$0: $1: no such file" >&2; exit 2; }
 
 in_dir="$(cd "$(dirname "$1")" && pwd)"
-out_dir="$(cd "$(dirname "$2")" && pwd)"   # must exist; OUT itself may not
+mkdir -p "$(dirname "$2")"                 # OUT's directory may not exist yet
+out_dir="$(cd "$(dirname "$2")" && pwd)"   # OUT itself may not
 image="${3:-mmt-bench/tcpreplay:local}"
 
 # An mbench- container, --rm, no network, like every container the harness
