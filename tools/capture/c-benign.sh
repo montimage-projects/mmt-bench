@@ -1,5 +1,6 @@
 #!/bin/sh
-# c-benign — the no-sudo runbook for the anonymised 1-h capture (#10, #50).
+# c-benign — the no-sudo runbook for the anonymised 1-h capture (#10, #50)
+# and the benchmark corpus derived from it (#54).
 #
 # This script ONLY PRINTS the commands. Nothing here runs them, but nothing
 # in them needs root either: the capture runs tcpdump inside the pinned
@@ -10,9 +11,12 @@
 # What it produces, under local/ and corpus/data/ (both git-ignored, never
 # committed):
 #   local/capture/c-benign-raw.pcap   the raw 1-h capture — stays local
-#                                     only (see step 4)
-#   corpus/data/c-benign.pcap         the anonymised capture, registered as
-#                                     corpus entry `c-benign` (local_only)
+#                                     only (see step 5)
+#   corpus/data/c-benign-all.pcap     the anonymised capture, registered as
+#                                     corpus entry `c-benign-all` (local_only)
+#   corpus/data/c-benign.pcap         the benchmark corpus: c-benign-all
+#                                     filtered to IPv4, IPv6 and ARP (#54),
+#                                     registered as `c-benign` (local_only)
 #
 # Anonymisation is `tcprewrite` in the same pinned image (built by
 # tools/docker/tcpreplay/Dockerfile; `docker inspect` prints the digest of
@@ -38,6 +42,14 @@
 # packets, keep the capture local_only — it is never published; only its
 # label and sha256 appear in results. If the capture must ever leave this
 # host, re-evaluate with a payload-aware anonymiser first.
+#
+# Why the filter (step 4): a real capture also carries layer-2 control
+# frames that mmt-probe's reports do not count — in this capture 3,600
+# frames of ethertype 0x7373, 3,599 802.3/LLC frames (spanning tree) and 1
+# of 0x88e1, 7,200 of 508,584 in all — while the harness requires the
+# tool's packet count to equal the pcap's, so every pass on the unfiltered
+# file is invalid. The corpus keeps IPv4, IPv6 and ARP only, filtered by
+# tcpdump 4.99.4 / libpcap 1.10.4 in the same pinned image.
 set -eu
 
 # The interface to listen on: the route to the outside, not a veth.
@@ -45,7 +57,7 @@ IFACE=$(ip -o -4 route show to default 2>/dev/null | awk 'NR==1 {print $5}')
 : "${IFACE:=CHANGE-ME}"   # no default route: pick the interface yourself
 
 cat <<EOF
-# 1. Build the capture + anonymiser image (user, once):
+# 1. Build the capture + anonymiser + filter image (user, once):
 docker build -t mmt-bench/tcpreplay:local tools/docker/tcpreplay
 docker inspect -f '{{.Id}}' mmt-bench/tcpreplay:local   # record this digest
 
@@ -68,17 +80,29 @@ docker run --rm --net host --cap-add NET_RAW --cap-add NET_ADMIN \\
 SEED=\$(od -An -N4 -tu4 /dev/urandom | tr -d ' ')
 docker run --rm --user "\$(id -u):\$(id -g)" \\
     -v "\$PWD/local/capture:/work" mmt-bench/tcpreplay:local \\
-    --infile=/work/c-benign-raw.pcap --outfile=/work/c-benign.pcap \\
+    --infile=/work/c-benign-raw.pcap --outfile=/work/c-benign-all.pcap \\
     --seed=\$SEED \\
     --enet-smac=02:00:00:00:00:01 --enet-dmac=02:00:00:00:00:02 \\
     --fixcsum
 
-# 4. Register the anonymised capture (user). The raw capture stays local
-#    only, in local/capture/ — not in git, not in any shared or synced
-#    path — and is deleted only after asking Luong.
+# 4. Derive the benchmark corpus (user, #54): keep IPv4, IPv6 and ARP
+#    only — the layer-2 control frames mmt-probe never counts are dropped.
+#    tcpdump 4.99.4 / libpcap 1.10.4 runs in the pinned image:
+#    'tcpdump -r c-benign-all.pcap -w c-benign.pcap "ip or ip6 or arp"'.
+#    Byte-for-byte reproducible: run it again, the sha256 is the same.
+tools/capture/filter-l2.sh local/capture/c-benign-all.pcap local/capture/c-benign.pcap
+sha256sum local/capture/c-benign.pcap   # run step 4 again: same sha256
+
+# 5. Register both captures (user). The raw capture stays local only, in
+#    local/capture/ — not in git, not in any shared or synced path — and
+#    is deleted only after asking Luong.
+mv local/capture/c-benign-all.pcap corpus/data/c-benign-all.pcap
 mv local/capture/c-benign.pcap corpus/data/c-benign.pcap
-uv run mbench corpus add corpus/data/c-benign.pcap --label c-benign \\
+uv run mbench corpus add corpus/data/c-benign-all.pcap --label c-benign-all \\
     --source 'dgx-spark own traffic, 1 h, tcprewrite --seed, not prefix-preserving (local)' \\
+    --licence 'local only — anonymised private capture' --local-only
+uv run mbench corpus add corpus/data/c-benign.pcap --label c-benign \\
+    --source 'c-benign-all filtered with tcpdump 4.99.4 (libpcap 1.10.4) in mmt-bench/tcpreplay:local: tcpdump -r c-benign-all.pcap -w c-benign.pcap "ip or ip6 or arp" (local)' \\
     --licence 'local only — anonymised private capture' --local-only
 sha256sum corpus/data/c-benign.pcap   # the sha256 results and reports name
 EOF

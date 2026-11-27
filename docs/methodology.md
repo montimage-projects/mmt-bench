@@ -279,6 +279,22 @@ The campaign is `campaigns/p1-headline.yaml`. Its rule sets are defined in
   benchmark exists to measure, so the capture is registered `local_only`
   and only its label and sha256 ever appear in results. That is the decided
   mitigation, pending Luong's confirmation.
+
+  The manifest then holds two `local_only` entries (#54): `c-benign-all`,
+  the anonymised capture, and `c-benign`, the corpus the campaigns name —
+  `c-benign-all` filtered to IPv4, IPv6 and ARP only. A real capture also
+  carries layer-2 control frames that mmt-probe's reports never count —
+  this one carried 3,600 frames of ethertype 0x7373, 3,599 802.3/LLC
+  frames (spanning tree) and 1 of 0x88e1, 7,200 of 508,584 in all — while
+  the exact-count check of [Offline capacity](#offline-capacity) still
+  requires the tool's packet count to equal the pcap's. A pass on the
+  unfiltered file is invalid, so the corpus is filtered; the check itself
+  is unchanged. The filter is
+  `tcpdump -r c-benign-all.pcap -w c-benign.pcap 'ip or ip6 or arp'`, run
+  by `tools/capture/filter-l2.sh` inside the pinned
+  `mmt-bench/tcpreplay:local` image (tcpdump 4.99.4, libpcap 1.10.4) —
+  the runbook's step 4. It is byte-for-byte reproducible: rebuilding
+  `c-benign` from `c-benign-all` with it gives the same sha256.
 - **Public benign mix: unresolved.** CIC-IDS2017's Monday capture fits, its
   terms allow redistribution with citation, but its official download URL
   redirects to a landing page — there is no stable URL + sha256 to pin.
