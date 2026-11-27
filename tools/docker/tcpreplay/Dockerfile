@@ -1,8 +1,9 @@
-# tcprewrite and tcpdump, the anonymiser and the capturer of the C-benign
-# runbook (issues #10 and #50). One image serves both steps: the capture is
-# `docker run --net host --cap-add NET_RAW --cap-add NET_ADMIN --user
-# $(id -u):$(id -g) --entrypoint tcpdump` (no sudo), the anonymisation keeps
-# the default `tcprewrite` entrypoint.
+# tcprewrite and tcpdump, the anonymiser, capturer and L2 filter of the
+# C-benign runbook (issues #10, #50 and #54). One image serves all three
+# steps: the capture is `docker run --net host --cap-add NET_RAW --cap-add
+# NET_ADMIN --user $(id -u):$(id -g) --entrypoint tcpdump` (no sudo), the
+# anonymisation keeps the default `tcprewrite` entrypoint, and the filter
+# is `tools/capture/filter-l2.sh` (--entrypoint tcpdump on files).
 #
 # tcpdump carries cap_net_raw,cap_net_admin as *file* capabilities: docker's
 # --cap-add does not apply to a non-root --user, so the capability the

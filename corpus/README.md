@@ -33,5 +33,6 @@ validate data/<label>.truth.json` checks the file.
 file is reported but not an error: captures are not committed, so any of them
 can be absent and regenerated or fetched again.
 
-An entry marked `local_only` (the anonymised dgx-spark capture) is never
+An entry marked `local_only` (the anonymised dgx-spark capture and its
+filtered benchmark corpus, `c-benign-all` and `c-benign`) is never
 committed or published: results and reports show only its label and sha256.
