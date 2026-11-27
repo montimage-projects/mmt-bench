@@ -28,7 +28,12 @@ import pytest
 
 from mbench import corpus, pcap, truth
 from mbench.adapters.base import ImageRef, Ruleset, tools_record_errors
-from mbench.adapters.mmt_probe import CliDocker, MmtProbeAdapter, _pick_protocol
+from mbench.adapters.mmt_probe import (
+    CONTAINER_PREFIX,
+    CliDocker,
+    MmtProbeAdapter,
+    _pick_protocol,
+)
 
 #: The check cases: pcap inside the image, its expect file, the pcap's
 #: pinned sha256 and how many alerts mmt-security says it raises. The
@@ -56,6 +61,11 @@ CHECK_CASES = [
 ]
 
 IMAGE = "mmt-bench/mmt-probe:local"
+
+#: The run containers' name prefix — the one "no container left" checks
+#: filter on, so a long-lived ``mbench-capture-*`` container elsewhere on
+#: the host cannot turn the suite red.
+RUN_PREFIX = f"{CONTAINER_PREFIX}mmt-probe-run-"
 
 
 def _docker_usable() -> bool:
@@ -251,14 +261,14 @@ def test_offline_run_on_the_check_pcap(
     # The record of the tool under test validates.
     assert tools_record_errors(adapter.tools_record()) == []
 
-    # No mbench- container is left running.
+    # No run container is left running.
     left = subprocess.run(
-        ["docker", "ps", "-q", "--filter", "name=mbench-"],
+        ["docker", "ps", "-q", "--filter", f"name={RUN_PREFIX}"],
         capture_output=True,
         text=True,
         timeout=30,
     ).stdout.strip()
-    assert left == "", f"mbench containers left running: {left}"
+    assert left == "", f"run containers left running: {left}"
 
 
 @needs_docker

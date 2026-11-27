@@ -62,13 +62,14 @@ def _completed(argv: Sequence[str], rc: int = 0) -> perf.Completed:
     return subprocess.CompletedProcess(list(argv), rc, b"", b"")
 
 
-def _probe(tmp_path: Path, paranoid: int = 1) -> perf.Probe:
+def _probe(tmp_path: Path, paranoid: int = 1, canary_rc: int = 0) -> perf.Probe:
     knob = tmp_path / "perf_event_paranoid"
     knob.write_text(f"{paranoid}\n", encoding="utf-8")
     return perf.Probe(
         binary="/usr/bin/perf",
         paranoid_path=knob,
-        run=lambda argv: _completed(argv),
+        which=lambda name: None,
+        run=lambda argv: _completed(argv, canary_rc),
         spawn=FakePopen,  # type: ignore[arg-type]
     )
 
@@ -122,7 +123,9 @@ def test_measured_passes_carry_the_perf_record(tmp_path: Path, fake_tool: None) 
 def test_a_refused_perf_is_the_marker_and_the_runbook(tmp_path: Path, fake_tool: None) -> None:
     doc = campaign_doc([{"label": "x"}], cpusets=["core:x925"], perf=True)
     campaign = _campaign(tmp_path, doc)
-    outcome, logs, _ = _run(campaign, tmp_path, perf_probe=_probe(tmp_path, paranoid=4))
+    outcome, logs, _ = _run(
+        campaign, tmp_path, perf_probe=_probe(tmp_path, paranoid=4, canary_rc=1)
+    )
     record = _load_run(outcome)
 
     measured = record["passes"][1]
@@ -130,7 +133,7 @@ def test_a_refused_perf_is_the_marker_and_the_runbook(tmp_path: Path, fake_tool:
     assert "perf_event_paranoid=4" in measured["perf"]["reason"]
     note = "\n".join(logs)
     assert "cap_perfmon=ep" in note  # the narrowest fix, printed for Luong
-    assert "kernel.perf_event_paranoid=1" in note
+    assert "kernel.perf_event_paranoid=0" in note  # CPU events need <= 0
     # the run is still a valid measurement — the marker is evidence, not a failure
     assert record["status"] == "ok"
 
@@ -191,7 +194,7 @@ def test_the_report_shows_cycles_and_the_ci(tmp_path: Path, fake_tool: None) -> 
 def test_a_marker_lands_in_the_report(tmp_path: Path, fake_tool: None) -> None:
     doc = campaign_doc([{"label": "x"}], cpusets=["core:x925"], perf=True)
     campaign = _campaign(tmp_path, doc)
-    outcome, _, _ = _run(campaign, tmp_path, perf_probe=_probe(tmp_path, paranoid=4))
+    outcome, _, _ = _run(campaign, tmp_path, perf_probe=_probe(tmp_path, paranoid=4, canary_rc=1))
     assert outcome.report_file is not None
     text = outcome.report_file.read_text(encoding="utf-8")
     assert "cycles/pkt unavailable" in text
